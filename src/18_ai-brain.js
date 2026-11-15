@@ -77,6 +77,34 @@ function aiTunnel(T,A,tf,free,take){
   }
 }
 
+// ---- AI 성향 · 전술 ----
+// 성향(persona)은 팀마다 한 번 정해지고, 원정 부대를 보낼 때마다 전술(tactic)을 새로 고른다.
+//  frontal 정면 진격 · rush 전력 돌격(후퇴 없음) · flank 측면 우회 · ambush 덤불 매복 후 기습
+const AIP={
+  aggressive:{delay:.55,frac:.8,ready:.6,ret:2.6,dig:.8,w:{rush:.35,frontal:.25,flank:.25,ambush:.15}},
+  defensive:{delay:1.45,frac:.5,ready:1.3,ret:1.2,dig:1.5,w:{frontal:.4,flank:.2,ambush:.4,rush:0}},
+  tricky:{delay:1,frac:.55,ready:.95,ret:1.5,dig:1,w:{ambush:.4,flank:.45,frontal:.1,rush:.05}},
+  balanced:{delay:1,frac:.6,ready:1,ret:1.6,dig:1,w:{frontal:.4,flank:.3,ambush:.2,rush:.1}}
+};
+function aiPickTactic(P,strengthRatio,hasBush){
+  const w=Object.assign({},P.w);
+  if(!hasBush)w.ambush=0;
+  if(strengthRatio>1.5)w.rush=(w.rush||0)+.25;
+  if(strengthRatio<.9){w.rush=0;w.flank=(w.flank||0)+.15;}
+  let tot=0;for(const k in w)tot+=w[k];let r=Math.random()*tot;
+  for(const k in w){r-=w[k];if(r<=0)return k;}
+  return 'frontal';
+}
+function aiFindBush(px,py,r){
+  let best=null,bd=1e9;
+  for(let dy=-r;dy<=r;dy+=1)for(let dx=-r;dx<=r;dx+=1){
+    const x=Math.round(px+dx),y=Math.round(py+dy);
+    if(!inb(x,y))continue;const i=y*G.w+x;
+    if(!G.brush[i]||G.obst[i]||G.tt[i]===2||G.trench[i])continue;
+    const d=Math.hypot(dx,dy);if(d<bd){bd=d;best=[x,y];}
+  }
+  return best;
+}
 function aiTick(T,dt){
   const A=T.ai;
   A.next-=dt;if(A.next>0)return;
@@ -103,7 +131,9 @@ function aiTick(T,dt){
   const tanks=G.vehicles.filter(v=>v.team===T.id&&!v.dead&&v.type==='tank');
   const homeR=12+G.w*.05;
   const home=foesNear(T,my.x,my.y,homeR);
-  if(A.attackAt===undefined)A.attackAt=80+G.w*1.1+Math.random()*50;
+  if(!A.persona){const r=Math.random();A.persona=r<.26?'aggressive':r<.5?'defensive':r<.76?'tricky':'balanced';A.side=Math.random()<.5?-1:1;}
+  const P=AIP[A.persona];
+  if(A.attackAt===undefined)A.attackAt=(80+G.w*1.1+Math.random()*50)*P.delay;
 
   // ── 1. 본진 방어: 가까운 적이 있으면 즉시 대응 ──
   if(home.n>0){
@@ -128,21 +158,38 @@ function aiTick(T,dt){
 
   // ── 2. 원정 부대 운용: 집결 → 진격(단계별 전진) → 접촉 판단 → 후퇴 ──
   const dxl=tf.x-my.x,dyl=tf.y-my.y,L=Math.hypot(dxl,dyl)||1;
-  const wpAt=(f)=>[clamp(Math.round(my.x+dxl*f),1,G.w-2),clamp(Math.round(my.y+dyl*f),1,G.h-2)];
+  const lat=A.tactic==='flank'?A.side*L*.3:0,px0=-dyl/L,py0=dxl/L;   // 우회 전술: 진격선에서 옆으로 호를 그리며 접근
+  const wpAt=(f)=>{const o=lat*Math.sin(Math.PI*Math.min(1,f));return [clamp(Math.round(my.x+dxl*f+px0*o),1,G.w-2),clamp(Math.round(my.y+dyl*f+py0*o),1,G.h-2)];};
   const strengthRatio=mineStr/enemyStr;
-  const ready=G.time>A.attackAt&&(strengthRatio>.85||G.time>A.attackAt+90);
+  const ready=G.time>A.attackAt&&(strengthRatio>.85*P.ready||G.time>A.attackAt+90);
   if(!A.squad.length&&ready&&fighters.length>=5){
     const pool=fighters.filter(u=>!u.task||u.state!=='work').sort((a,b)=>Math.hypot(a.x-tf.x,a.y-tf.y)-Math.hypot(b.x-tf.x,b.y-tf.y));
-    const take2=pool.slice(0,Math.max(4,Math.floor(fighters.length*(strengthRatio>1.3?.75:.55))));
-    A.squad=take2.map(u=>u.id);A.f=.12;A.hold=0;A.mode='gather';
-    const wp=wpAt(A.f);orderMove(take2,wp[0],wp[1]);
+    // 전술 선택: 매복 후보 덤불을 진격선 60% 지점 근처에서 찾는다
+    const bushSpot=aiFindBush(my.x+dxl*.6+(-dyl/L)*A.side*L*.1,my.y+dyl*.6+(dxl/L)*A.side*L*.1,12);
+    A.tactic=aiPickTactic(P,strengthRatio,!!bushSpot);
+    A.ambush=A.tactic==='ambush'?bushSpot:null;A.ambushGo=false;A.ambushT=0;
+    const frac=A.tactic==='rush'?.9:(strengthRatio>1.3?P.frac+.15:P.frac);
+    const take2=pool.slice(0,Math.max(4,Math.floor(fighters.length*frac)));
+    A.squad=take2.map(u=>u.id);A.f=A.tactic==='rush'?.3:.12;A.hold=0;A.mode='gather';
+    const wp=A.ambush?A.ambush:wpAt(A.f);orderMove(take2,wp[0],wp[1]);
     if(tanks.length)orderVehicles(tanks,wp[0],wp[1]);
+  }else if(A.squad.length&&A.tactic==='ambush'&&A.ambush&&!A.ambushGo){
+    // 매복: 덤불에 모여 숨어 있다가, 적이 접근하거나 시간이 지나면 기습으로 전환
+    A.mode='ambush';
+    const sq=A.squad.map(id=>G.uid.get(id)).filter(Boolean),sp=A.ambush;
+    const there=sq.filter(u=>Math.hypot(u.x-sp[0],u.y-sp[1])<4.5);
+    if(there.length<sq.length*.6){const far=sq.filter(u=>!there.includes(u)&&u.state!=='move');if(far.length)orderMove(far,sp[0],sp[1]);}
+    else{
+      A.ambushT++;
+      const trig=foesNear(T,sp[0],sp[1],11);
+      if(trig.n>0||A.ambushT>20){A.ambushGo=true;A.f=Math.max(A.f||0,.65);A.tactic='frontal';}
+    }
   }else if(A.squad.length){
     const sq=A.squad.map(id=>G.uid.get(id));
     let sx=0,sy=0;for(const u of sq){sx+=u.x;sy+=u.y;}sx/=sq.length;sy/=sq.length;
     const local=foesNear(T,sx,sy,11),mineLocal=friendsNear(T,sx,sy,9);
     const tight=sq.filter(u=>Math.hypot(u.x-sx,u.y-sy)<6).length/sq.length;
-    if(local.n>mineLocal*1.6+1&&local.n>=3){
+    if(A.tactic!=='rush'&&local.n>mineLocal*P.ret+1&&local.n>=3){
       // 후퇴: 가까운 아군 참호/의무막사로 물러나 재편성
       A.mode='retreat';
       const back=nearestOwnTrench(T,sx+(my.x-sx)*.4,sy+(my.y-sy)*.4,18)||[my.x,my.y];
@@ -185,9 +232,11 @@ function aiTick(T,dt){
   else if(mineStr<8)types=['medbay','mg','tower'];
   else if(mineStr>enemyStr*1.3)types=['tank','truck','mortar','mg','sandbag'];
   else types=['mg','tower','bunker','mortar','medbay','tank','truck','sandbag','sandbag'];
+  if(A.persona==='defensive')types=types.concat(['mg','bunker','mortar','tower']);
+  if(A.persona==='aggressive')types=types.concat(['tank','truck']);
   aiBuildNear(T,free,take,tf,types);
   // 참호 굴착 / 포탄 구덩이 개조 / 개량
-  if(free.length>=2&&T.trench.length<Math.round(40+G.w*1.1)){
+  if(free.length>=2&&T.trench.length<Math.round((40+G.w*1.1)*P.dig)){
     let fi=T.trench[0],fd=1e9;
     for(const ti of T.trench){const d=Math.hypot(ti%G.w-tf.x,((ti/G.w)|0)-tf.y);if(d<fd){fd=d;fi=ti;}}
     let cx2=fi%G.w,cy2=(fi/G.w)|0;const tiles=[];

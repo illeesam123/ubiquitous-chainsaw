@@ -1,5 +1,5 @@
 // ================= 렌더링 =================
-const cv=document.getElementById('cv'),cx=cv.getContext('2d');
+const cv=document.getElementById('cv');let cx=cv.getContext('2d');const cx_main=cx;
 const mini=document.getElementById('mini'),mx=mini.getContext('2d');
 const cam={x:0,y:0,z:1};
 let W=0,H=0,DPR=1,mmCache=null;

@@ -169,10 +169,12 @@ function drawArmoryOb(o,L){
     const bx=xa+.1+(k%4)*.42,by=yb+.12+Math.floor(k/4)*.3;
     wbox(bx,by,bx+.32,by+.24,0,6,'#a58b55','#8d7545','#745f37','#463a20');
   }
-  if(o.team===0&&z>=.8){
-    const p=pt(cxw,yb+.7,0),txt=EXPK.map(k=>`${EXP[k].n.slice(0,2)}${s[k]}`).join(' ');
-    cx.font=`${Math.round(10*z)}px ui-monospace,monospace`;cx.textAlign='center';cx.fillStyle='rgba(0,0,0,.55)';cx.fillText(txt,p[0]+1,p[1]+9*z+1);cx.fillStyle='#ffe29a';cx.fillText(txt,p[0],p[1]+9*z);cx.textAlign='start';
-  }
+  if(!REC)drawArmoryLabel(o);
+}
+function drawArmoryLabel(o){
+  const z=cam.z;if(o.team!==0||z<.8)return;
+  const yb=o.y+o.size-.12,cxw=o.x+o.size/2,s=armStock(o),p=pt(cxw,yb+.7,0),txt=EXPK.map(k=>`${EXP[k].n.slice(0,2)}${s[k]}`).join(' ');
+  cx.font=`${Math.round(10*z)}px ui-monospace,monospace`;cx.textAlign='center';cx.fillStyle='rgba(0,0,0,.55)';cx.fillText(txt,p[0]+1,p[1]+9*z+1);cx.fillStyle='#ffe29a';cx.fillText(txt,p[0],p[1]+9*z);cx.textAlign='start';
 }
 const _du=drawUnit;
 drawUnit=function(u){

@@ -23,6 +23,12 @@ npm run dist         # 설치 파일 생성 (Windows NSIS / macOS dmg / Linux Ap
 - `electron/main.js` — 데스크톱 창 (F11 전체화면, F12 개발자도구)
 - `tests/smoke.js` — 게임 시작·시뮬레이션 오류 점검
 
+## 벡터(SVG) 스프라이트
+- `src/42_svg-sprites.js`: 건물·장애물 그리기 코드를 SVG 기록기(SvgRec)에 실행해 종류/변형별 벡터 이미지를 만들고, 줌 단계별로 래스터화해 캐시합니다.
+- 병사가 들어 있거나 피격 점멸/박격포 발사 중인 건물은 기존 절차적 그리기로 그립니다. 체력바와 무기고 재고 글자는 스프라이트 위에 덧그립니다.
+- `npm run sprites` → `assets/sprites/*.svg` 와 `index.html`(갤러리) 내보내기. 현재 263종.
+- 알려진 차이: 나무 흔들림·의무막사 깃발 흔들림 애니메이션은 스프라이트에서 정지 상태입니다.
+
 ## 새 기능 추가
 1. `src/`에 `NN_기능.js`를 만들고 `MANIFEST.json`에 추가
 2. 기존 함수를 확장할 땐 `const _old=fn; fn=function(...){...}` 래퍼 패턴을 쓰고 있음 (도로·무기고 모듈 참고)

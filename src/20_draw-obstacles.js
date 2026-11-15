@@ -67,6 +67,12 @@ function drawOb(o){
   }
   return drawObFull(o);
 }
+function drawObHp(o){
+  if(!(o.hp<o.max))return;
+  const z=cam.z,t=o.type,[sx,sy]=toS(o.x+o.size/2,o.y+o.size/2);
+  const top=t==='apartment'?-100:t==='warehouse'?-52:t==='shed'?-32:t==='ruin'?-34:t==='house'?-46:t==='tower'?-84:t==='bunker'?-40:-34;
+  hpBar(sx,sy+top*z,Math.max(24,o.size*26)*z,Math.max(0,o.hp/o.max),'#d0583f');
+}
 function drawObFull(o){
   const z=cam.z,t=o.type,fl=o.fl>0,L=(c)=>fl?'#fff':c;
   const cxw=o.x+o.size/2,cyw=o.y+o.size/2,[sx,sy]=toS(cxw,cyw);
@@ -269,7 +275,7 @@ function drawObFull(o){
     const p0=toS(x0,y0),p1=toS(x1,y0),p2=toS(x1,y1),p3=toS(x0,y1);
     cx.beginPath();cx.moveTo(p0[0],p0[1]);cx.lineTo(p1[0],p1[1]);cx.lineTo(p2[0],p2[1]);cx.lineTo(p3[0],p3[1]);cx.closePath();cx.stroke();
   }
-  if(o.hp<o.max){const top=t==='apartment'?-100:t==='warehouse'?-52:t==='shed'?-32:t==='ruin'?-34:t==='house'?-46:t==='tower'?-84:t==='bunker'?-40:-34;hpBar(sx,sy+top*z,Math.max(24,o.size*26)*z,Math.max(0,o.hp/o.max),'#d0583f');}
+  if(!REC)drawObHp(o);
 }
 
 // ---- 참호 ----

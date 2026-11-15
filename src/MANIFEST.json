@@ -40,5 +40,6 @@
   "src/38_demolition.js",
   "src/39_special-seeds.js",
   "src/40_roads.js",
-  "src/41_armory-explosives.js"
+  "src/41_armory-explosives.js",
+  "src/42_svg-sprites.js"
 ]

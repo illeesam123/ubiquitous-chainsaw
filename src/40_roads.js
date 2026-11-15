@@ -120,7 +120,16 @@ function drawBush(x,y){
 }
 // ---- 도로 건설 작업 ----
 const _tcR=taskCheck;
+const BUSH_WORK=1.4;
 taskCheck=function(team,kind,x,y,type){
+  if(kind==='clr'){
+    if(!inb(x,y))return '맵 밖입니다';
+    const i=y*G.w+x;
+    if(G.obst[i])return '장애물이 있습니다';
+    if(!G.brush[i])return '덤불이 없습니다';
+    if(G.tasks.has(tkey('clr',i)))return '이미 예약된 작업입니다';
+    return null;
+  }
   if(kind!=='road')return _tcR(team,kind,x,y,type);
   const B=ROADB[type];if(!B)return '알 수 없는 도로';
   if(!inb(x,y))return '맵 밖입니다';
@@ -139,6 +148,12 @@ taskCheck=function(team,kind,x,y,type){
 };
 const _gtR=getTask;
 getTask=function(team,kind,x,y,type,create){
+  if(kind==='clr'){
+    const i=y*G.w+x,ex=G.tasks.get(tkey('clr',i));
+    if(ex||!create)return ex||null;
+    if(!G.brush[i]||G.obst[i])return null;
+    return mkTaskX(team,'clr',x,y,null,BUSH_WORK,null,0);
+  }
   if(kind!=='road')return _gtR(team,kind,x,y,type,create);
   const i=y*G.w+x,k=tkey('road',i),ex=G.tasks.get(k);
   if(ex||!create)return ex||null;
@@ -148,6 +163,13 @@ getTask=function(team,kind,x,y,type,create){
 };
 const _ftR=finishTask;
 finishTask=function(t){
+  if(t.kind==='clr'){
+    G.tasks.delete(t.key);G.brush[t.idx]=0;
+    const w=rint(Math.random,1,2);G.teams[t.team].res.wood+=w;if(t.team===0){G.lastGain=`덤불 제거 +${w}나무`;G.gainShow=3;}
+    fxPush({k:'dust',x:t.x+.5,y:t.y+.5,t:0,d:.5,kind:'demo'});sfx('dig',t.x+.5,t.y+.5);
+    for(const id of [...t.workers,...t.res]){const u=G.uid.get(id);if(!u)continue;u.task=null;u.state='idle';u.path=[];pickTask(u);}
+    return;
+  }
   if(t.kind==='road'){
     G.tasks.delete(t.key);G.road[t.idx]=ROADB[t.type].code;G.brush[t.idx]=0;
     fxPush({k:'dust',x:t.x+.5,y:t.y+.5,t:0,d:.5});sfx('done',t.x+.5,t.y+.5);

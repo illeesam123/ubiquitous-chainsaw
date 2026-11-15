@@ -41,7 +41,7 @@ const root = path.join(__dirname, '..'), out = path.join(root, 'assets', 'sprite
   fs.rmSync(out, { recursive: true, force: true }); fs.mkdirSync(out, { recursive: true });
   const man = {}, names = [];
   const fileOf = (k) => k.replace(/\|/g, '_').replace(/_+$/, '').replace(/[^\w.-]/g, '-') + '.svg';
-  for (const k of keysO) { const n = fileOf(k); fs.writeFileSync(path.join(out, n), all[k]); man[k] = [n, ...(meta[k] || [0, 0, 0, 0])]; names.push(n); }
+  for (const k of keysO) { const n = fileOf(k); fs.writeFileSync(path.join(out, n), all[k]); const vb = /viewBox="(-?[\d.]+) (-?[\d.]+) ([\d.]+) ([\d.]+)"/.exec(all[k]); if (!vb) throw new Error('viewBox 없음: ' + k); man[k] = [n, +vb[1], +vb[2], +vb[3], +vb[4]]; names.push(n); }
   fs.writeFileSync(path.join(out, 'manifest.js'), '// 자동 생성: npm run sprites\nvar SPRITE_MANIFEST=' + JSON.stringify(man) + ';\n');
   names.sort();
   fs.writeFileSync(path.join(out, 'index.html'), `<!doctype html><meta charset="utf-8"><title>참호전 스프라이트</title><style>body{background:#2a2d22;color:#ddd;font:12px sans-serif;display:flex;flex-wrap:wrap;gap:10px;padding:10px}figure{margin:0;background:#3b3f31;padding:6px;text-align:center}img{display:block;margin:auto;max-width:200px;max-height:200px}</style>` + names.map(n => `<figure><img src="${n}"><figcaption>${n.replace('.svg', '')}</figcaption></figure>`).join(''));

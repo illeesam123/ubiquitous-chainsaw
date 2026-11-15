@@ -223,10 +223,12 @@ finishTask=function(t){_finishTask(t);if(!G.tasks.has(t.key))sfx('done',t.x+.5,t
 function demoOrFill(tiles,sel){
   const dm=tiles.filter(([x,y])=>inb(x,y)&&G.obst[y*G.w+x]&&!OB[G.obst[y*G.w+x].type].nodemo);
   const fl=tiles.filter(([x,y])=>inb(x,y)&&!G.obst[y*G.w+x]&&G.trench[y*G.w+x]===255);
-  if(!dm.length&&!fl.length)return '철거할 시설이나 메울 구덩이가 없습니다';
-  let err=null;
-  if(dm.length)err=issueWork(0,'demo',dm,null,assignN,sel);
-  if(fl.length){const e=issueWork(0,'fill',fl,null,assignN,sel);if(!dm.length)err=e;}
+  const br=tiles.filter(([x,y])=>inb(x,y)&&!G.obst[y*G.w+x]&&G.brush[y*G.w+x]&&G.trench[y*G.w+x]!==255);
+  if(!dm.length&&!fl.length&&!br.length)return '철거할 시설·덤불이나 메울 구덩이가 없습니다';
+  let err=null,first=true;
+  if(dm.length){err=issueWork(0,'demo',dm,null,assignN,sel);first=false;}
+  if(fl.length){const e=issueWork(0,'fill',fl,null,assignN,sel);if(first)err=e;first=false;}
+  if(br.length){const e=issueWork(0,'clr',br,null,assignN,sel);if(first)err=e;}
   return err;
 }
 function commandTiles(tiles,sel,vsel,t){

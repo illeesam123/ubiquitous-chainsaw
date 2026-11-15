@@ -16,7 +16,7 @@ function uiGround(x0,y0,x1,y1){
     for(const [x,y] of tiles){
       if(!inb(x,y))continue;
       const kind=tool==='dig'?(viewLay?'tun':'dig'):tool==='demo'?'demo':tool.startsWith('u:')?'upg':tool.startsWith('r:')?'road':'build';
-      const bad=kind==='demo'?(G.obst[y*G.w+x]?!!OB[G.obst[y*G.w+x].type].nodemo:G.trench[y*G.w+x]!==255):!!taskCheck(0,kind,x,y,(kind==='upg'||kind==='road')?tool.slice(2):tool);
+      const bad=kind==='demo'?(G.obst[y*G.w+x]?!!OB[G.obst[y*G.w+x].type].nodemo:G.trench[y*G.w+x]!==255&&!G.brush[y*G.w+x]):!!taskCheck(0,kind,x,y,(kind==='upg'||kind==='road')?tool.slice(2):tool);
       const cells=kind==='build'?footprint(tool,x,y):[[x,y]];
       for(const [a,b] of cells){if(!inb(a,b))continue;tileDia(a,b,.1);cx.fillStyle=bad?'rgba(208,88,63,.35)':'rgba(125,255,125,.4)';cx.fill();}
     }

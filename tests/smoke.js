@@ -10,5 +10,7 @@ const { chromium } = require('playwright'); const path = require('path');
     placeFlag(0, q[0], q[1]); aiPlaceFlags(); G.phase = 'play'; G.speed = 4;
     await new Promise(r => setTimeout(r, 8000)); return { t: Math.round(G.time), units: G.units.length };
   });
+  const bad = await p.evaluate(() => Object.entries(SPRITE_MANIFEST).filter(([k, m]) => !(m[3] > 0 && m[4] > 0)).length);
+  if (bad) errs.push('매니페스트에 크기 0 스프라이트 ' + bad + '개');
   console.log(JSON.stringify(r), errs.length ? errs : 'noerr'); await b.close(); process.exit(errs.length ? 1 : 0);
 })();

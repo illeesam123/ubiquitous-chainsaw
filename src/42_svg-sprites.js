@@ -61,7 +61,7 @@ function sprFromFile(key){
   const M=typeof SPRITE_MANIFEST!=='undefined'?SPRITE_MANIFEST:null;if(!M)return null;
   let m=M[key],use=key;
   if(!m){const k=key.split('|');if(k[1]!=='plain'){k[1]='plain';use=k.join('|');m=M[use];}}
-  if(!m)return null;
+  if(!m||!(m[3]>0&&m[4]>0))return null;
   const old=SPR.map.get(use);if(old)return old;
   const e={key:use,ready:false,fail:false,file:m[0],x:m[1],y:m[2],w:m[3],h:m[4],img:new Image(),bmp:{}};
   e.img.onload=()=>{e.ready=true;};e.img.onerror=()=>{e.fail=true;};e.img.src=SPR_DIR+m[0];

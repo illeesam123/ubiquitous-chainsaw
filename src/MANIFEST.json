@@ -43,5 +43,6 @@
   "src/41_armory-explosives.js",
   "src/42_svg-sprites.js",
   "src/43_endgame.js",
-  "src/44_panic-civilians.js"
+  "src/44_panic-civilians.js",
+  "src/45_visual-fx.js"
 ]

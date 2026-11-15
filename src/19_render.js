@@ -44,19 +44,9 @@ function hpBar(sx,sy,w,f,col){
   cx.fillStyle='rgba(0,0,0,.6)';cx.fillRect(sx-w/2-1,sy-1,w+2,5);
   cx.fillStyle=col;cx.fillRect(sx-w/2,sy,w*f,3);
 }
-function drawUnit(u){
-  const z=cam.z;let [sx,sy]=toS(u.x,u.y);
-  const tv=G.trench[Math.floor(u.y)*G.w+Math.floor(u.x)],sink=(tv>0&&tv!==255)?7*z:0;
-  if(sink){cx.save();cx.beginPath();cx.rect(sx-40*z,sy-90*z,80*z,(90+3)*z);cx.clip();sy+=sink;}
-  const col=TEAM_COL[u.team],inG=u.state==='gar'||u.state==='med';
-  cx.fillStyle='rgba(0,0,0,.3)';cx.beginPath();cx.ellipse(sx,sy,7*z,3.5*z,0,0,6.3);cx.fill();
-  if(G.tt[Math.floor(u.y)*G.w+Math.floor(u.x)]===2){cx.strokeStyle='rgba(215,238,245,.65)';cx.lineWidth=Math.max(.7,z);cx.beginPath();cx.ellipse(sx,sy,(9+Math.sin(u.anim*6))*z,4.5*z,0,0,6.3);cx.stroke();}
-  const inTr=sameTeamTrench(u);
-  let by=sy,lift=inTr?-3*z:0;
-  if(inG){by=sy-20*z;}
-  if(u.state==='fuse')by+=2.5*z;
+// 병사 몸체(다리·몸통·머리·무기). 스프라이트 생성기도 이 함수를 그대로 사용한다. (sx,by)=발 위치
+function unitBody(u,sx,by,z,body,inG){
   const bob=(u.state==='move'||u.state==='flee')?Math.sin(u.anim*(u.state==='flee'?17:12))*1.2*z:0;
-  const body=u.flash>0?'#fff':col;
   if(!inG){
     cx.strokeStyle='#2a2a22';cx.lineWidth=2*z;
     const lg=(u.state==='move'||u.state==='flee')?Math.sin(u.anim*(u.state==='flee'?17:12))*3*z:0;
@@ -80,6 +70,21 @@ function drawUnit(u){
     cx.strokeStyle='#111';cx.lineWidth=2*z;cx.beginPath();cx.moveTo(sx-ix*3*z,by-10*z+bob-iy*3*z);cx.lineTo(sx+ix*10*z,by-10*z+bob+iy*10*z);cx.stroke();
     if(u.muz>0){cx.fillStyle='#ffd76a';cx.beginPath();cx.arc(sx+ix*13*z,by-10*z+iy*13*z,3.5*z,0,6.3);cx.fill();}
   }
+}
+function drawUnit(u){
+  const z=cam.z;let [sx,sy]=toS(u.x,u.y);
+  const tv=G.trench[Math.floor(u.y)*G.w+Math.floor(u.x)],sink=(tv>0&&tv!==255)?7*z:0;
+  if(sink){cx.save();cx.beginPath();cx.rect(sx-40*z,sy-90*z,80*z,(90+3)*z);cx.clip();sy+=sink;}
+  const col=TEAM_COL[u.team],inG=u.state==='gar'||u.state==='med';
+  cx.fillStyle='rgba(0,0,0,.3)';cx.beginPath();cx.ellipse(sx,sy,7*z,3.5*z,0,0,6.3);cx.fill();
+  if(G.tt[Math.floor(u.y)*G.w+Math.floor(u.x)]===2){cx.strokeStyle='rgba(215,238,245,.65)';cx.lineWidth=Math.max(.7,z);cx.beginPath();cx.ellipse(sx,sy,(9+Math.sin(u.anim*6))*z,4.5*z,0,0,6.3);cx.stroke();}
+  const inTr=sameTeamTrench(u);
+  let by=sy,lift=inTr?-3*z:0;
+  if(inG){by=sy-20*z;}
+  if(u.state==='fuse')by+=2.5*z;
+  const bob=(u.state==='move'||u.state==='flee')?Math.sin(u.anim*(u.state==='flee'?17:12))*1.2*z:0;
+  const body=u.flash>0?'#fff':col;
+  if(!unitSprite(u,sx,by,z,body,inG))unitBody(u,sx,by,z,body,inG);
   if(sink)cx.restore();
   if(u.team===0&&u.sel){cx.strokeStyle='#7dff7d';cx.lineWidth=1.6;cx.beginPath();cx.ellipse(sx,sy-(sink?sink:0),10*z,5*z,0,0,6.3);cx.stroke();}
   if(u.hp<u.max||u.sel)hpBar(sx,by-27*z,14*z,Math.max(0,u.hp/u.max),u.hp>u.max*.35?'#86b45e':'#d0583f');
@@ -103,7 +108,7 @@ function drawGround(x0,y0,x1,y1){
   for(let y=y0;y<=y1;y++){const [xa,xb]=visRange(y,x0,x1);for(let x=xa;x<=xb;x++){
     const i=y*w+x;
     if(cam.z<.8){tileDia(x,y,-.04);cx.fillStyle=(G.road[i]&&G.up[i]!==1)?ROADCOL[G.road[i]]:G.ground[i];cx.fill();continue;}
-    tileDia(x,y,0);cx.fillStyle=G.ground[i];cx.fill();cx.strokeStyle=G.ground[i];cx.stroke();
+    if(!tileSprite(x,y,i)){tileDia(x,y,0);cx.fillStyle=G.ground[i];cx.fill();cx.strokeStyle=G.ground[i];cx.stroke();}
     if(G.road[i])drawRoadTile(x,y,i);
     if(G.tt[i]===2||G.tt[i]===4)drawWaterTile(x,y,i);else if(G.dec[i]===3)drawReeds(x,y);
     if(G.dec[i]&&G.dec[i]<3){const [sx,sy]=toS(x+.5,y+.5);cx.fillStyle=G.dec[i]===1?'rgba(0,0,0,.14)':'rgba(255,255,255,.1)';cx.beginPath();cx.ellipse(sx+(G.dec[i]*3-5)*cam.z,sy,5*cam.z,2.5*cam.z,0,0,6.3);cx.fill();}

@@ -7,7 +7,7 @@ function drawTank(v,flash,team){
   // 포탑 방향 (차체와 독립적으로 부드럽게 회전)
   const tgt=(v.aimT>0&&v.aim!==undefined)?v.aim:v.face;
   if(v.turA===undefined)v.turA=v.face;
-  const dA=Math.atan2(Math.sin(tgt-v.turA),Math.cos(tgt-v.turA));v.turA+=dA*.14;
+  if(!v._tuDone){const dA=Math.atan2(Math.sin(tgt-v.turA),Math.cos(tgt-v.turA));v.turA+=dA*.14;}
   const track=(side)=>{
     const ya=side>0?.19:-.37,yb=side>0?.37:-.19;
     extrude(F,[[-.5,ya],[.5,ya],[.57,ya+.05],[.57,yb-.05],[.5,yb],[-.5,yb],[-.57,yb-.05],[-.57,ya+.05]],0,10,C(black),{top:C('#3b3a35')});

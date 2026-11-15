@@ -9,7 +9,8 @@
     "start": "node tools/build.js && electron .",
     "test": "node tools/build.js && node tests/smoke.js",
     "dist": "node tools/build.js && electron-builder",
-    "sprites": "node tools/build.js && node tools/export-sprites.js"
+    "sprites": "node tools/build.js && node tools/export-sprites.js",
+    "editor": "node tools/build.js && node tools/editor-server.js"
   },
   "devDependencies": {
     "electron": "^33.0.0",

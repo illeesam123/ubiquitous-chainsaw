@@ -55,7 +55,7 @@ function drawDamageSmoke(wx,wy,fire,t){
 }
 function drawVehicle(v){
   const z=cam.z,[sx,sy]=toS(v.x,v.y),d=VEH[v.type],flash=v.flash>0;
-  if(v.type==='tank')drawTank(v,flash,v.team);else drawTruck(v,flash,v.team);
+  if(!vehSprite(v,flash)){if(v.type==='tank')drawTank(v,flash,v.team);else drawTruck(v,flash,v.team);}
   if(v.sel){cx.strokeStyle='#7dff7d';cx.lineWidth=1.6;cx.beginPath();cx.ellipse(sx,sy+2*z,v.type==='tank'?36*z:40*z,v.type==='tank'?18*z:20*z,0,0,6.3);cx.stroke();}
   const top=v.type==='tank'?-46:-58;
   if(v.hp<v.max||v.sel)hpBar(sx,sy+top*z,38*z,Math.max(0,v.hp/v.max),v.hp>v.max*.35?'#86b45e':'#d0583f');

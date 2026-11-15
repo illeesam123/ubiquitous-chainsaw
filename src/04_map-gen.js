@@ -1,7 +1,7 @@
 // ================= 게임 / 맵 생성 =================
 function newGame(cfg){
   const w=cfg.size,h=cfg.size,N=w*h,rnd=mulberry(hashStr(cfg.seed)());
-  G={cfg,w,h,N,ground:new Array(N),mm:new Uint8Array(N),tt:new Uint8Array(N),biome:'plain',dec:new Uint8Array(N),trench:new Uint8Array(N),trenchHP:new Float32Array(N),shells:[],obst:new Array(N).fill(null),obSet:new Set(),
+  G={cfg,w,h,N,ground:new Array(N),gq:new Uint8Array(N),mm:new Uint8Array(N),tt:new Uint8Array(N),biome:'plain',dec:new Uint8Array(N),trench:new Uint8Array(N),trenchHP:new Float32Array(N),shells:[],obst:new Array(N).fill(null),obSet:new Set(),
     units:[],vehicles:[],uid:new Map(),tasks:new Map(),tkey:new Map(),nextId:1,teams:[],flags:[],phase:'setup',time:0,countdown:0,fx:[],weather:{type:['clear','rain','snow','fog'][Math.floor(Math.random()*4)],next:95+Math.random()*55,night:false},
     expl:new Uint8Array(N),vis:new Uint8Array(N),over:null,speed:1,paused:false,gen:rnd,dead:false,tv:0,to:0,tw:0};
   for(let t=0;t<=cfg.enemies;t++)G.teams.push({id:t,human:t===0,flag:null,res:{money:300+cfg.soldiers*12,bullets:500+cfg.soldiers*20,metal:60+cfg.soldiers*3,wood:80+cfg.soldiers*4},order:{lines:[]},heli:{state:'wait',timer:HELI.first+t*9,t:0,dir:0,delivered:false},pad:null,trench:[],alive:true,kills:0,lost:0,name:TEAM_NAME[t],ai:{next:3+t*.7,nb:10,nr:0,bi:0,na:0}});
@@ -46,7 +46,7 @@ function genMap(r){
     if(G.special&&G.special!=='mineshaft')kind=0;
     if(bio==='swamp'&&wv>.73)kind=2;else if(bio==='snow'&&wv>.78)kind=4;
     G.tt[i]=kind;G.mm[i]=kind===1?1:0;
-    G.ground[i]=tileColor(bio,kind,g);
+    G.ground[i]=tileColor(bio,kind,g);G.gq[i]=Math.min(3,Math.max(0,(g*4)|0));
     const q=r();G.dec[i]=kind>=2?0:(q<.07?1:q<.1?2:0);
   }
   if(bio==='swamp')for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x;if(G.tt[i]===2)continue;

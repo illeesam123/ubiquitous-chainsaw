@@ -6,7 +6,7 @@
 // - 체력바·무기고 재고 글자는 스프라이트에 굽지 않고 매 프레임 위에 덧그림
 let REC=false;
 class SvgRec{
-  constructor(){this.out=[];this.d='';this.cur=null;this.fillStyle='#000';this.strokeStyle='#000';this.lineWidth=1;this.globalAlpha=1;this.lineCap='butt';this.font='';this.textAlign='start';
+  constructor(){this.out=[];this.d='';this.cur=null;this.fillStyle='#000';this.strokeStyle='#000';this.lineWidth=1;this.globalAlpha=1;this.lineCap='butt';this.dash=null;this.font='';this.textAlign='start';
     this.x0=1e9;this.y0=1e9;this.x1=-1e9;this.y1=-1e9;this.n=0;}
   _b(x,y,p){p=p||0;if(x-p<this.x0)this.x0=x-p;if(y-p<this.y0)this.y0=y-p;if(x+p>this.x1)this.x1=x+p;if(y+p>this.y1)this.y1=y+p;}
   beginPath(){this.d='';this.cur=null;}
@@ -25,15 +25,18 @@ class SvgRec{
   }
   _op(){return this.globalAlpha<1?` opacity="${f(this.globalAlpha)}"`:'';}
   fill(){if(!this.d)return;this.out.push(`<path d="${this.d}" fill="${this.fillStyle}"${this._op()}/>`);}
-  stroke(){if(!this.d)return;this.out.push(`<path d="${this.d}" fill="none" stroke="${this.strokeStyle}" stroke-width="${f(this.lineWidth)}"${this.lineCap!=='butt'?` stroke-linecap="${this.lineCap}"`:''}${this._op()}/>`);}
+  stroke(){if(!this.d)return;this.out.push(`<path d="${this.d}" fill="none" stroke="${this.strokeStyle}" stroke-width="${f(this.lineWidth)}"${this.dash?` stroke-dasharray="${this.dash.map(f).join(' ')}"`:''}${this.lineCap!=='butt'?` stroke-linecap="${this.lineCap}"`:''}${this._op()}/>`);}
   fillRect(x,y,w,h){this._b(x,y);this._b(x+w,y+h);this.out.push(`<rect x="${f(x)}" y="${f(y)}" width="${f(w)}" height="${f(h)}" fill="${this.fillStyle}"${this._op()}/>`);}
   strokeRect(x,y,w,h){this._b(x,y,this.lineWidth);this._b(x+w,y+h,this.lineWidth);this.out.push(`<rect x="${f(x)}" y="${f(y)}" width="${f(w)}" height="${f(h)}" fill="none" stroke="${this.strokeStyle}" stroke-width="${f(this.lineWidth)}"${this._op()}/>`);}
+  setLineDash(a){this.dash=a&&a.length?a:null;}
   save(){}restore(){}clip(){}fillText(){}
   svg(){
     const pad=1,x=Math.floor(this.x0)-pad,y=Math.floor(this.y0)-pad,w=Math.ceil(this.x1-this.x0)+pad*2+1,h=Math.ceil(this.y1-this.y0)+pad*2+1;
-    return {x,y,w,h,svg:`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${x} ${y} ${w} ${h}">${this.out.join('')}</svg>`};
+    return {x,y,w,h,svg:`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${x} ${y} ${w} ${h}">${sprBounds(x,y,w,h)}${this.out.join('')}</svg>`};
   }
 }
+// 이미지 전체 가장자리에 딱 맞는 투명 사각형: 편집기·미리보기에서 그림 영역(경계)이 항상 같은 크기로 보이게 한다
+function sprBounds(x,y,w,h){return `<rect id="bounds" x="${x}" y="${y}" width="${w}" height="${h}" fill="#000" fill-opacity="0"/>`;}
 function f(v){return Math.round(v*100)/100;}
 const SPR={files:0,map:new Map(),buckets:[.36,.5,.7,1,1.25,1.5,2,3],bakes:0,hits:0,miss:0,on:true};
 const SPR_TYPES=new Set(['tree','rock','house','apartment','warehouse','shed','ruin','rubble','rubble2','rubble3','fence','wire','sandbag','crate','bunker','tower','mg','medbay','armory']);
@@ -64,7 +67,7 @@ function sprFromFile(key){
   if(!m||!(m[3]>0&&m[4]>0))return null;
   const old=SPR.map.get(use);if(old)return old;
   const e={key:use,ready:false,fail:false,file:m[0],x:m[1],y:m[2],w:m[3],h:m[4],img:new Image(),bmp:{}};
-  e.img.onload=()=>{e.ready=true;};e.img.onerror=()=>{e.fail=true;};e.img.src=SPR_DIR+m[0];
+  e.img.onload=()=>{e.ready=true;};e.img.onerror=()=>{e.fail=true;};sprSetSrc(e.img,m[0]);
   SPR.map.set(use,e);SPR.files++;return e;
 }
 function sprBake(o,key){

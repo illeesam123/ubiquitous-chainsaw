@@ -16,7 +16,7 @@ function placeFlag(team,tx,ty){
   const T=G.teams[team],w=G.w;
   G.flags.push({team,x:tx,y:ty});T.flag={x:tx,y:ty};
   for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++){const o=G.obst[(ty+dy)*w+tx+dx];if(o)removeOb(o);G.brush[(ty+dy)*w+tx+dx]=0;}
-  for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++){const j=(ty+dy)*w+tx+dx;if(G.tt[j]===2||G.tt[j]===4){G.tt[j]=0;G.mm[j]=0;G.ground[j]=tileColor(G.biome,0,((tx+dx)*7+(ty+dy)*13)%10/10);}if(G.dec[j]===3)G.dec[j]=0;}
+  for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++){const j=(ty+dy)*w+tx+dx;if(G.tt[j]===2||G.tt[j]===4){G.tt[j]=0;G.mm[j]=0;{const gg=((tx+dx)*7+(ty+dy)*13)%10/10;G.ground[j]=tileColor(G.biome,0,gg);G.gq[j]=Math.min(3,(gg*4)|0);}}if(G.dec[j]===3)G.dec[j]=0;}
   T.pad={x:tx-1,y:ty-1};
   for(const [px,py] of padCells(T.pad)){const j=py*w+px;G.trench[j]=0;G.trenchHP[j]=0;}
   const ti=ty*w+tx+2;G.trench[ti]=team+1;G.trenchHP[ti]=220;T.trench.push(ti);

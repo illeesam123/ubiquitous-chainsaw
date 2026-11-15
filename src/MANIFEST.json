@@ -44,5 +44,6 @@
   "src/42_svg-sprites.js",
   "src/43_endgame.js",
   "src/44_panic-civilians.js",
-  "src/45_visual-fx.js"
+  "src/45_visual-fx.js",
+  "src/46_sprites-extra.js"
 ]

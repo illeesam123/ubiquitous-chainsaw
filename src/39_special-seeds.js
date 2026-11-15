@@ -17,7 +17,7 @@ function carveRiver(r,ori,pos,wid,amp){
       if(Math.abs(d)>hw)continue;
       const b=Math.round(c+d);if(b<0||b>=span)continue;
       const x=ori==='h'?a:b,y=ori==='h'?b:a,i=y*w+x;
-      G.tt[i]=2;G.mm[i]=0;G.dec[i]=0;G.ground[i]=tileColor(G.biome,2,hsh(x,y));
+      G.tt[i]=2;G.mm[i]=0;G.dec[i]=0;G.ground[i]=tileColor(G.biome,2,hsh(x,y));G.gq[i]=Math.min(3,(hsh(x,y)*4)|0);
     }
   }
 }

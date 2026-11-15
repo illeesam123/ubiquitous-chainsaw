@@ -7,6 +7,8 @@
   let CAT = [], cur = null, rowAx = [], colAx = [], cell = null, ghView = false, remoteSha = '', ghGame = false;
   let pending = LS('editor.pending') || {};           // { file: { svg, committed } }
   const cfg = Object.assign({ repo: 'illeesam123/ubiquitous-chainsaw', branch: 'main', token: '' }, LS('editor.gh') || {});
+  const TEAMC = ['#4f8fd6', '#d9534f', '#e0a82e', '#a56bd6']; let tintTeam = 0;
+  const GROUPS = [['unit', '병사·깃발'], ['veh', '차량'], ['terrain', '지형·도로'], ['struct', '건물·장애물'], ['tint', '색상 치환형 (팀색)']];
   const origCache = {}, EMB = window.__EMBED || null;   // 단독 실행판(asset-manager.html)은 카탈로그·SVG 를 파일 안에 내장
 
   const toast = (m) => { const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 2600); };
@@ -15,11 +17,14 @@
   async function origText(file) { if (EMB) return EMB.svgs[file]; if (origCache[file] === undefined) origCache[file] = await (await fetch('../assets/sprites/' + file)).text(); return origCache[file]; }
 
   // ---------- 핫바 / 검색 ----------
-  const PREF = ['unit', 'tank', 'truck', 'tile', 'road', 'crater', 'tree', 'rock', 'house', 'apartment', 'warehouse', 'shed', 'bunker', 'tower', 'mg', 'medbay', 'armory', 'fence', 'wire', 'sandbag', 'crate', 'ruin'];
+  const PREF = ['ubody', 'ubodyt', 'gun', 'tool', 'occ', 'occt', 'flag', 'flagc', 'unit', 'tank', 'truck', 'tile', 'road', 'crater', 'tree', 'rock', 'house', 'apartment', 'warehouse', 'shed', 'bunker', 'tower', 'mg', 'medbay', 'armory', 'fence', 'wire', 'sandbag', 'crate', 'ruin'];
   function buildHot() {
-    const ord = [...CAT].sort((a, b) => (PREF.indexOf(a.id) + 1 || 99) - (PREF.indexOf(b.id) + 1 || 99));
     $('hotChips').innerHTML = '';
-    for (const a of ord) { const b = document.createElement('button'); b.className = 'btn'; b.textContent = a.name; b.dataset.id = a.id; b.onclick = () => openAsset(a.id); $('hotChips').appendChild(b); }
+    for (const [g, label] of GROUPS) {
+      const list = CAT.filter(a => a.group === g).sort((a, b) => (PREF.indexOf(a.id) + 1 || 99) - (PREF.indexOf(b.id) + 1 || 99)); if (!list.length) continue;
+      const l = document.createElement('span'); l.className = 'grp'; l.textContent = label; $('hotChips').appendChild(l);
+      for (const a of list) { const b = document.createElement('button'); b.className = 'btn' + (a.tint ? ' tintchip' : ''); b.textContent = a.name; b.dataset.id = a.id; b.onclick = () => openAsset(a.id); $('hotChips').appendChild(b); }
+    }
   }
   let sel = 0, hits = [];
   function suggest() {
@@ -48,10 +53,17 @@
     if (!rowAx.length && colAx.length > 1) rowAx = [colAx.shift()];
     document.querySelectorAll('#hotChips .btn').forEach(b => b.classList.toggle('on', b.dataset.id === id));
     $('empty').hidden = true; $('view').hidden = false;
-    $('vTitle').textContent = cur.name; $('vCount').textContent = `모양 ${cur.cells.length}개`;
+    $('vTitle').textContent = cur.name; $('vCount').textContent = `모양 ${cur.cells.length}개`; $('vNote').textContent = cur.note || '';
+    renderTintBar();
     renderAxes(); renderTable();
   }
-  const AXN = { biome: '바이옴', state: '상태', variant: '무늬(랜덤)', team: '팀', dir: '방향', size: '크기' };
+  function renderTintBar() {
+    const b = $('tintBar'); b.hidden = !(cur && cur.tint); b.innerHTML = '';
+    if (b.hidden) return; b.insertAdjacentHTML('beforeend', '<span class="dim">미리보기 팀색</span>');
+    TEAMC.forEach((c, i) => { const x = document.createElement('button'); x.style.background = c; x.className = i === tintTeam ? 'on' : ''; x.title = `팀 ${i + 1}`; x.onclick = () => { tintTeam = i; renderTintBar(); renderTable(); refreshModal(); }; b.appendChild(x); });
+  }
+  const imgHtml = (c, w, h, extra) => cur && cur.tint ? `<div class="tint" style="width:${w}px;height:${h}px;background:${TEAMC[tintTeam]};-webkit-mask-image:url('${srcOf(c)}');mask-image:url('${srcOf(c)}')"></div>` : `<img ${extra || ''} width="${w}" height="${h}" src="${srcOf(c)}" alt="">`;
+  const AXN = { gun: '총기', biome: '바이옴', state: '상태', variant: '무늬(랜덤)', team: '팀', dir: '방향', size: '크기' };
   function renderAxes() {
     const box = $('axes'); box.innerHTML = '<span class="dim">축 배치:</span>';
     for (const a of cur.axes) {
@@ -78,9 +90,9 @@
       for (const k of cols) {
         const td = tr.insertCell(), list = map.get(r + '\u0001' + k); td.className = 'cell';
         if (!list) continue;
-        const c = list[0], vb = c.vb, w = Math.min(vb[2] * z, 260);
+        const c = list[0], vb = c.vb, sc = Math.max(z, Math.min(8, 56 / Math.max(vb[2], vb[3]))), w = Math.min(vb[2] * sc, 260);
         if (pending[c.file]) td.classList.add('mod');
-        td.innerHTML = `<div class="chk" style="padding:2px"><img loading="lazy" width="${w}" height="${w * vb[3] / vb[2]}" src="${srcOf(c)}" alt=""></div>` + (list.length > 1 ? `<div class="dim">+${list.length - 1}</div>` : '');
+        td.innerHTML = `<div class="chk" style="padding:2px">${imgHtml(c, w, w * vb[3] / vb[2], 'loading="lazy"')}</div>` + (list.length > 1 ? `<div class="dim">+${list.length - 1}</div>` : '');
         td.title = c.file; td.onclick = () => openCell(c);
       }
     }
@@ -96,7 +108,7 @@
   function refreshModal() {
     if (!cell || $("modal").hidden) return;
     const c = cell, vb = c.vb, w = Math.min(Math.max(vb[2] * 4, 200), 520);
-    $('mPrev').innerHTML = `<img width="${w}" height="${w * vb[3] / vb[2]}" src="${srcOf(c)}" alt="">`;
+    $('mPrev').innerHTML = imgHtml(c, w, w * vb[3] / vb[2]);
     $('mInfo').innerHTML = `<code>${c.file}</code> · 영역 ${vb[2]}×${vb[3]} (기준점 ${-vb[0]},${-vb[1]})<br>키 <code>${c.key}</code>${pending[c.file] ? '<br><b style="color:var(--ac)">교체본 적용 중' + (pending[c.file].committed ? ' (GitHub 커밋됨)' : ' (아직 커밋 안 됨)') + '</b>' : ''}`;
     $('mRev').disabled = !pending[c.file];
   }
@@ -160,6 +172,46 @@
     return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${w}" height="${h}" viewBox="${x} ${y} ${w} ${h}"><rect id="bounds" x="${x}" y="${y}" width="${w}" height="${h}" fill="#000" fill-opacity="0"/><image x="${x + (w - iw) / 2}" y="${y + (h - ih) / 2}" width="${iw}" height="${ih}" href="${url}"/></svg>`;
   }
 
+  // ---------- ZIP (SVG + 스프라이트 시트) ----------
+  const crcT = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  const crc32 = (u) => { let c = 0xFFFFFFFF; for (let i = 0; i < u.length; i++) c = crcT[(c ^ u[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  function makeZip(files) { // 압축 없이 저장(store) 하는 최소 zip
+    const enc = new TextEncoder(), parts = [], cen = []; let off = 0;
+    for (const f of files) {
+      const name = enc.encode(f.name), crc = crc32(f.data), h = new DataView(new ArrayBuffer(30));
+      h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint32(14, crc, true); h.setUint32(18, f.data.length, true); h.setUint32(22, f.data.length, true); h.setUint16(26, name.length, true);
+      parts.push(new Uint8Array(h.buffer), name, f.data);
+      const c = new DataView(new ArrayBuffer(46)); c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint32(16, crc, true); c.setUint32(20, f.data.length, true); c.setUint32(24, f.data.length, true); c.setUint16(28, name.length, true); c.setUint32(42, off, true);
+      cen.push(new Uint8Array(c.buffer), name); off += 30 + name.length + f.data.length;
+    }
+    const cl = cen.reduce((a, b) => a + b.length, 0), e = new DataView(new ArrayBuffer(22));
+    e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cl, true); e.setUint32(16, off, true);
+    return new Blob([...parts, ...cen, new Uint8Array(e.buffer)], { type: 'application/zip' });
+  }
+  const txt = (t) => new TextEncoder().encode(t);
+  const curText = async (c) => pending[c.file] ? pending[c.file].svg : await origText(c.file);
+  async function sheetPng(a, texts) { // 스프라이트 시트: 2배 크기, 칸마다 기준점 표시용 좌표를 sheet.json 에 기록
+    const k = 2, pad = 4, cells = a.cells, mw = Math.min(260, Math.max(...cells.map(c => c.vb[2])) * k), mh = Math.min(260, Math.max(...cells.map(c => c.vb[3])) * k);
+    const cols = Math.min(12, Math.max(1, Math.ceil(Math.sqrt(cells.length * 1.4)))), rows = Math.ceil(cells.length / cols), cw = mw + pad, ch = mh + pad;
+    const cv = document.createElement('canvas'); cv.width = cols * cw; cv.height = rows * ch; const g = cv.getContext('2d'), frames = [];
+    for (let i = 0; i < cells.length; i++) {
+      const c = cells[i], x = (i % cols) * cw, y = Math.floor(i / cols) * ch, w = Math.min(mw, c.vb[2] * k), h = Math.min(mh, c.vb[3] * k);
+      try { const im = new Image(); im.src = dataUri(texts[i]); await im.decode(); g.drawImage(im, x + pad / 2, y + pad / 2, w, h); } catch (e) { }
+      frames.push({ file: c.file, key: c.key, x: x + pad / 2, y: y + pad / 2, w, h, pivot: [-c.vb[0] * k, -c.vb[1] * k], axes: c.axes });
+    }
+    const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+    return { png: new Uint8Array(await blob.arrayBuffer()), json: JSON.stringify({ scale: k, image: 'sheet.png', frames }, null, 1) };
+  }
+  async function zipAsset(a, withSheet) {
+    const files = [], texts = [];
+    for (const c of a.cells) { const t = await curText(c); texts.push(t); files.push({ name: `${a.id}/${c.file}`, data: txt(t) }); }
+    files.push({ name: `${a.id}/index.json`, data: txt(JSON.stringify({ id: a.id, name: a.name, group: a.group, tint: !!a.tint, note: a.note || '', cells: a.cells.map(c => ({ file: c.file, key: c.key, axes: c.axes, viewBox: c.vb })) }, null, 1)) });
+    if (withSheet) { const s = await sheetPng(a, texts); files.push({ name: `${a.id}/sheet.png`, data: s.png }, { name: `${a.id}/sheet.json`, data: txt(s.json) }); }
+    return files;
+  }
+  $('bZip').onclick = async () => { if (!cur) return; toast('zip 만드는 중…'); download(`${cur.id}-sprites.zip`, makeZip(await zipAsset(cur, true))); toast(`${cur.name} ${cur.cells.length}개를 zip 으로 받았습니다`); };
+  $('bAllZip').onclick = async () => { toast('전체 zip 만드는 중… (시트 제외)'); let all = []; for (const a of CAT) all = all.concat(await zipAsset(a, false)); download('trench-war-all-sprites.zip', makeZip(all)); toast(`전체 ${all.length}개 파일 zip 완료`); };
+
   // ---------- 비교 ----------
   $('mCmp').onclick = async () => {
     const c = cell, vb = c.vb, w = Math.min(Math.max(vb[2] * 3, 160), 320), h = w * vb[3] / vb[2], im = (s) => `<img width="${w}" height="${h}" src="${s}" alt="">`;
@@ -216,5 +268,5 @@
     savePending();
     const h = location.hash.slice(1); if (h && CAT.some(a => a.id === h)) openAsset(h);
   })();
-  window.__ed = { normalizeSvg, apply, revert, get pending() { return pending; }, openAsset };
+  window.__ed = { makeZip, zipAsset, get cat() { return CAT; }, normalizeSvg, apply, revert, get pending() { return pending; }, openAsset };
 })();

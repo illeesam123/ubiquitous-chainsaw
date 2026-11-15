@@ -73,6 +73,24 @@ function drawObHp(o){
   const top=t==='apartment'?-100:t==='warehouse'?-52:t==='shed'?-32:t==='ruin'?-34:t==='house'?-46:t==='tower'?-84:t==='bunker'?-40:-34;
   hpBar(sx,sy+top*z,Math.max(24,o.size*26)*z,Math.max(0,o.hp/o.max),'#d0583f');
 }
+// 점령 표시(슬롯 점·병사 체력) / 선택 테두리 — 스프라이트 모드에서도 매 프레임 위에 덧그린다
+function drawOccMarks(o,occ){
+  const z=cam.z,t=o.type,x0=o.x,y0=o.y,x1=o.x+o.size,y1=o.y+o.size,cxw=o.x+o.size/2;
+  const d0=OB[t];
+  if(d0.slots){
+    const pb=pt(cxw,y1+.02,-2);
+    for(let k=0;k<d0.slots;k++){
+      const ou=occ[k],px=pb[0]+(k-(d0.slots-1)/2)*8*z;
+      cx.fillStyle=ou?TEAM_COL[o.occTeam]:'rgba(0,0,0,.5)';cx.beginPath();cx.arc(px,pb[1]+4*z,2.6*z,0,6.3);cx.fill();
+      if(ou&&ou.hp<ou.max){cx.fillStyle='rgba(0,0,0,.6)';cx.fillRect(px-3.5*z,pb[1]+8*z,7*z,2*z);cx.fillStyle=ou.hp>ou.max*.35?'#86b45e':'#d0583f';cx.fillRect(px-3.5*z,pb[1]+8*z,7*z*ou.hp/ou.max,2*z);}
+    }
+  }
+  if(occ.some(u=>u.sel&&u.team===0)){
+    cx.strokeStyle='#7dff7d';cx.lineWidth=1.8;
+    const p0=toS(x0,y0),p1=toS(x1,y0),p2=toS(x1,y1),p3=toS(x0,y1);
+    cx.beginPath();cx.moveTo(p0[0],p0[1]);cx.lineTo(p1[0],p1[1]);cx.lineTo(p2[0],p2[1]);cx.lineTo(p3[0],p3[1]);cx.closePath();cx.stroke();
+  }
+}
 function drawObFull(o){
   const z=cam.z,t=o.type,fl=o.fl>0,L=(c)=>fl?'#fff':c;
   const cxw=o.x+o.size/2,cyw=o.y+o.size/2,[sx,sy]=toS(cxw,cyw);
@@ -260,21 +278,7 @@ function drawObFull(o){
     sandbagRow(o,[[a+.15,d+.1],[b-.15,d+.1]],0,5,false);
     if(!o.natural){const p=pt(a,d,Hr);cx.fillStyle=TEAM_COL[o.team];cx.fillRect(p[0],p[1]-4*z,12*z,3.5*z);}
   }
-  // 점령 표시 / 선택
-  const d0=OB[t];
-  if(d0.slots){
-    const pb=pt(cxw,y1+.02,-2);
-    for(let k=0;k<d0.slots;k++){
-      const ou=occ[k],px=pb[0]+(k-(d0.slots-1)/2)*8*z;
-      cx.fillStyle=ou?TEAM_COL[o.occTeam]:'rgba(0,0,0,.5)';cx.beginPath();cx.arc(px,pb[1]+4*z,2.6*z,0,6.3);cx.fill();
-      if(ou&&ou.hp<ou.max){cx.fillStyle='rgba(0,0,0,.6)';cx.fillRect(px-3.5*z,pb[1]+8*z,7*z,2*z);cx.fillStyle=ou.hp>ou.max*.35?'#86b45e':'#d0583f';cx.fillRect(px-3.5*z,pb[1]+8*z,7*z*ou.hp/ou.max,2*z);}
-    }
-  }
-  if(occ.some(u=>u.sel&&u.team===0)){
-    cx.strokeStyle='#7dff7d';cx.lineWidth=1.8;
-    const p0=toS(x0,y0),p1=toS(x1,y0),p2=toS(x1,y1),p3=toS(x0,y1);
-    cx.beginPath();cx.moveTo(p0[0],p0[1]);cx.lineTo(p1[0],p1[1]);cx.lineTo(p2[0],p2[1]);cx.lineTo(p3[0],p3[1]);cx.closePath();cx.stroke();
-  }
+  drawOccMarks(o,occ);
   if(!REC)drawObHp(o);
 }
 

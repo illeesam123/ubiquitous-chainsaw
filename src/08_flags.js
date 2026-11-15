@@ -9,7 +9,7 @@ function flagCheck(tx,ty){
 }
 function mkUnit(team,x,y){
   const u={id:G.nextId++,team,x,y,hp:150,max:150,state:'idle',path:[],queue:[],task:null,gar:null,garTarget:null,dest:null,
-    cd:Math.random()*.6,face:Math.random()*6.28,anim:Math.random()*6,wait:0,flash:0,sel:false,sx:x,sy:y};
+    cd:Math.random()*.6,face:Math.random()*6.28,anim:Math.random()*6,wait:0,flash:0,sel:false,sx:x,sy:y,gun:'rifle'};
   G.units.push(u);G.uid.set(u.id,u);return u;
 }
 function placeFlag(team,tx,ty){

@@ -25,7 +25,7 @@ function sprReloadFile(file){
   for(const e of SPR.map.values()){
     if(e.file!==file)continue;
     const im=new Image(),u=sprUrl(file);if(u.startsWith('http'))im.crossOrigin='anonymous';
-    im.onload=()=>{e.img=im;e.bmp={};e.ready=true;e.fail=false;};im.src=u;
+    im.onload=()=>{e.img=im;e.bmp={};e.tint={};e.ready=true;e.fail=false;};im.src=u;
   }
 }
 function sprReloadAll(){const done=new Set();for(const e of SPR.map.values())if(e.file&&!done.has(e.file)){done.add(e.file);sprReloadFile(e.file);}}
@@ -70,21 +70,25 @@ function sprBlit(e,sx,sy,z,snap){
   cx.drawImage(bm,dx,dy,bm.width*k,bm.height*k);
 }
 const sprOk=(e)=>e&&e.ready&&!e.fail;
-
-// ---- 병사 ----
-function unitSprite(u,sx,by,z,body,inG){
-  if(!SPR.on||u.flash>0||!(u.team>=0&&u.team<=3))return false;
-  const st=u.state;let pose,fr=0;
-  if(st==='fuse')pose='fuse';
-  else if(st==='work'){if(u.task&&u.task.bomb)return false;pose='work';fr=(((u.anim*9)/6.2832)%1)*4|0;}
-  else if(u.muz>0)pose=inG?'gfire':'fire';
-  else if(st==='move'||st==='flee'){pose='move';fr=(((u.anim*(st==='flee'?17:12))/6.2832)%1)*4|0;}
-  else pose=inG?'gidle':'idle';
-  const d=((Math.round(u.face/(Math.PI/4))%8)+8)%8;
-  const key='unit|'+u.team+'|'+pose+(pose==='move'||pose==='work'?fr:'')+'|'+(pose==='fuse'?0:d);
-  const e=sprGetX(key);if(!sprOk(e))return false;
-  sprBlit(e,sx,by,z,false);return true;
+const sprBkt=(z)=>{let b=SPR.buckets[SPR.buckets.length-1];for(const q of SPR.buckets)if(q>=z-.001){b=q;break;}return b;};
+// 팀색 치환형: 마스크 SVG(불투명한 곳 = 색 칠할 영역)를 팀 색으로 칠해 찍는다. (픽셀 읽기 없이 합성만 사용)
+function sprTinted(e,b,color){
+  e.tint=e.tint||{};const k=b+color;let c=e.tint[k];if(c)return c;
+  const bm=sprRaster(e,b);c=document.createElement('canvas');c.width=bm.width;c.height=bm.height;
+  const g=c.getContext('2d');g.drawImage(bm,0,0);g.globalCompositeOperation='source-in';g.fillStyle=color;g.fillRect(0,0,c.width,c.height);
+  return e.tint[k]=c;
 }
+function sprBlitTint(e,sx,sy,z,color,snap){
+  const b=sprBkt(z),bm=sprTinted(e,b,color),k=z/b;let dx=sx+e.x*z,dy=sy+e.y*z;if(snap){dx=Math.round(dx);dy=Math.round(dy);}
+  cx.drawImage(bm,dx,dy,bm.width*k,bm.height*k);
+}
+// 좌우반전해서 찍기 (기준점 (sx,sy) 를 지나는 세로축 기준)
+function sprBlitFlip(e,sx,sy,z,snap,tint){
+  const b=sprBkt(z),bm=tint?sprTinted(e,b,tint):sprRaster(e,b),k=z/b;
+  const dx=-(e.x+e.w)*z,dy=e.y*z;
+  cx.save();cx.translate(snap?Math.round(sx):sx,snap?Math.round(sy):sy);cx.scale(-1,1);cx.drawImage(bm,dx,dy,bm.width*k,bm.height*k);cx.restore();
+}
+
 // ---- 차량 ----
 function vehSprite(v,flash){
   if(!SPR.on||!(v.team>=0&&v.team<=3)){v._tuDone=false;return false;}
@@ -95,8 +99,10 @@ function vehSprite(v,flash){
     v.turA+=Math.atan2(Math.sin(tgt-v.turA),Math.cos(tgt-v.turA))*.14;v._tuDone=true;
     const a=q*Math.PI/8;if(Math.abs(Math.atan2(Math.sin(v.turA-a),Math.cos(v.turA-a)))>.22)ok=false;
   }
-  const e=ok?sprGetX('veh|'+v.type+'|'+v.team+'|'+q):null;if(!sprOk(e))return false;
-  const [sx,sy]=toS(v.x,v.y);sprBlit(e,sx,sy,cam.z,false);
+  // 좌우반전 재사용: 방향 q ↔ (4-q) 는 서로 거울상
+  const qm=(4-q)&15,qc=Math.min(q,qm),fl=qc!==q;
+  const e=ok?sprGetX('veh|'+v.type+'|'+v.team+'|'+qc):null;if(!sprOk(e))return false;
+  const [sx,sy]=toS(v.x,v.y);if(fl)sprBlitFlip(e,sx,sy,cam.z,false);else sprBlit(e,sx,sy,cam.z,false);
   if(v.hp<v.max*.4){
     if(v.type==='tank')drawDamageSmoke(v.x,v.y,v.hp<v.max*.2,v.anim);
     else drawDamageSmoke(v.x+Math.cos(v.face)*.5,v.y+Math.sin(v.face)*.5,v.hp<v.max*.2,v.anim);
@@ -106,22 +112,23 @@ function vehSprite(v,flash){
 // ---- 타일 ----
 function tileSprite(x,y,i){
   if(!SPR.on)return false;
-  if(!G.tsE||G.tsE.length!==G.N){G.tsE=new Array(G.N);G.tsS=new Uint16Array(G.N);}
+  if(!G.tsE||G.tsE.length!==G.N){G.tsE=new Array(G.N);G.tsS=new Uint16Array(G.N);G.tsF=new Uint8Array(G.N);}
   const kind=G.tt[i],q=G.gq[i],sig=(kind+1)*8+q+1;
   let e=G.tsE[i];
   if(G.tsS[i]!==sig||e===undefined){
-    G.tsS[i]=sig;
-    e=sprGetX('tile|'+G.biome+'|'+kind+'|'+q+'|'+((hsh(x*1.7,y*2.3)*3)|0))||false;G.tsE[i]=e;
+    G.tsS[i]=sig;const v4=(hsh(x*1.7,y*2.3)*4)|0;                       // 무늬 4종 = 파일 2종 + 좌우반전
+    e=sprGetX('tile|'+G.biome+'|'+kind+'|'+q+'|'+(v4&1))||false;G.tsE[i]=e;G.tsF[i]=v4>>1;
   }
   if(!sprOk(e))return false;
-  const [sx,sy]=toS(x+.5,y+.5);sprBlit(e,sx,sy,cam.z,true);return true;
+  const [sx,sy]=toS(x+.5,y+.5);if(G.tsF[i])sprBlitFlip(e,sx,sy,cam.z,true);else sprBlit(e,sx,sy,cam.z,true);return true;
 }
 // ---- 도로 ----
 function roadSprite(x,y,i){
   const k=G.road[i];if(!SPR.on||!k||G.up[i]===1)return false;
   let m=0;for(const [dx,dy] of roadLinks(x,y,k))m|=dx===1?1:dx===-1?2:dy===1?4:8;
-  const e=sprGetX('road|'+k+'|'+m+'|'+(k===3?0:(hsh(x,y)>.5?1:0)));if(!sprOk(e))return false;
-  const [sx,sy]=toS(x+.5,y+.5);sprBlit(e,sx,sy,cam.z,true);return true;
+  const mm=((m&1)<<2)|((m&4)>>2)|((m&2)<<2)|((m&8)>>2),mc=Math.min(m,mm);   // E↔S, W↔N 는 거울상
+  const e=sprGetX('road|'+k+'|'+mc+'|'+(k===3?0:(hsh(x,y)>.5?1:0)));if(!sprOk(e))return false;
+  const [sx,sy]=toS(x+.5,y+.5);if(mc!==m)sprBlitFlip(e,sx,sy,cam.z,true);else sprBlit(e,sx,sy,cam.z,true);return true;
 }
 const _drtBase=drawRoadTile;
 drawRoadTile=function(x,y,i){if(!roadSprite(x,y,i))_drtBase(x,y,i);};
@@ -133,18 +140,19 @@ drawCrater=function(x,y){
 };
 
 // ---- 생성기 (tools/export-sprites.js 가 호출) ----
+function sprRecordSplit(fn,wx,wy,marker){
+  const rec=new SvgRec(),sv={cam:{x:cam.x,y:cam.y,z:cam.z},time:G.time,cx,rec:REC};
+  try{cam.z=1;cam.x=-(wx-wy)*32;cam.y=-(wx+wy)*16;G.time=0;cx=rec;REC=true;fn();}
+  finally{cam.x=sv.cam.x;cam.y=sv.cam.y;cam.z=sv.cam.z;G.time=sv.time;cx=sv.cx;REC=sv.rec;}
+  const all=rec.out;rec.out=all.filter(t=>!t.includes(marker));const n=rec.out.length?rec.svg().svg:null;
+  rec.out=all.filter(t=>t.includes(marker));const t=rec.out.length?rec.svg().svg:null;return {neutral:n,tint:t};
+}
 function sprRecord(fn,wx,wy){
   const rec=new SvgRec(),sv={cam:{x:cam.x,y:cam.y,z:cam.z},time:G.time,cx,rec:REC};
   try{cam.z=1;cam.x=-(wx-wy)*32;cam.y=-(wx+wy)*16;G.time=0;cx=rec;REC=true;fn();}
   finally{cam.x=sv.cam.x;cam.y=sv.cam.y;cam.z=sv.cam.z;G.time=sv.time;cx=sv.cx;REC=sv.rec;}
+  sprRecord.last=rec.out.slice();
   if(!rec.out.length)return null;return rec.svg().svg;
-}
-function sprBakeUnit(team,pose,fr,d){
-  const inG=pose[0]==='g',base=inG?pose.slice(1):pose;
-  const u={team,x:-1,y:-1,face:d*Math.PI/4,flash:0,muz:base==='fire'?.05:0,task:{},
-    state:base==='fuse'?'fuse':base==='work'?'work':base==='move'?'move':inG?'gar':'idle',
-    anim:base==='move'?(fr+.5)/4*6.2832/12:base==='work'?(fr+.5)/4*6.2832/9:0};
-  return sprRecord(()=>unitBody(u,0,0,1,TEAM_COL[team],inG),0,0);
 }
 function sprBakeVeh(type,team,q){
   const a=q*Math.PI/8,v={type,team,x:10,y:10,face:a,turA:a,aim:a,aimT:0,muz:0,hp:1,max:1,anim:0,flash:0,_tuDone:true};
@@ -158,3 +166,28 @@ function sprBakeRoad(k,mask,v){
   finally{G.road[i]=sr;G.up[i]=su;roadLinks=sl;}
 }
 function sprBakeCrater(){return sprRecord(()=>_crBase(10,10),10.5,10.5);}
+
+// 병사 점령 오버레이: 건물 창문 등에 보이는 병사 모습. 중립(피부·헬멧·총·창문 뒤 어둠)과 팀색(어깨·헬멧 띠) 마스크로 나눈다.
+function sprBakeOcc(type){
+  const res=[];let o=null;
+  outer:for(let y=8;y<G.h-8;y+=3)for(let x=8;x<G.w-8;x+=4){o=addOb(type,x,y,0);if(o)break outer;}
+  if(!o)return res;
+  const n=OB[type].slots,ids=[];
+  const mk=(j)=>({id:-100-j,team:7,x:o.x,y:o.y,face:.8,muz:0,flash:0,hp:1,max:1,sel:false});
+  for(let j=0;j<n;j++){const u=mk(j);G.uid.set(u.id,u);ids.push(u.id);}
+  o.occ=new Set(ids);o.occTeam=7;
+  const calls=[],pk=peek,sv=TEAM_COL[7];TEAM_COL[7]='rgba(0,0,0,0)';
+  const cxw=o.x+o.size/2,cyw=o.y+o.size/2;
+  try{peek=function(p,u,sc,sh){calls.push([p[0],p[1],sc,sh]);};sprRecord(()=>drawObFull(o),cxw,cyw);}finally{peek=pk;}
+  // 건물이 병사 자리의 창문을 어둡게 칠한 도형(점령 시에만 생김)을 그대로 가져와 오버레이의 배경으로 쓴다
+  const dark=(sprRecord.last||[]).filter(t=>/fill="#(14100b|1a150f)"/.test(t)&&t.startsWith('<path'));
+  calls.forEach((c,j)=>{
+    const u=mk(j);TEAM_COL[7]='#fffffe';
+    const r=sprRecordSplit(()=>{
+      if(dark.length===calls.length){const d=dark[j],nums=/d="([^"]+)"/.exec(d)[1].replace(/[A-Za-z]/g,' ').trim().split(/\s+/).map(Number);for(let k=0;k+1<nums.length;k+=2)cx._b(nums[k],nums[k+1],0);cx.out.push(d);}
+      pk([c[0],c[1]],u,c[2],c[3]);},0,0,'#fffffe');
+    res.push({size:o.size,j,neutral:r.neutral,tint:r.tint});
+  });
+  TEAM_COL[7]=sv;for(const id of ids)G.uid.delete(id);removeOb(o);
+  return res;
+}

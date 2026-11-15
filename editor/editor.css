@@ -48,3 +48,11 @@ td.cell.mod{background:#5b4a1f55}
 #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#14160f;border:1px solid var(--ac);border-radius:8px;padding:8px 14px;opacity:0;pointer-events:none;transition:.25s;z-index:40;max-width:90%}
 #toast.on{opacity:1}
 @media(max-width:720px){#hot{max-width:100%}#bar{flex-wrap:wrap}#q{width:150px}}
+
+.grp{font-size:11px;color:var(--dim);align-self:center;padding:0 2px 0 8px;white-space:nowrap;border-left:1px solid var(--ln)}
+#hotChips button.tintchip{border-style:dashed}
+#vNote{margin:2px 0 4px}#vNote:empty{display:none}
+#tintBar{display:inline-flex;gap:4px;align-items:center}
+#tintBar button{width:20px;height:20px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
+#tintBar button.on{border-color:#fff}
+.tint{display:block;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain}

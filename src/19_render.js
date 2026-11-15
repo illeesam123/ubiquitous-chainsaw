@@ -45,7 +45,8 @@ function hpBar(sx,sy,w,f,col){
   cx.fillStyle=col;cx.fillRect(sx-w/2,sy,w*f,3);
 }
 // 병사 몸체(다리·몸통·머리·무기). 스프라이트 생성기도 이 함수를 그대로 사용한다. (sx,by)=발 위치
-function unitBody(u,sx,by,z,body,inG){
+// 병사 몸(다리·몸통·머리·헬멧, 도화선 때의 팔). 총·삽·폭탄은 unitHeld 로 분리 — SVG 모드에서는 별도 스프라이트를 회전해 얹는다.
+function unitBodyParts(u,sx,by,z,body,inG){
   const bob=(u.state==='move'||u.state==='flee')?Math.sin(u.anim*(u.state==='flee'?17:12))*1.2*z:0;
   if(!inG){
     cx.strokeStyle='#2a2a22';cx.lineWidth=2*z;
@@ -55,10 +56,16 @@ function unitBody(u,sx,by,z,body,inG){
   cx.fillStyle=body;cx.fillRect(sx-4*z,by-15*z+bob,8*z,10*z);
   cx.fillStyle='#d8b890';cx.beginPath();cx.arc(sx,by-18*z+bob,3.6*z,0,6.3);cx.fill();
   cx.fillStyle=u.flash>0?'#fff':'#3d4630';cx.beginPath();cx.arc(sx,by-19.5*z+bob,4*z,Math.PI,0);cx.fill();
-  const c=Math.cos(u.face),s=Math.sin(u.face),ix=(c-s)*.9,iy=(c+s)*.5;
   if(u.state==='fuse'){
     cx.strokeStyle=body;cx.lineWidth=2*z;cx.beginPath();cx.moveTo(sx-4*z,by-13*z);cx.lineTo(sx-5*z,by-21*z);cx.lineTo(sx-1*z,by-22*z);cx.moveTo(sx+4*z,by-13*z);cx.lineTo(sx+5*z,by-21*z);cx.lineTo(sx+1*z,by-22*z);cx.stroke();
-  }else if(u.state==='work'&&u.task&&u.task.bomb){
+  }
+}
+// 들고 있는 것: 폭탄 · 삽 · 총
+function unitHeld(u,sx,by,z,body){
+  const bob=(u.state==='move'||u.state==='flee')?Math.sin(u.anim*(u.state==='flee'?17:12))*1.2*z:0;
+  const c=Math.cos(u.face),s=Math.sin(u.face),ix=(c-s)*.9,iy=(c+s)*.5;
+  if(u.state==='fuse')return;
+  if(u.state==='work'&&u.task&&u.task.bomb){
     const sw=Math.sin(u.anim*6),bx=sx+ix*8*z,byy=by-5*z+iy*6*z+sw*1.2*z;
     cx.strokeStyle=body;cx.lineWidth=2*z;cx.beginPath();cx.moveTo(sx+ix*3*z,by-10*z);cx.lineTo(bx,byy);cx.stroke();
     cx.fillStyle='#3b4730';cx.fillRect(bx-3*z,byy-4*z,6*z,7*z);cx.fillStyle='#d4b13c';cx.fillRect(bx-3*z,byy-1*z,6*z,1.6*z);
@@ -71,6 +78,7 @@ function unitBody(u,sx,by,z,body,inG){
     if(u.muz>0){cx.fillStyle='#ffd76a';cx.beginPath();cx.arc(sx+ix*13*z,by-10*z+iy*13*z,3.5*z,0,6.3);cx.fill();}
   }
 }
+function unitBody(u,sx,by,z,body,inG){unitBodyParts(u,sx,by,z,body,inG);unitHeld(u,sx,by,z,body);}
 function drawUnit(u){
   const z=cam.z;let [sx,sy]=toS(u.x,u.y);
   const tv=G.trench[Math.floor(u.y)*G.w+Math.floor(u.x)],sink=(tv>0&&tv!==255)?7*z:0;
@@ -94,6 +102,7 @@ function drawUnit(u){
   }
 }
 function drawFlag(f){
+  if(flagSprite(f))return;
   const z=cam.z,[sx,sy]=toS(f.x+.5,f.y+.5);
   cx.strokeStyle='#ddd';cx.lineWidth=2*z;cx.beginPath();cx.moveTo(sx,sy+4*z);cx.lineTo(sx,sy-40*z);cx.stroke();
   cx.fillStyle=TEAM_COL[f.team];cx.beginPath();cx.moveTo(sx,sy-40*z);cx.lineTo(sx+22*z,sy-34*z+Math.sin(G.time*3+f.team)*2*z);cx.lineTo(sx,sy-26*z);cx.closePath();cx.fill();

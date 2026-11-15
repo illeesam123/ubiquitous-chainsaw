@@ -8,6 +8,7 @@
   <div id="hot">
     <div id="hotChips"></div>
     <div id="searchWrap"><input id="q" type="search" placeholder="에셋 이름 검색 (예: 병사, tank, 나무)" autocomplete="off"><div id="sugg" hidden></div></div>
+    <button class="btn" id="bAllZip" title="모든 에셋을 SVG 그대로 하나의 zip 으로">⬇ 전체 ZIP</button>
     <button class="btn" id="bPending" title="변경된 에셋">변경 <b id="nPend">0</b></button>
     <button class="btn" id="bGh" title="GitHub 설정·커밋">GitHub</button>
   </div>
@@ -16,7 +17,10 @@
   <section id="empty"><h2>에셋을 선택하세요</h2><p>우측 상단 핫바에서 이름을 검색하거나 버튼을 누르면 바이옴·상태·무늬별 모양이 표로 나열됩니다.<br>모양을 클릭하면 <b>다운로드 · 업로드(교체) · 비교</b>를 고를 수 있습니다.</p><p class="dim">게임이 같은 주소의 다른 탭에서 열려 있으면 교체한 에셋이 즉시 반영됩니다. (<code>npm run editor</code> 로 열면 됩니다)</p></section>
   <section id="view" hidden>
     <div class="vhead"><h2 id="vTitle"></h2><span id="vCount" class="dim"></span><div class="grow"></div>
+      <span id="tintBar" hidden></span>
+      <button class="btn pri" id="bZip" title="이 종류의 모든 모양(SVG)과 스프라이트 시트(PNG)를 zip 으로 받습니다">⬇ ZIP (이 종류 전체)</button>
       <label class="dim">확대 <input id="zoom" type="range" min="1" max="4" step=".5" value="2"></label></div>
+    <div id="vNote" class="dim"></div>
     <div id="axes"></div>
     <div id="tblWrap"><table id="tbl"></table></div>
   </section>

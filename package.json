@@ -1,0 +1,43 @@
+{
+  "name": "trench-war",
+  "productName": "참호전",
+  "version": "16.0.0",
+  "description": "아이소메트릭 참호전 RTS",
+  "main": "electron/main.js",
+  "scripts": {
+    "build": "node tools/build.js",
+    "start": "node tools/build.js && electron .",
+    "test": "node tools/build.js && node tests/smoke.js",
+    "dist": "node tools/build.js && electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0",
+    "playwright": "^1.48.0"
+  },
+  "build": {
+    "appId": "com.example.trenchwar",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "portable",
+        "nsis"
+      ]
+    },
+    "mac": {
+      "target": "dmg",
+      "identity": null
+    },
+    "linux": {
+      "target": "AppImage"
+    },
+    "directories": {
+      "output": "release"
+    },
+    "artifactName": "TrenchWar-${version}-${os}.${ext}"
+  }
+}

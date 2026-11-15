@@ -14,7 +14,7 @@ function hurt(u,dmg,shooter){
   if(!VEH[u.type])u.reveal=Math.max(u.reveal||0,1.5);
   u.hp-=dmg;u.flash=.12;
   if(u.hp<=0){
-    G.teams[u.team].lost++;if(shooter)G.teams[shooter.team].kills++;
+    G.teams[u.team].lost++;if(shooter&&G.teams[shooter.team])G.teams[shooter.team].kills++;
     killUnit(u);
   }
 }

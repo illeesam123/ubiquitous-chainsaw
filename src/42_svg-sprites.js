@@ -35,27 +35,43 @@ class SvgRec{
   }
 }
 function f(v){return Math.round(v*100)/100;}
-const SPR={map:new Map(),buckets:[.36,.5,.7,1,1.25,1.5,2,3],bakes:0,hits:0,miss:0,on:true};
+const SPR={files:0,map:new Map(),buckets:[.36,.5,.7,1,1.25,1.5,2,3],bakes:0,hits:0,miss:0,on:true};
 const SPR_TYPES=new Set(['tree','rock','house','apartment','warehouse','shed','ruin','rubble','rubble2','rubble3','fence','wire','sandbag','crate','bunker','tower','mg','medbay','armory']);
 const SPR_LINEAR=new Set(['fence','wire','sandbag']);
-function sprKey(o){
+const SPR_BIOME=new Set(['tree']);                       // 바이옴별 디자인이 의도된 종류 (그 외는 전부 'plain' 기본 디자인 하나만 사용)
+const SPR_DMG=new Set(['house','apartment','warehouse','shed','ruin']); // 파손 단계가 그림에 반영되는 종류
+const SPR_UNIFORM=new Set(['bunker','tower','mg','medbay','armory']); // 변형 없는 고정 디자인
+const SPR_DIR='assets/sprites/';
+function sprKey(o,biome){
   const t=o.type;
   if(o.fl>0||(o.occ&&(o.occ.size||o.occ.length))||o.muz>0)return null;
   if(!SPR_TYPES.has(t))return null;
   if(t==='medbay'&&o.patients&&o.patients.length)return null;
-  const hp=o.hp>=o.max?0:Math.min(4,Math.floor((1-o.hp/o.max)*5)+0);
+  const hp=SPR_DMG.has(t)&&o.hp<o.max?Math.min(4,Math.floor((1-o.hp/o.max)*5)):0;
   let nb='';
   if(SPR_LINEAR.has(t)||t==='rubble'||t==='rubble2'||t==='rubble3'){
     for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const x=o.x+dx,y=o.y+dy,q=inb(x,y)?G.obst[y*G.w+x]:null;nb+=q&&q.type===o.type?1:0;}
   }
   const stock=t==='armory'?Math.min(8,Math.ceil(armTotal(o)/3)):0;
-  return [t,t==='tree'?G.biome:'',o.size,(o.v*4)|0,o.id%4,hp,nb,o.natural?'n':o.team,o.from||'',stock].join('|');
+  return [t,SPR_BIOME.has(t)?(biome||G.biome):'plain',o.size,SPR_UNIFORM.has(t)?0:(o.v*4)|0,SPR_UNIFORM.has(t)?0:o.id%4,hp,nb,o.natural?'n':o.team,o.from||'',stock].join('|');
+}
+function sprFile(key){return key.replace(/\|/g,'_').replace(/_+$/,'').replace(/[^\w.-]/g,'-')+'.svg';}
+// 파일(매니페스트)에서 스프라이트 항목 만들기. 바이옴 전용 파일이 없으면 plain 기본 디자인으로 대체
+function sprFromFile(key){
+  const M=typeof SPRITE_MANIFEST!=='undefined'?SPRITE_MANIFEST:null;if(!M)return null;
+  let m=M[key],use=key;
+  if(!m){const k=key.split('|');if(k[1]!=='plain'){k[1]='plain';use=k.join('|');m=M[use];}}
+  if(!m)return null;
+  const old=SPR.map.get(use);if(old)return old;
+  const e={key:use,ready:false,fail:false,file:m[0],x:m[1],y:m[2],w:m[3],h:m[4],img:new Image(),bmp:{}};
+  e.img.onload=()=>{e.ready=true;};e.img.onerror=()=>{e.fail=true;};e.img.src=SPR_DIR+m[0];
+  SPR.map.set(use,e);SPR.files++;return e;
 }
 function sprBake(o,key){
   const e={key,ready:false,fail:false,svg:null,img:null,bmp:{}};SPR.map.set(key,e);
   const hq=key.split('|')[5]|0;
   const px=Object.create(o);
-  px.occ=[];px.fl=0;px.muz=0;px.id=o.id%4;px.v=(((o.v*4)|0)+.5)/4;
+  const uni=SPR_UNIFORM.has(o.type);px.occ=[];px.fl=0;px.muz=0;px.id=uni?0:o.id%4;px.v=uni?.5:(((o.v*4)|0)+.5)/4;
   px.hp=hq===0?o.max:o.max*(1-(hq+.5)/5);
   if(o.type==='armory')px.stock={smoke:Math.min(8,Math.ceil(armTotal(o)/3))*3,flash:0,molotov:0,frag:0};
   const rec=new SvgRec(),sv={cam:{x:cam.x,y:cam.y,z:cam.z},time:G.time,cx,rec:REC};
@@ -80,15 +96,28 @@ let _sprT=0,_sprBudget=0;
 const _drawObBase=drawOb;
 drawOb=function(o){
   if(!SPR.on)return _drawObBase(o);
-  const key=sprKey(o);if(!key)return _drawObBase(o);
-  let e=SPR.map.get(key);
-  if(!e){const _t=performance.now();if(_t-_sprT>8){_sprT=_t;_sprBudget=6;}if(_sprBudget<=0){SPR.miss++;return _drawObBase(o);}_sprBudget--;e=sprBake(o,key);}
-  if(!e.ready||e.fail){SPR.miss++;return _drawObBase(o);}
+  // 키 계산은 비싸서 상태 서명이 바뀌거나 0.5초(게임 시간) 지났을 때만 다시 한다
+  const occN=o.occ?(o.occ.size||o.occ.length||0):0,sig=o.hp*7+(o.fl>0?1e7:0)+occN*1e5+(o.muz>0?3e8:0)+(o.stock?armTotal(o):0)*13,slice=(G.time*2)|0;
+  let e=o._se;
+  if(o._ss!==sig||o._sl!==slice||(o._sb!==G.biome)){
+    o._ss=sig;o._sl=slice;o._sb=G.biome;
+    const key=sprKey(o);
+    if(!key){e=o._se=null;}
+    else{
+      e=SPR.map.get(key)||sprFromFile(key);
+      if(!e){
+        const _t=performance.now();if(_t-_sprT>8){_sprT=_t;_sprBudget=6;}
+        if(_sprBudget>0){_sprBudget--;e=sprBake(o,key);}
+      }
+      o._se=e||null;if(!e)o._ss=-1; // 아직 없으면 다음 프레임에 다시 시도
+    }
+  }
+  if(!e||!e.ready||e.fail){SPR.miss++;return _drawObBase(o);}
   const z=cam.z;let b=SPR.buckets[SPR.buckets.length-1];for(const q of SPR.buckets)if(q>=z-.001){b=q;break;}
   const bm=sprRaster(e,b),[sx,sy]=toS(o.x+o.size/2,o.y+o.size/2),k=z/b;
   cx.drawImage(bm,sx+e.x*z,sy+e.y*z,bm.width*k,bm.height*k);
   SPR.hits++;
-  drawObHp(o);
+  if(o.hp<o.max)drawObHp(o);
   if(o.type==='armory')drawArmoryLabel(o);
 };
 // 스프라이트 내보내기 (tools/export-sprites.js 가 사용)

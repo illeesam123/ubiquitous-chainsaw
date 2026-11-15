@@ -7,12 +7,12 @@
   let CAT = [], cur = null, rowAx = [], colAx = [], cell = null, ghView = false, remoteSha = '', ghGame = false;
   let pending = LS('editor.pending') || {};           // { file: { svg, committed } }
   const cfg = Object.assign({ repo: 'illeesam123/ubiquitous-chainsaw', branch: 'main', token: '' }, LS('editor.gh') || {});
-  const origCache = {};
+  const origCache = {}, EMB = window.__EMBED || null;   // 단독 실행판(asset-manager.html)은 카탈로그·SVG 를 파일 안에 내장
 
   const toast = (m) => { const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 2600); };
   const savePending = () => { LS('editor.pending', pending); const n = Object.values(pending).filter(p => !p.committed).length; $('nPend').textContent = n; };
-  const srcOf = (c) => pending[c.file] ? dataUri(pending[c.file].svg) : (ghView && remoteSha ? GH.raw(cfg, remoteSha, c.file) : '../assets/sprites/' + c.file);
-  async function origText(file) { if (origCache[file] === undefined) origCache[file] = await (await fetch('../assets/sprites/' + file)).text(); return origCache[file]; }
+  const srcOf = (c) => pending[c.file] ? dataUri(pending[c.file].svg) : EMB && !(ghView && remoteSha) ? dataUri(EMB.svgs[c.file]) : (ghView && remoteSha ? GH.raw(cfg, remoteSha, c.file) : '../assets/sprites/' + c.file);
+  async function origText(file) { if (EMB) return EMB.svgs[file]; if (origCache[file] === undefined) origCache[file] = await (await fetch('../assets/sprites/' + file)).text(); return origCache[file]; }
 
   // ---------- 핫바 / 검색 ----------
   const PREF = ['unit', 'tank', 'truck', 'tile', 'road', 'crater', 'tree', 'rock', 'house', 'apartment', 'warehouse', 'shed', 'bunker', 'tower', 'mg', 'medbay', 'armory', 'fence', 'wire', 'sandbag', 'crate', 'ruin'];
@@ -123,6 +123,7 @@
   $('mRev').onclick = () => { revert(cell.file); $('mMsg').textContent = '원본으로 되돌렸습니다.'; };
   $('mDisk').onclick = async () => {
     try {
+      if (EMB) { $('mMsg').textContent = '단독 실행판에서는 디스크 저장이 없습니다. SVG 다운로드를 쓰세요.'; return; }
       const r = await fetch('/api/sprite/' + cell.file, { method: 'PUT', body: await curSvg() });
       $('mMsg').textContent = r.ok ? '디스크의 assets/sprites 와 dist 에 저장했습니다.' : '저장 실패(' + r.status + '): npm run editor 로 연 로컬 서버에서만 가능합니다.';
       if (r.ok) { delete origCache[cell.file]; }
@@ -207,7 +208,7 @@
 
   // ---------- 시작 ----------
   (async () => {
-    try { CAT = await (await fetch('../assets/sprites/catalog.json')).json(); }
+    try { CAT = EMB ? EMB.catalog : await (await fetch('../assets/sprites/catalog.json')).json(); }
     catch (e) { $('empty').innerHTML = '<h2>카탈로그를 불러오지 못했습니다</h2><p>저장소 루트에서 <code>npm run editor</code> 로 실행하세요. (file:// 로는 열 수 없습니다)</p>'; return; }
     buildHot(); savePending();
     // 이미 GitHub 에 올라간 교체본이 로컬 원본과 같아졌으면 목록에서 정리

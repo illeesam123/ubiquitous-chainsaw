@@ -25,3 +25,17 @@ jobs:
             release/*.exe
             release/*.dmg
             release/*.AppImage
+  asset-manager:
+    # 서버 없이 더블클릭으로 여는 에셋 매니저 (단일 HTML)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tools/build.js
+      - run: node tools/build-editor.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: asset-manager
+          path: dist/asset-manager.html

@@ -59,3 +59,4 @@ npm run dist         # 설치 파일 생성 (Windows NSIS / macOS dmg / Linux Ap
 - 같은 주소(`/dist/index.html`)의 게임 탭에는 교체본이 **즉시** 반영됩니다(BroadcastChannel + localStorage).
 - **GitHub 연동**: 에디터의 GitHub 패널에 저장소·브랜치·토큰(Contents 쓰기 권한)을 넣으면 변경분을 한 커밋으로 푸시합니다. 게임 헤더의 ☁ 버튼(또는 에디터의 "게임이 GitHub 에셋을 읽게 하기")을 켜면 최신 커밋의 SVG 를 raw 주소에서 직접 읽어 재빌드 없이 적용합니다.
 - 한계: 참호 타일, 갈대, 수면 물결, 민간인, 헬기 등은 아직 코드로 그립니다. 전차는 포탑이 차체와 정렬됐을 때만 스프라이트(조준·발사 중엔 코드 폴백), 피격 점멸·폭탄 작업 중 병사도 코드 폴백입니다.
+- **서버 없이 쓰기**: `npm run editor:html` 이 `dist/asset-manager.html`(카탈로그·SVG 내장 단일 파일)을 만듭니다. GitHub Actions 의 **asset-manager** 산출물로도 내려받을 수 있고, 더블클릭으로 열면 됩니다. (디스크 저장만 제외하고 동일하게 동작)

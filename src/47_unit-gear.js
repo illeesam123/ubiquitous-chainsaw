@@ -13,12 +13,12 @@ function gearPose(A){ // 화면 각도 → [모양, 회전, 좌우반전]
   return A<0?['up',A+Math.PI/2,false]:['down',A-Math.PI/2,false];
 }
 function unitSprite(u,sx,by,z,body,inG){
-  if(!SPR.on||u.flash>0||!(u.team>=0&&u.team<=3))return false;
+  if(REC||!(u.team>=0&&u.team<=3))return false;
   const st=u.state,mv=st==='move'||st==='flee';
   let pose='stand';
   if(st==='fuse')pose='fuse';else if(inG)pose='gar';else if(mv)pose='move'+((((u.anim*(st==='flee'?17:12))/6.2832)%1)*4|0);
   const eb=sprGetX('ubody|'+pose),et=sprGetX('ubodyt|'+pose);
-  if(!sprOk(eb)||!sprOk(et))return false;
+  if(!sprOk(eb)||!sprOk(et)){if(!eb)sprMissing('ubody|'+pose);return true;}
   const c=Math.cos(u.face),s=Math.sin(u.face),ix=(c-s)*.9,iy=(c+s)*.5,bob=mv?Math.sin(u.anim*(st==='flee'?17:12))*1.2*z:0;
   let held=null,tip=null;
   if(st==='fuse'){}
@@ -55,9 +55,9 @@ function sprBakeUnitBody(pose){
 
 // ---- 깃발: 기둥(중립) + 천(팀색 마스크 1장). 펄럭임은 천을 기둥 축 기준으로 세로 기울임(skewY)해서 만든다 ----
 function flagSprite(f){
-  if(!SPR.on)return false;
+  if(REC)return false;
   const ep=sprGetX('flag|pole'),ec=sprGetX('flagc|0');
-  if(!sprOk(ep)||!sprOk(ec))return false;
+  if(!sprOk(ep)||!sprOk(ec))return true;
   const [sx,sy]=toS(f.x+.5,f.y+.5),z=cam.z,k=Math.sin(G.time*3+f.team)*.1;
   sprBlit(ep,sx,sy,z,false);
   cx.save();cx.translate(sx,sy);cx.transform(1,k,0,1,0,0);sprBlitTint(ec,0,0,z,TEAM_COL[f.team],false);cx.restore();return true;

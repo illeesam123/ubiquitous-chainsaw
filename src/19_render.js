@@ -138,7 +138,7 @@ function paintBase(x,y,i,w){
     tileDia(x,y,-.04);cx.fillStyle=(G.road[i]&&G.up[i]!==1)?ROADCOL[G.road[i]]:G.ground[i];cx.fill();return;
   }
   if(!slp&&!tileSprite(x,y,i)){tileDia(x,y,0);cx.fillStyle=G.ground[i];cx.fill();cx.strokeStyle=G.ground[i];cx.stroke();}
-  if(hl)hillShadow(x,y,i);
+  if(G.shT&&G.shT[i])paintShade(x,y,i);
   if(G.road[i])drawRoadTile(x,y,i);
   if(G.tt[i]!==2&&G.tt[i]!==4&&G.dec[i]===3)drawReeds(x,y);
   if(G.dec[i]&&G.dec[i]<3){const [sx,sy]=toS(x+.5,y+.5);cx.fillStyle=G.dec[i]===1?'rgba(0,0,0,.14)':'rgba(255,255,255,.1)';cx.beginPath();cx.ellipse(sx+(G.dec[i]*3-5)*cam.z,sy,5*cam.z,2.5*cam.z,0,0,6.3);cx.fill();}
@@ -147,7 +147,7 @@ function paintBase(x,y,i,w){
 const CHK=16,CHB=[.5,.7,1,1.25];
 let chunkMap=new Map(),chunkG=null,chunkPix=0;
 function chunkSig(a,b){
-  const w=G.w,x1=Math.min(G.w,a*CHK+CHK),y1=Math.min(G.h,b*CHK+CHK);let h=(SPR.on?7:3)+SPRV*131+(G.biome.length*17);const hv=G.hill;
+  const w=G.w,x1=Math.min(G.w,a*CHK+CHK),y1=Math.min(G.h,b*CHK+CHK);let h=(SPR.on?7:3)+SPRV*131+(G.biome.length*17)+(G.shV|0)*7919;const hv=G.hill;
   for(let y=b*CHK;y<y1;y++)for(let x=a*CHK,i=y*w+x;x<x1;x++,i++)h=(h*31+G.tt[i]*5+G.gq[i]*3+G.road[i]*11+G.dec[i]*13+(G.up[i]===1?7:0)+(G.mm[i]?1:0)+(hv?G.lv[i]*17+G.sl[i]*19:0))|0;
   if(hv){for(let y=b*CHK;y<y1;y++){if(x1<G.w){const i=y*w+x1;h=(h*31+G.lv[i]*17+G.sl[i]*19)|0;}}if(y1<G.h)for(let x=a*CHK;x<x1;x++){const i=y1*w+x;h=(h*31+G.lv[i]*17+G.sl[i]*19)|0;}}
   return h;
@@ -182,6 +182,7 @@ function drawGround(x0,y0,x1,y1){
     for(let y=y0;y<=y1;y++){const [xa,xb]=visRange(y,x0,x1);for(let x=xa;x<=xb;x++){const i=y*w+x;paintBase(x,y,i,w);if(cam.z>=.8&&(G.tt[i]===2||G.tt[i]===4))waterQueue(x,y,i);}}
   }
   waterFlush();
+  if(WFX.acc>.03)snowCover(x0,y0,x1,y1);   // 눈은 참호 그리기 전에 깔고, 참호·구덩이 칸은 건너뛴다
   for(let y=y0;y<=y1;y++){const [xa,xb]=visRange(y,x0,x1);for(let x=xa;x<=xb;x++){
     const v=G.trench[y*w+x];if(!v)continue;
     if(v===255)drawCrater(x,y);else drawTrenchTile(x,y,v);
@@ -205,7 +206,6 @@ function render(){
   const y0=clamp(Math.floor(Math.min(...cs.map(c=>c[1])))-2,0,G.h-1),y1=clamp(Math.ceil(Math.max(...cs.map(c=>c[1])))+3,0,G.h-1);
   if(viewLay===1&&G.phase!=='setup'){renderUnder(x0,y0,x1,y1);return;}
   drawGround(x0,y0,x1,y1);
-  if(WFX.acc>.03)snowCover(x0,y0,x1,y1);
   for(const T of G.teams)if(T.pad&&T.pad.x+3>=x0&&T.pad.x<=x1&&T.pad.y+3>=y0&&T.pad.y<=y1)drawPad(T);
   drawWeatherGround(x0,y0,x1,y1);
   // 시체 / 사전 효과
@@ -222,13 +222,8 @@ function render(){
   for(const v of G.vehicles)if(v.x>=x0-2&&v.x<=x1+2&&v.y>=y0-2&&v.y<=y1+2)list.push({d:v.x+v.y+.35,v});
   if(G.civs)for(const c of G.civs)if(!c.dead&&c.x>=x0-1&&c.x<=x1+2&&c.y>=y0-1&&c.y<=y1+2)list.push({d:c.x+c.y+.3,civ:c});
   for(const f of G.flags)list.push({d:f.x+f.y+1.2,f});
-  if(G.hill){
-    for(let y=y0;y<=y1;y++){const [xa,xb]=visRange(y,x0,x1);for(let x=xa;x<=xb;x++){const i=y*G.w+x;if(G.occ[i])list.push({d:x+y+.99,hill:i});}}
-    // 가림 타일 위에 서 있는 개체는 그 타일을 다시 그린 뒤에 그려야 한다
-    for(const e of list){const a=e.u||e.v||e.civ;if(a){const tx=a.x|0,ty=a.y|0;if(tx>=0&&ty>=0&&tx<G.w&&ty<G.h&&G.occ[ty*G.w+tx]&&e.d<tx+ty+1)e.d=tx+ty+1;}}
-  }
   list.sort((a,b)=>a.d-b.d);
-  for(const e of list){if(e.hill!==undefined){const hx=e.hill%G.w,hy=(e.hill/G.w)|0;paintBase(hx,hy,e.hill,G.w);const v=G.trench[e.hill];if(v){if(v===255)drawCrater(hx,hy);else drawTrenchTile(hx,hy,v);}if(G.mouth[e.hill])drawMouth(hx,hy);const up=G.up[e.hill];if(up===1)drawBridge(hx,hy);else if(up===4)drawShaftHatch(hx,hy);}else if(e.o){drawOb(e.o);drawCharges(e.o);}else if(e.bush)drawBush(e.bush[0],e.bush[1]);else if(e.roof!==undefined)drawRoof(e.roof);else if(e.u){if(e.ghost)cx.globalAlpha=.4;drawUnit(e.u);cx.globalAlpha=1;}else if(e.v)drawVehicle(e.v);else if(e.civ)drawCiv(e.civ);else drawFlag(e.f);}
+  for(const e of list){const ea=e.u||e.v||e.civ;if(G.hill&&ea){ELK=null;ELK=elevPx(ea.x,ea.y);}if(e.o){drawOb(e.o);drawCharges(e.o);}else if(e.bush)drawBush(e.bush[0],e.bush[1]);else if(e.roof!==undefined)drawRoof(e.roof);else if(e.u){if(e.ghost)cx.globalAlpha=.4;drawUnit(e.u);cx.globalAlpha=1;}else if(e.v)drawVehicle(e.v);else if(e.civ)drawCiv(e.civ);else drawFlag(e.f);ELK=null;if(G.hill)hillOcclude(e);}
   for(const T of G.teams)if(T.pad&&T.heli.state!=='wait')drawHeli(T);
   for(const sh of G.shells){const p=Math.min(1,sh.t/sh.d),x=sh.x+(sh.tx-sh.x)*p,y=sh.y+(sh.ty-sh.y)*p,arc=Math.sin(p*Math.PI)*3.2,[sx,sy]=toS(x,y);cx.fillStyle='#27251d';cx.beginPath();cx.arc(sx,sy-arc*cam.z,3.2*cam.z,0,6.3);cx.fill();cx.fillStyle='rgba(255,190,90,.7)';cx.beginPath();cx.arc(sx-1*cam.z,sy-(arc+1)*cam.z,1.2*cam.z,0,6.3);cx.fill();}
   for(const f of G.fx){

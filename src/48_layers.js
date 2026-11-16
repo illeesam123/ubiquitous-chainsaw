@@ -5,6 +5,8 @@
 // G.hl[i]  : 이 타일은 입체로 그려야 함(높이≠지상, 빗면, 또는 앞쪽 이웃보다 높음).
 // G.occ[i] : 이 타일은 뒤쪽(작은 x+y)보다 높아서 뒤에 있는 것들을 가린다 → 개체 정렬 때 한 번 더 그린다.
 const FLOOR_PX=28,HALF_PX=14,GROUND_LV=6,UNDER_LV=2,MAX_LV=12;
+let OCQ=null,ELK=null;   // ELK: 개체를 그리는 동안 고도를 한 값으로 고정(차량 등이 경사에서 부위별로 다른 높이로 찌그러지는 것 방지)
+   // 타일별: 앞쪽에 이 타일의 서 있는 것을 가릴 만큼 높은 타일이 있는가
 function initLayers(){G.lv=new Uint8Array(G.N).fill(GROUND_LV);G.sl=new Uint8Array(G.N);G.hl=new Uint8Array(G.N);G.occ=new Uint8Array(G.N);G.hill=false;}
 function elevIn(i,fx,fy){
   const s=G.sl[i];let a=0;
@@ -17,12 +19,12 @@ function elevH(x,y){
   if(tx<0)tx=0;else if(tx>=G.w)tx=G.w-1;if(ty<0)ty=0;else if(ty>=G.h)ty=G.h-1;
   return elevIn(ty*G.w+tx,x-tx,y-ty);
 }
-const elevPx=(x,y)=>(elevH(x,y)-GROUND_LV)*HALF_PX;
+const elevPx=(x,y)=>ELK!==null?ELK:(elevH(x,y)-GROUND_LV)*HALF_PX;
 const maxH=(i)=>G.lv[i]+(G.sl[i]?2:0);
 function layersFinalize(){
   const w=G.w,h=G.h;G.hill=false;
   for(let i=0;i<G.N;i++)if(G.lv[i]!==GROUND_LV||G.sl[i]){G.hill=true;break;}
-  G.hl.fill(0);G.occ.fill(0);if(!G.hill)return;
+  G.hl.fill(0);G.occ.fill(0);OCQ=new Uint8Array(G.N);if(!G.hill){computeShade();return;}
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){
     const i=y*w+x;let f=G.lv[i]!==GROUND_LV||G.sl[i]?1:0;
     const e=x+1<w?i+1:-1,s=y+1<h?i+w:-1;
@@ -32,6 +34,13 @@ function layersFinalize(){
     let oc=0;const m=maxH(i);
     if(x>0&&m>maxH(i-1))oc=1;if(y>0&&m>maxH(i-w))oc=1;if(x>0&&y>0&&m>maxH(i-w-1))oc=1;
     G.hl[i]=f||oc;G.occ[i]=oc;
+  }
+  computeShade();
+  // 가림 후보 미리 계산: 앞(dx,dy≥0)의 타일 T 가 D반층 더 높고 (dx+dy)*16px < D*14px + 여유 이면 그 타일 위 개체는 가려질 수 있다
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const i=y*w+x,m=G.lv[i];let q=0;
+    for(let dy=0;dy<=6&&!q;dy++)for(let dx=0;dx<=6;dx++){if(!dx&&!dy)continue;const a=x+dx,b=y+dy;if(a>=w||b>=h)break;const D=maxH(b*w+a)-m;if(D>0&&(dx+dy)*16<D*HALF_PX+40){q=1;break;}}
+    OCQ[i]=q;
   }
 }
 // 평평한 한 덩어리인가 (건물·깃발·헬기장 같은 큰 시설용)
@@ -92,15 +101,15 @@ function hillWalls(x,y,i){
   const w=G.w,base=G.ground[i];
   // [이웃 칸, 내 쪽 꼭짓점 둘, 이웃 쪽 꼭짓점 둘, 면 색 배율]
   const faces=[
-    [x+1<w?i+1:-1,[1,0],[1,1],[0,0],[0,1],.62],   // +x 면
-    [y+1<G.h?i+w:-1,[0,1],[1,1],[0,0],[1,0],.8],  // +y 면
+    [x+1<w?i+1:-1,[1,0],[1,1],[0,0],[0,1],.7],   // +x 면
+    [y+1<G.h?i+w:-1,[0,1],[1,1],[0,0],[1,0],.9],  // +y 면
   ];
   for(const [nb,pa,pb,na,nb2,f] of faces){
     const hA=elevIn(i,pa[0],pa[1]),hB=elevIn(i,pb[0],pb[1]);
     let nA=nb>=0?elevIn(nb,na[0],na[1]):hA-4,nB=nb>=0?elevIn(nb,nb2[0],nb2[1]):hB-4;
     nA=Math.min(nA,hA);nB=Math.min(nB,hB);if(hA-nA<.01&&hB-nB<.01)continue;
     const A=rawS(x+pa[0],y+pa[1],hA),B=rawS(x+pb[0],y+pb[1],hB),B2=rawS(x+pb[0],y+pb[1],nB),A2=rawS(x+pa[0],y+pa[1],nA);
-    cx.fillStyle=dimCol(base,f*.78);cx.beginPath();cx.moveTo(A[0],A[1]);cx.lineTo(B[0],B[1]);cx.lineTo(B2[0],B2[1]);cx.lineTo(A2[0],A2[1]);cx.closePath();cx.fill();
+    {const gr=cx.createLinearGradient(0,Math.min(A[1],B[1]),0,Math.max(A2[1],B2[1]));gr.addColorStop(0,dimCol(base,f*1.12));gr.addColorStop(1,dimCol(base,f*.78));cx.fillStyle=gr;}cx.beginPath();cx.moveTo(A[0],A[1]);cx.lineTo(B[0],B[1]);cx.lineTo(B2[0],B2[1]);cx.lineTo(A2[0],A2[1]);cx.closePath();cx.fill();
     // 지층 줄무늬: 층 경계마다
     if(Math.abs(hA-hB)<.01&&Math.abs(nA-nB)<.01){
       cx.strokeStyle='rgba(0,0,0,.18)';cx.lineWidth=Math.max(.6,cam.z);cx.beginPath();
@@ -132,23 +141,97 @@ function paintHill(x,y,i){
   return false;
 }
 
-// 언덕 주변 그림자: 더 높은 이웃과 맞닿은 낮은 타일의 가장자리를 어둡게(접지 그림자),
-// 그리고 빛(왼쪽 위)과 반대쪽인 +x/+y 쪽 낮은 땅에는 길게 드리운 그림자를 얹는다.
-const AO_DIRS=[[-1,0,[0,0],[0,1],[.55,0],[.55,1]],[1,0,[1,0],[1,1],[.45,0],[.45,1]],[0,-1,[0,0],[1,0],[0,.55],[1,.55]],[0,1,[0,1],[1,1],[0,.45],[1,.45]]];
-function hillShadow(x,y,i){
-  const w=G.w;
-  for(const [dx,dy,p0,p1,q0,q1] of AO_DIRS){
-    const a=x+dx,b=y+dy;if(a<0||b<0||a>=w||b>=G.h)continue;const n=b*w+a;
-    // 이웃 쪽 변에서의 높이 차 (이웃의 해당 변은 내 변과 같은 위치)
-    const np0=[dx===-1?1:dx===1?0:p0[0],dy===-1?1:dy===1?0:p0[1]],np1=[dx===-1?1:dx===1?0:p1[0],dy===-1?1:dy===1?0:p1[1]];
-    const d=Math.max(elevIn(n,np0[0],np0[1])-elevIn(i,p0[0],p0[1]),elevIn(n,np1[0],np1[1])-elevIn(i,p1[0],p1[1]));
-    if(d<.9)continue;
-    const P=rawS(x+p0[0],y+p0[1],elevIn(i,p0[0],p0[1])),Q=rawS(x+p1[0],y+p1[1],elevIn(i,p1[0],p1[1])),
-      Q2=rawS(x+q1[0],y+q1[1],elevIn(i,q1[0],q1[1])),P2=rawS(x+q0[0],y+q0[1],elevIn(i,q0[0],q0[1]));
-    const g=cx.createLinearGradient((P[0]+Q[0])/2,(P[1]+Q[1])/2,(P2[0]+Q2[0])/2,(P2[1]+Q2[1])/2),al=Math.min(.46,.2*d);
-    // 빛이 왼쪽 위에서 오므로, 높은 땅이 -x/-y 쪽에 있는 경우(그림자가 +x/+y 쪽으로 떨어짐)를 더 진하게
-    const k=(dx<0||dy<0)?1.25:.8;
-    g.addColorStop(0,`rgba(10,8,4,${Math.min(.6,al*k).toFixed(3)})`);g.addColorStop(1,'rgba(10,8,4,0)');
-    cx.fillStyle=g;cx.beginPath();cx.moveTo(P[0],P[1]);cx.lineTo(Q[0],Q[1]);cx.lineTo(Q2[0],Q2[1]);cx.lineTo(P2[0],P2[1]);cx.closePath();cx.fill();
+// ---- 그림자: 지형 높이로 한 번에 계산 ----
+// 꼭짓점마다 (1) 태양(왼쪽 위, 고도각 약 50°)을 향해 높이 지형을 훑어 가려지면 그림자, (2) 주변보다 움푹하면 접지 그림자(AO)를
+// 계산해 (w+1)×(h+1) 텍스처 한 장에 담는다. 타일은 이 텍스처의 네 꼭짓점 값을 쌍선형 보간해 한 번에 얹는다(경계 이음매 없음).
+function computeShade(){
+  const w=G.w,h=G.h,W1=w+1,H1=h+1,HT=HALF_PX/32*.9;        // 반층 높이를 타일 길이 단위로 (대략)
+  G.shV=(G.shV|0)+1;G.shT=new Uint8Array(G.N);G.shC=null;
+  if(!G.hill)return;
+  const V=new Float32Array(W1*H1);
+  for(let vy=0;vy<H1;vy++)for(let vx=0;vx<W1;vx++){
+    let sum=0,n=0;
+    for(const [tx,ty,cx_,cy_] of [[vx-1,vy-1,1,1],[vx,vy-1,0,1],[vx-1,vy,1,0],[vx,vy,0,0]]){if(tx<0||ty<0||tx>=w||ty>=h)continue;sum+=elevIn(ty*w+tx,cx_,cy_);n++;}
+    V[vy*W1+vx]=n?sum/n:GROUND_LV;
   }
+  const hAt=(x,y)=>{x=x<0?0:x>w?w:x;y=y<0?0:y>h?h:y;const x0=Math.min(w-1,x|0),y0=Math.min(h-1,y|0),fx=x-x0,fy=y-y0;
+    return (V[y0*W1+x0]*(1-fx)+V[y0*W1+x0+1]*fx)*(1-fy)+(V[(y0+1)*W1+x0]*(1-fx)+V[(y0+1)*W1+x0+1]*fx)*fy;};
+  const Lx=-.92,Ly=-.38,TAN=1.15,dark=new Float32Array(W1*H1);
+  for(let vy=0;vy<H1;vy++)for(let vx=0;vx<W1;vx++){
+    const h0=V[vy*W1+vx];let sh=0;
+    for(let t=.5;t<=11;t+=.5){
+      const th=(hAt(vx+Lx*t,vy+Ly*t)-h0)*HT;if(th<=0)continue;
+      const k=(th-t*TAN)/.5;if(k>sh)sh=k;if(sh>=1){sh=1;break;}
+    }
+    // 접지 그림자: 8방향 이웃 평균이 나보다 높을수록
+    let avg=0,n=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const a=vx+dx,b=vy+dy;if(a<0||b<0||a>=W1||b>=H1)continue;avg+=V[b*W1+a];n++;}
+    const ao=Math.max(0,Math.min(1,(avg/n-h0)/3))*.5;
+    dark[vy*W1+vx]=Math.min(.6,Math.min(1,sh)*.38+ao);
+  }
+  const cv=document.createElement('canvas');cv.width=W1;cv.height=H1;const g=cv.getContext('2d'),im=g.createImageData(W1,H1);
+  for(let i=0;i<W1*H1;i++){im.data[i*4]=12;im.data[i*4+1]=9;im.data[i*4+2]=5;im.data[i*4+3]=Math.round(dark[i]*255);}
+  g.putImageData(im,0,0);G.shC=cv;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const a=y*W1+x;if(dark[a]>.02||dark[a+1]>.02||dark[a+W1]>.02||dark[a+W1+1]>.02)G.shT[y*w+x]=1;}
+}
+function paintShade(x,y,i){
+  const P0=rawS(x,y,elevIn(i,0,0)),P1=rawS(x+1,y,elevIn(i,1,0)),P2=rawS(x,y+1,elevIn(i,0,1));
+  cx.save();cx.transform(P1[0]-P0[0],P1[1]-P0[1],P2[0]-P0[0],P2[1]-P0[1],P0[0],P0[1]);
+  cx.drawImage(G.shC,x+.5,y+.5,1,1,0,0,1,1);cx.restore();
+}
+// ---- 타일 비트맵 캐시: 가림용 타일을 개체마다 벡터로 다시 그리지 않고 한 장씩 찍는다 ----
+const TBM=new Map();
+function tileBmp(j,zb){
+  const w=G.w,x=j%w,y=(j/w)|0,key=j*8+CHB.indexOf(zb);
+  let sg=(SPRV*131+(G.shV|0)*7919+G.lv[j]*17+G.sl[j]*19+G.road[j]*3+G.tt[j]+G.dec[j])|0;
+  for(const o of [1,w,-1,-w,w+1])if(j+o>=0&&j+o<G.N)sg=(sg*31+G.lv[j+o]*5+G.sl[j+o]*7)|0;
+  let c=TBM.get(key);if(c&&c.sg===sg)return c;
+  const pad=6,top=Math.max(0,(maxH(j)-GROUND_LV)*HALF_PX)+24,bot=70,ox=pad+34,oy=top+pad;
+  const cv=c?c.cv:document.createElement('canvas');cv.width=Math.ceil((68+pad*2)*zb);cv.height=Math.ceil((top+32+bot+pad*2)*zb);
+  const sv={cx:cx,x:cam.x,y:cam.y,z:cam.z};
+  cx=cv.getContext('2d');cx.setTransform(1,0,0,1,0,0);cam.z=zb;cam.x=ox*zb;cam.y=oy*zb;
+  try{cx.lineWidth=1;paintBase(x,y,j,w);const v=G.trench[j];if(v){if(v===255)drawCrater(x,y);else drawTrenchTile(x,y,v);}if(G.mouth[j])drawMouth(x,y);const u=G.up[j];if(u===1)drawBridge(x,y);else if(u===4)drawShaftHatch(x,y);}
+  finally{cx=sv.cx;cam.x=sv.x;cam.y=sv.y;cam.z=sv.z;}
+  // 타일 기준점 = rawS(x,y,GROUND) = 캔버스 (ox,oy)*zb 에 해당. 원점은 현재 카메라에서의 같은 좌표로 맞춰 찍는다
+  c={cv,sg,ox:ox,oy:oy,zb};if(TBM.size>1500)TBM.clear();TBM.set(key,c);return c;
+}
+// 개체 가림: 개체를 그린 뒤, 그 앞(더 큰 x+y)에 있으면서 더 높은 타일(절벽·언덕)이 개체를 가리는 부분만 다시 덮는다.
+// 타일은 이미 올바른 순서로 한 번 그려졌으므로, 덮는 범위를 개체 주변 상자로 한정하면 다른 곳의 표시(오버레이)는 건드리지 않는다.
+function hillOcclude(e){
+  let px,py,size=1,mine=false;
+  if(e.u){px=e.u.x;py=e.u.y;mine=e.u.team===0&&!e.ghost;}else if(e.v){px=e.v.x;py=e.v.y;size=1.3;}else if(e.civ){px=e.civ.x;py=e.civ.y;}
+  else if(e.o){px=e.o.x+e.o.size/2;py=e.o.y+e.o.size/2;size=e.o.size;}else if(e.bush){px=e.bush[0]+.5;py=e.bush[1]+.5;}
+  else if(e.f){px=e.f.x+.5;py=e.f.y+.5;}else return;
+  const w=G.w,tx=Math.floor(px),ty=Math.floor(py);if(tx<0||ty<0||tx>=w||ty>=G.h)return;
+  if(!OCQ[ty*w+tx]&&!(e.o&&e.o.size>1))return;
+  const lvE=elevH(px,py);let list=null;
+  const R=size>1?size:0;
+  for(let y=ty;y<=ty+6&&y<G.h;y++)for(let x=tx;x<=tx+6&&x<w;x++){
+    if(x<tx+(e.o?size:1)&&y<ty+(e.o?size:1)&&(!e.o||(x>=e.o.x&&y>=e.o.y)))continue;   // 개체 자신이 서 있는 칸 제외
+    const j=y*w+x;if(!G.hl[j]||maxH(j)<=lvE+.5)continue;
+    (list||(list=[])).push(j);
+  }
+  if(!list)return;
+  const z=cam.z,[sx,sy]=toS(px,py);
+  // 개체 크기에 맞춘 상자: 병사·민간인은 작게, 건물은 크기에 비례, 나무·바위 등은 중간
+  const big=e.o&&size>1,Wd=(e.u||e.civ?16:big?size*34+16:e.v?30:34)*z,up=(e.u||e.civ?36:big?size*38+30:e.v?30:66)*z,dn=(e.u||e.civ?6:big?size*14:e.v?10:12)*z;
+  let hit=false;const zb=CHB.find(q=>q>=z-.001),bx0=sx-Wd,by0=sy-up,bx1=sx+Wd,by1=sy+dn;
+  cx.save();if(zb===undefined){cx.beginPath();cx.rect(bx0,by0,bx1-bx0,by1-by0);cx.clip();}
+  for(const j of list){
+    const x=j%w,y=(j/w)|0,[cxs,cys]=toS(x+.5,y+.5);
+    if(Math.abs(cxs-sx)>Wd+34*z)continue;
+    const ytop=cys-16*z-(Math.max(elevIn(j,0,0),elevIn(j,1,0),elevIn(j,0,1),elevIn(j,1,1))-elevH(x+.5,y+.5))*HALF_PX*z;   // 윗면의 가장 높은 꼭짓점 y
+    if(ytop>sy+dn*.4||cys+16*z<sy-up)continue;
+    // 실제로 겹치는 면적이 너무 작으면(얇은 띠) 건너뛴다
+    const ovH=Math.min(sy+dn,cys+16*z+30*z)-Math.max(sy-up,ytop),ovW=Math.min(sx+Wd,cxs+32*z)-Math.max(sx-Wd,cxs-32*z);
+    if(ovH<5*z||ovW<8*z)continue;
+    hit=true;
+    if(zb!==undefined){
+      const c=tileBmp(j,zb),k=z/zb,o0=rawS(x,y,GROUND_LV),dx=o0[0]-c.ox*z,dy=o0[1]-c.oy*z,iw=c.cv.width*k,ih=c.cv.height*k;
+      const ix0=Math.max(dx,bx0),iy0=Math.max(dy,by0),ix1=Math.min(dx+iw,bx1),iy1=Math.min(dy+ih,by1);
+      if(ix1>ix0&&iy1>iy0)cx.drawImage(c.cv,(ix0-dx)/k,(iy0-dy)/k,(ix1-ix0)/k,(iy1-iy0)/k,ix0,iy0,ix1-ix0,iy1-iy0);
+    }else{paintBase(x,y,j,w);const v=G.trench[j];if(v){if(v===255)drawCrater(x,y);else drawTrenchTile(x,y,v);}if(G.mouth[j])drawMouth(x,y);const up2=G.up[j];if(up2===1)drawBridge(x,y);else if(up2===4)drawShaftHatch(x,y);}
+  }
+  cx.restore();
+  // 가려진 아군 병사는 윤곽만 흐리게 한 번 더 보여 준다 (선택·확인용)
+  if(hit&&mine){cx.globalAlpha=.42;drawUnit(e.u);cx.globalAlpha=1;}
 }

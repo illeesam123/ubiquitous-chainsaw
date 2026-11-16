@@ -12,12 +12,25 @@ function updateWfx(){
   if(WFX.rain>.6){WFX.nextFlash-=dt;if(WFX.nextFlash<=0){WFX.flash=1;WFX.nextFlash=8+Math.random()*16;}}
   WFX.flash=Math.max(0,WFX.flash-dt*2.2);
 }
-// 쌓인 눈: 지면 타일 위에 불규칙한 흰 덮개
+// 쌓인 눈: 지면 타일 위에 불규칙한 흰 덮개. 참호·구덩이·물·동굴 입구·다리처럼 지면 모양이 바뀐 곳은 덮지 않고,
+// 투명도가 같은 타일끼리 한 경로로 모아 한 번에 칠한다(타일마다 fill 하지 않음).
 function snowCover(x0,y0,x1,y1){
-  const a=WFX.acc;cx.fillStyle='rgb(233,239,245)';
+  const a=WFX.acc,B=[[],[],[],[]],w=G.w,hill=G.hill;
   for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
-    cx.globalAlpha=a*(.3+.32*hsh(x*1.7,y*2.3));
-    tileDia(x,y,0);cx.fill();
+    const i=y*w+x;
+    if(G.trench[i]||G.tt[i]===2||G.mouth[i]||G.up[i]===1||G.up[i]===4)continue;
+    B[Math.min(3,((hsh(x*1.7,y*2.3))*4)|0)].push(x,y);
+  }
+  cx.fillStyle='rgb(233,239,245)';
+  for(let b=0;b<4;b++){
+    const L=B[b];if(!L.length)continue;
+    cx.globalAlpha=a*(.3+.32*(b+.5)/4);cx.beginPath();
+    for(let q=0;q<L.length;q+=2){
+      const x=L[q],y=L[q+1];
+      if(hill){const i=y*w+x;[[0,0],[1,0],[1,1],[0,1]].forEach(([fx,fy],k)=>{const p=rawS(x+fx,y+fy,elevIn(i,fx,fy));k?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]);});cx.closePath();}
+      else{const [sx,sy]=toS(x,y),z=cam.z;cx.moveTo(sx,sy);cx.lineTo(sx+32*z,sy+16*z);cx.lineTo(sx,sy+32*z);cx.lineTo(sx-32*z,sy+16*z);cx.closePath();}
+    }
+    cx.fill();
   }
   cx.globalAlpha=1;
 }

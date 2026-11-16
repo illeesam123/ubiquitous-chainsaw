@@ -100,17 +100,16 @@ function sprBlitFlip(e,sx,sy,z,snap,tint){
 
 // ---- 차량 ----
 function vehSprite(v,flash){
-  if(!SPR.on||!(v.team>=0&&v.team<=3)){v._tuDone=false;return false;}
+  if(!(v.team>=0&&v.team<=3)){v._tuDone=false;return false;}
   v._tuDone=false;
-  const q=((Math.round(v.face/(Math.PI/8))%16)+16)%16;let ok=!flash&&!(v.muz>0);
+  const q=((Math.round(v.face/(Math.PI/8))%16)+16)%16;let ok=true;
   if(v.type==='tank'){
     const tgt=(v.aimT>0&&v.aim!==undefined)?v.aim:v.face;if(v.turA===undefined)v.turA=v.face;
     v.turA+=Math.atan2(Math.sin(tgt-v.turA),Math.cos(tgt-v.turA))*.14;v._tuDone=true;
-    const a=q*Math.PI/8;if(Math.abs(Math.atan2(Math.sin(v.turA-a),Math.cos(v.turA-a)))>.22)ok=false;
   }
   // 좌우반전 재사용: 방향 q ↔ (4-q) 는 서로 거울상
   const qm=(4-q)&15,qc=Math.min(q,qm),fl=qc!==q;
-  const e=ok?sprGetX('veh|'+v.type+'|'+v.team+'|'+qc):null;if(!sprOk(e))return false;
+  const e=ok?sprGetX('veh|'+v.type+'|'+v.team+'|'+qc):null;if(!sprOk(e)){if(!e)sprMissing('veh|'+v.type+'|'+v.team+'|'+qc);return true;}
   const [sx,sy]=toS(v.x,v.y);if(fl)sprBlitFlip(e,sx,sy,cam.z,false);else sprBlit(e,sx,sy,cam.z,false);
   if(v.hp<v.max*.4){
     if(v.type==='tank')drawDamageSmoke(v.x,v.y,v.hp<v.max*.2,v.anim);
@@ -120,7 +119,6 @@ function vehSprite(v,flash){
 }
 // ---- 타일 ----
 function tileSprite(x,y,i){
-  if(!SPR.on)return false;
   if(!G.tsE||G.tsE.length!==G.N){G.tsE=new Array(G.N);G.tsS=new Uint16Array(G.N);G.tsF=new Uint8Array(G.N);}
   const kind=G.tt[i],q=G.gq[i],sig=(kind+1)*8+q+1;
   let e=G.tsE[i];
@@ -128,23 +126,24 @@ function tileSprite(x,y,i){
     G.tsS[i]=sig;const v4=(hsh(x*1.7,y*2.3)*4)|0;                       // 무늬 4종 = 파일 2종 + 좌우반전
     e=sprGetX('tile|'+G.biome+'|'+kind+'|'+q+'|'+(v4&1))||false;G.tsE[i]=e;G.tsF[i]=v4>>1;
   }
-  if(!sprOk(e))return false;
+  if(!sprOk(e)){if(!e)sprMissing('tile|'+G.biome+'|'+G.tt[i]+'|'+G.gq[i]);return REC?false:true;}
   const [sx,sy]=toS(x+.5,y+.5);if(G.tsF[i])sprBlitFlip(e,sx,sy,cam.z,true);else sprBlit(e,sx,sy,cam.z,true);return true;
 }
 // ---- 도로 ----
 function roadSprite(x,y,i){
-  const k=G.road[i];if(!SPR.on||!k||G.up[i]===1)return false;
+  const k=G.road[i];if(!k||G.up[i]===1)return false;
   let m=0;for(const [dx,dy] of roadLinks(x,y,k))m|=dx===1?1:dx===-1?2:dy===1?4:8;
   const mm=((m&1)<<2)|((m&4)>>2)|((m&2)<<2)|((m&8)>>2),mc=Math.min(m,mm);   // E↔S, W↔N 는 거울상
-  const e=sprGetX('road|'+k+'|'+mc+'|'+(k===3?0:(hsh(x,y)>.5?1:0)));if(!sprOk(e))return false;
+  const e=sprGetX('road|'+k+'|'+mc+'|'+(k===3?0:(hsh(x,y)>.5?1:0)));if(!sprOk(e)){if(!e)sprMissing('road|'+k+'|'+mc);return REC?false:true;}
   const [sx,sy]=toS(x+.5,y+.5);if(mc!==m)sprBlitFlip(e,sx,sy,cam.z,true);else sprBlit(e,sx,sy,cam.z,true);return true;
 }
 const _drtBase=drawRoadTile;
 drawRoadTile=function(x,y,i){if(!roadSprite(x,y,i))_drtBase(x,y,i);};
 const _crBase=drawCrater;
 drawCrater=function(x,y){
-  const e=SPR.on?sprGetX('crater|0'):null;
-  if(!sprOk(e))return _crBase(x,y);
+  const e=REC?null:sprGetX('crater|0');
+  if(REC)return _crBase(x,y);
+  if(!sprOk(e))return;
   const [sx,sy]=toS(x+.5,y+.5);sprBlit(e,sx,sy,cam.z,false);
 };
 
@@ -205,7 +204,8 @@ function sprBakeOcc(type){
 function sprBakeBridge(water){const x=10,y=10,i=y*G.w+x,sv=G.tt[i];try{G.tt[i]=water?2:0;return sprRecord(()=>_dbBase(x,y),x+.5,y+.5);}finally{G.tt[i]=sv;}}
 const _dbBase=drawBridge;
 drawBridge=function(x,y){
-  const e=SPR.on?sprGetX('bridge|'+(G.tt[y*G.w+x]===2?'water':'land')):null;
-  if(!sprOk(e))return _dbBase(x,y);
+  if(REC)return _dbBase(x,y);
+  const e=sprGetX('bridge|'+(G.tt[y*G.w+x]===2?'water':'land'));
+  if(!sprOk(e))return;
   const [sx,sy]=toS(x+.5,y+.5);sprBlit(e,sx,sy,cam.z,true);
 };

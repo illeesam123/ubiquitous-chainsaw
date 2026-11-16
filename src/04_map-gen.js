@@ -9,10 +9,11 @@ function newGame(cfg){
   G.biome=G.special?(G.special==='mineshaft'?'arid':'plain'):(cfg.biome&&BIOME[cfg.biome])?cfg.biome:BIOME_KEYS[hashStr(cfg.seed+'#biome')()%BIOME_KEYS.length];
   if(G.special==='superflat')for(const T of G.teams)T.res={money:110,bullets:240,metal:10,wood:14};
   G.weather.type=pickWeather(null);
-  G.up=new Uint8Array(N);G.under=new Uint8Array(N);G.mouth=new Uint8Array(N);G.road=new Uint8Array(N);G.brush=new Uint8Array(N);G.urail=new Uint8Array(N);G.open=G.teams.map(()=>new Uint8Array(N));G.trans=[];viewLay=0;
+  G.up=new Uint8Array(N);G.under=new Uint8Array(N);G.mouth=new Uint8Array(N);G.road=new Uint8Array(N);G.brush=new Uint8Array(N);G.urail=new Uint8Array(N);G.open=G.teams.map(()=>new Uint8Array(N));G.trans=[];viewLay=0;initLayers();
   genMap(rnd);
   if(G.special==='mineshaft')genMine(rnd);else genCaves(mulberry(hashStr(cfg.seed+'#cave')()));
   genBush(rnd);
+  if(G.hill){for(let i=0;i<G.N;i++)if(G.sl[i]){G.road[i]=0;if(G.trench[i]===255)G.trench[i]=0;}layersFinalize();}
   G.gen=null;
   G.expl.fill(1);G.vis.fill(1);
   return G;
@@ -26,7 +27,7 @@ function addOb(type,x,y,team){
   const cells=footprint(type,x,y);
   for(const [ax,ay] of cells){
     if(ax<0||ay<0||ax>=G.w||ay>=G.h)return null;
-    const j=ay*G.w+ax;if(G.obst[j]||G.trench[j]===255||G.tt[j]===2||(G.gen&&G.road[j]))return null;
+    const j=ay*G.w+ax;if(G.hill&&(cells.length>1||OB[type].building)&&!flatArea(x,y,OB[type].size||1))return null;if(G.obst[j]||G.trench[j]===255||G.tt[j]===2||(G.gen&&G.road[j]))return null;
   }
   const i=y*G.w+x;
   const d=OB[type],nat=team===undefined||team<0,rv=G.gen||Math.random;
@@ -52,6 +53,7 @@ function genMap(r){
   if(bio==='swamp')for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x;if(G.tt[i]===2)continue;
     if((G.tt[i-1]===2||G.tt[i+1]===2||G.tt[i-w]===2||G.tt[i+w]===2)&&r()<.55)G.dec[i]=3;}
   const SP=G.special;
+  if(!SP&&!G.cfg.flat)genHills();   // cfg.flat: 에셋 추출용 평지 맵
   if(SP==='superflat')return;
   if(SP==='urbanwar'){
     carveRiver(r,'h',.5,Math.max(6,Math.round(w/14)),.1);

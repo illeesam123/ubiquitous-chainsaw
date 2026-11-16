@@ -9,15 +9,28 @@ function resize(){
   cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
   clampCamera();
 }
-const toS=(x,y)=>[(x-y)*32*cam.z+cam.x,(x+y)*16*cam.z+cam.y];
+const toS=(x,y)=>[(x-y)*32*cam.z+cam.x,(x+y)*16*cam.z+cam.y-elevPx(x,y)*cam.z];
 function toW(sx,sy){
-  const gx=(sx-cam.x)/cam.z,gy=(sy-cam.y)/cam.z;
-  return [(gx/32+gy/16)/2,(gy/16-gx/32)/2];
+  const gx=(sx-cam.x)/cam.z,g0=(sy-cam.y)/cam.z;
+  if(!G||!G.hill||viewLay===1)return [(gx/32+g0/16)/2,(g0/16-gx/32)/2];
+  // 시선 따라 내려가기: 높은 평면(가까움)부터 내려오며, 처음으로 지형 표면에 닿는 점이 보이는 점이다
+  let lastX=0,lastY=0,hit=false;
+  for(let e=MAX_LV+1;e>=0;e-=.5){
+    const gy=g0+(e-GROUND_LV)*HALF_PX,wx=(gx/32+gy/16)/2,wy=(gy/16-gx/32)/2;
+    if(elevH(wx,wy)>=e-.02){
+      // 직전 평면과 사이를 이분해 표면 위치를 다듬는다
+      let lo=e,hi=e+.5;if(!hit&&e>=MAX_LV+1)return [wx,wy];
+      for(let k=0;k<5;k++){const m=(lo+hi)/2,gm=g0+(m-GROUND_LV)*HALF_PX,mx2=(gx/32+gm/16)/2,my2=(gm/16-gx/32)/2;if(elevH(mx2,my2)>=m-.02)lo=m;else hi=m;}
+      const gm=g0+(lo-GROUND_LV)*HALF_PX;return [(gx/32+gm/16)/2,(gm/16-gx/32)/2];
+    }
+    hit=true;
+  }
+  return [(gx/32+g0/16)/2,(g0/16-gx/32)/2];
 }
 function clampCamera(){
   if(!G||!W||!H)return;
   const minX=-(G.h*32+32)*cam.z,maxX=(G.w*32+32)*cam.z;
-  const minY=0,maxY=((G.w+G.h)*16+32)*cam.z;
+  const minY=G.hill?-100*cam.z:0,maxY=((G.w+G.h)*16+32+(G.hill?60:0))*cam.z;
   const spanX=maxX-minX,spanY=maxY-minY;
   cam.x=spanX<=W?(W-spanX)/2-minX:clamp(cam.x,W-maxX,-minX);
   cam.y=spanY<=H?(H-spanY)/2-minY:clamp(cam.y,H-maxY,-minY);
@@ -113,8 +126,13 @@ function visRange(y,x0,x1){
 }
 // 한 타일의 바닥(스프라이트/색 + 도로 + 갈대 + 얼룩). 물결 애니메이션은 별도(waterQueue)라서 여기 포함되지 않는다.
 function paintBase(x,y,i,w){
-  if(cam.z<.8){tileDia(x,y,-.04);cx.fillStyle=(G.road[i]&&G.up[i]!==1)?ROADCOL[G.road[i]]:G.ground[i];cx.fill();return;}
-  if(!tileSprite(x,y,i)){tileDia(x,y,0);cx.fillStyle=G.ground[i];cx.fill();cx.strokeStyle=G.ground[i];cx.stroke();}
+  const hl=G.hill&&G.hl[i],slp=hl&&paintHill(x,y,i);
+  if(cam.z<.8){
+    if(slp)return;
+    if(hl){const pts=[[0,0],[1,0],[1,1],[0,1]].map(([a,c])=>rawS(x+a,y+c,elevIn(i,a,c)));cx.fillStyle=(G.road[i]&&G.up[i]!==1)?ROADCOL[G.road[i]]:G.ground[i];cx.beginPath();pts.forEach((p,k)=>k?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]));cx.closePath();cx.fill();return;}
+    tileDia(x,y,-.04);cx.fillStyle=(G.road[i]&&G.up[i]!==1)?ROADCOL[G.road[i]]:G.ground[i];cx.fill();return;
+  }
+  if(!slp&&!tileSprite(x,y,i)){tileDia(x,y,0);cx.fillStyle=G.ground[i];cx.fill();cx.strokeStyle=G.ground[i];cx.stroke();}
   if(G.road[i])drawRoadTile(x,y,i);
   if(G.tt[i]!==2&&G.tt[i]!==4&&G.dec[i]===3)drawReeds(x,y);
   if(G.dec[i]&&G.dec[i]<3){const [sx,sy]=toS(x+.5,y+.5);cx.fillStyle=G.dec[i]===1?'rgba(0,0,0,.14)':'rgba(255,255,255,.1)';cx.beginPath();cx.ellipse(sx+(G.dec[i]*3-5)*cam.z,sy,5*cam.z,2.5*cam.z,0,0,6.3);cx.fill();}
@@ -123,22 +141,23 @@ function paintBase(x,y,i,w){
 const CHK=16,CHB=[.5,.7,1,1.25];
 let chunkMap=new Map(),chunkG=null,chunkPix=0;
 function chunkSig(a,b){
-  const w=G.w,x1=Math.min(G.w,a*CHK+CHK),y1=Math.min(G.h,b*CHK+CHK);let h=(SPR.on?7:3)+SPRV*131+(G.biome.length*17);
-  for(let y=b*CHK;y<y1;y++)for(let x=a*CHK,i=y*w+x;x<x1;x++,i++)h=(h*31+G.tt[i]*5+G.gq[i]*3+G.road[i]*11+G.dec[i]*13+(G.up[i]===1?7:0)+(G.mm[i]?1:0))|0;
+  const w=G.w,x1=Math.min(G.w,a*CHK+CHK),y1=Math.min(G.h,b*CHK+CHK);let h=(SPR.on?7:3)+SPRV*131+(G.biome.length*17);const hv=G.hill;
+  for(let y=b*CHK;y<y1;y++)for(let x=a*CHK,i=y*w+x;x<x1;x++,i++)h=(h*31+G.tt[i]*5+G.gq[i]*3+G.road[i]*11+G.dec[i]*13+(G.up[i]===1?7:0)+(G.mm[i]?1:0)+(hv?G.lv[i]*17+G.sl[i]*19:0))|0;
+  if(hv){for(let y=b*CHK;y<y1;y++){if(x1<G.w){const i=y*w+x1;h=(h*31+G.lv[i]*17+G.sl[i]*19)|0;}}if(y1<G.h)for(let x=a*CHK;x<x1;x++){const i=y1*w+x;h=(h*31+G.lv[i]*17+G.sl[i]*19)|0;}}
   return h;
 }
 function chunkGet(a,b,zb){
   const key=(a*512+b)*8+CHB.indexOf(zb),sig=chunkSig(a,b);let c=chunkMap.get(key);
   if(c&&c.sig===sig)return c;
-  const pad=8,minX=(a*CHK-b*CHK-CHK)*32,maxX=(a*CHK+CHK-b*CHK)*32,minY=(a*CHK+b*CHK)*16,maxY=(a*CHK+b*CHK+CHK*2)*16;
-  const cv2=c?c.cv:document.createElement('canvas');cv2.width=Math.ceil((maxX-minX+pad*2)*zb);cv2.height=Math.ceil((maxY-minY+pad*2)*zb);
+  const pad=8,padT=G.hill?110:8,padB=G.hill?60:8,minX=(a*CHK-b*CHK-CHK)*32,maxX=(a*CHK+CHK-b*CHK)*32,minY=(a*CHK+b*CHK)*16,maxY=(a*CHK+b*CHK+CHK*2)*16;
+  const cv2=c?c.cv:document.createElement('canvas');cv2.width=Math.ceil((maxX-minX+pad*2)*zb);cv2.height=Math.ceil((maxY-minY+padT+padB)*zb);
   const sv={cx:cx,x:cam.x,y:cam.y,z:cam.z};
-  cx=cv2.getContext('2d');cx.setTransform(1,0,0,1,0,0);cam.z=zb;cam.x=(-minX+pad)*zb;cam.y=(-minY+pad)*zb;
+  cx=cv2.getContext('2d');cx.setTransform(1,0,0,1,0,0);cam.z=zb;cam.x=(-minX+pad)*zb;cam.y=(-minY+padT)*zb;
   try{
     const x1=Math.min(G.w,a*CHK+CHK),y1=Math.min(G.h,b*CHK+CHK);cx.lineWidth=1;
     for(let y=b*CHK;y<y1;y++)for(let x=a*CHK;x<x1;x++)paintBase(x,y,y*G.w+x,G.w);
   }finally{cx=sv.cx;cam.x=sv.x;cam.y=sv.y;cam.z=sv.z;}
-  c={cv:cv2,sig,ox:minX-pad,oy:minY-pad};chunkMap.set(key,c);return c;
+  c={cv:cv2,sig,ox:minX-pad,oy:minY-padT};chunkMap.set(key,c);return c;
 }
 function drawGround(x0,y0,x1,y1){
   const w=G.w;
@@ -197,8 +216,13 @@ function render(){
   for(const v of G.vehicles)if(v.x>=x0-2&&v.x<=x1+2&&v.y>=y0-2&&v.y<=y1+2)list.push({d:v.x+v.y+.35,v});
   if(G.civs)for(const c of G.civs)if(!c.dead&&c.x>=x0-1&&c.x<=x1+2&&c.y>=y0-1&&c.y<=y1+2)list.push({d:c.x+c.y+.3,civ:c});
   for(const f of G.flags)list.push({d:f.x+f.y+1.2,f});
+  if(G.hill){
+    for(let y=y0;y<=y1;y++){const [xa,xb]=visRange(y,x0,x1);for(let x=xa;x<=xb;x++){const i=y*G.w+x;if(G.occ[i])list.push({d:x+y+.99,hill:i});}}
+    // 가림 타일 위에 서 있는 개체는 그 타일을 다시 그린 뒤에 그려야 한다
+    for(const e of list){const a=e.u||e.v||e.civ;if(a){const tx=a.x|0,ty=a.y|0;if(tx>=0&&ty>=0&&tx<G.w&&ty<G.h&&G.occ[ty*G.w+tx]&&e.d<tx+ty+1)e.d=tx+ty+1;}}
+  }
   list.sort((a,b)=>a.d-b.d);
-  for(const e of list){if(e.o){drawOb(e.o);drawCharges(e.o);}else if(e.bush)drawBush(e.bush[0],e.bush[1]);else if(e.roof!==undefined)drawRoof(e.roof);else if(e.u){if(e.ghost)cx.globalAlpha=.4;drawUnit(e.u);cx.globalAlpha=1;}else if(e.v)drawVehicle(e.v);else if(e.civ)drawCiv(e.civ);else drawFlag(e.f);}
+  for(const e of list){if(e.hill!==undefined){const hx=e.hill%G.w,hy=(e.hill/G.w)|0;paintBase(hx,hy,e.hill,G.w);const v=G.trench[e.hill];if(v){if(v===255)drawCrater(hx,hy);else drawTrenchTile(hx,hy,v);}if(G.mouth[e.hill])drawMouth(hx,hy);const up=G.up[e.hill];if(up===1)drawBridge(hx,hy);else if(up===4)drawShaftHatch(hx,hy);}else if(e.o){drawOb(e.o);drawCharges(e.o);}else if(e.bush)drawBush(e.bush[0],e.bush[1]);else if(e.roof!==undefined)drawRoof(e.roof);else if(e.u){if(e.ghost)cx.globalAlpha=.4;drawUnit(e.u);cx.globalAlpha=1;}else if(e.v)drawVehicle(e.v);else if(e.civ)drawCiv(e.civ);else drawFlag(e.f);}
   for(const T of G.teams)if(T.pad&&T.heli.state!=='wait')drawHeli(T);
   for(const sh of G.shells){const p=Math.min(1,sh.t/sh.d),x=sh.x+(sh.tx-sh.x)*p,y=sh.y+(sh.ty-sh.y)*p,arc=Math.sin(p*Math.PI)*3.2,[sx,sy]=toS(x,y);cx.fillStyle='#27251d';cx.beginPath();cx.arc(sx,sy-arc*cam.z,3.2*cam.z,0,6.3);cx.fill();cx.fillStyle='rgba(255,190,90,.7)';cx.beginPath();cx.arc(sx-1*cam.z,sy-(arc+1)*cam.z,1.2*cam.z,0,6.3);cx.fill();}
   for(const f of G.fx){

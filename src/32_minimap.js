@@ -14,6 +14,7 @@ function drawMini(){
       if(o)c=o.type==='tree'?'#1f3d1c':o.type==='rock'?'#77766f':o.natural?'#8b5a3c':o.type==='mortar'?'#d7c07a':TEAM_COL[o.team];
       if(G.trench[i]&&G.trench[i]!==255)c=TEAM_COL[G.trench[i]-1];
       if(c){m.fillStyle=c;m.fillRect(x,y,1,1);}
+      if(G.hill&&G.lv[i]!==GROUND_LV){const d=(G.lv[i]-GROUND_LV)/2;m.fillStyle=d>0?`rgba(255,236,190,${(.1*d).toFixed(2)})`:`rgba(0,0,0,${(-.1*d).toFixed(2)})`;m.fillRect(x,y,1,1);}
     }
     for(const T of G.teams){if(!T.pad)continue;m.fillStyle='#d8d6c4';for(const [x,y] of padCells(T.pad))m.fillRect(x,y,1,1);m.fillStyle=TEAM_COL[T.id];m.fillRect(T.pad.x+1,T.pad.y+1,1,1);}
   }

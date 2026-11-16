@@ -27,7 +27,7 @@ function findPath(sx,sy,gx,gy,adj,size,vehicle){
       const nx=cx+dx,ny=cy+dy;if(nx<0||ny<0||nx>=w||ny>=G.h)continue;
       const n=ny*w+nx;
       if(!(pass(n)||(!adj&&n===gi)))continue;
-      if(dx&&dy&&(!pass(cy*w+nx)||!pass(ny*w+cx)))continue;
+      if(dx&&dy&&(!pass(cy*w+nx)||!pass(ny*w+cx)||(G.hill&&(!stepH(c,cy*w+nx)||!stepH(c,ny*w+cx)))))continue;
       if(!pfLay){if(!stepOK(c,n))continue;if(dx&&dy&&(roofedI(c)||roofedI(n)))continue;}
       const tr=pfLay?1:(G.trench[n]===255?3:G.trench[n]>0?.8:1)*(G.tt[n]===2&&G.up[n]!==1?2.4:G.tt[n]===1?1.15:1)*(vehicle?roadCost(n):(G.brush[n]?1.4:1)),ng=pfG[c]+cs*tr;
       if(pfS[n]!==pfStamp||ng<pfG[n]){pfS[n]=pfStamp;pfG[n]=ng;pfP[n]=c;push(ng+hh(nx,ny),n);}

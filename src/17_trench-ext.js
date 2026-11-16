@@ -11,7 +11,7 @@ let viewLay=0,areaMode=true,pfLay=0,pfTeam=0;
 
 function roofedI(i){const v=G.up[i];return v===2||v===3;}
 function inRoof(u){return !u.lay&&roofedI(Math.floor(u.y)*G.w+Math.floor(u.x));}
-function stepOK(a,b){const ra=roofedI(a),rb=roofedI(b);if(ra===rb)return true;return ra?G.up[a]===3:G.up[b]===3;}
+function stepOK(a,b){if(G.hill&&!stepH(a,b))return false;const ra=roofedI(a),rb=roofedI(b);if(ra===rb)return true;return ra?G.up[a]===3:G.up[b]===3;}
 function underOK(i,team){return G.under[i]!==0&&G.open[team][i]===1;}
 function transitOK(team,i){return (G.mouth[i]===1&&G.under[i]!==0)||(G.up[i]===4&&G.under[i]!==0&&G.open[team][i]===1);}
 function findPathL(lay,team,sx,sy,gx,gy,adj,size,vehicle){

@@ -19,7 +19,7 @@ const root = path.join(__dirname, '..'), out = path.join(root, 'assets', 'sprite
     const r = await p.evaluate(([seed, bio]) => {
       for (const k in SPRITE_MANIFEST) delete SPRITE_MANIFEST[k];      // 기존 파일 무시하고 새로 굽기
       SPR.map.clear();
-      startGame({ seed, biome: bio, size: 96, enemies: 1, soldiers: 12, minDist: 30 }); G.paused = true;
+      startGame({ seed, biome: bio, size: 96, enemies: 1, soldiers: 12, minDist: 30, flat: true }); G.paused = true;
       globalThis.__mir = globalThis.__mir || {};
       // 좌우반전 재사용: 무늬 id 2,3 은 굽지 않고, 이웃 연결이 반전 모양인 것은 원본을 구워 두었다가 거울상으로 정본 키에 저장
       const bake = (o) => { const k = sprKey(o); if (!k) return; if (SPR.kf) { if (SPR.ki) return; const kr = SPR.kr; if (!SPR.map.has(kr)) sprBake(o, kr); __mir[kr] = k; return; } if (!SPR.map.has(k)) sprBake(o, k); };
@@ -46,7 +46,7 @@ const root = path.join(__dirname, '..'), out = path.join(root, 'assets', 'sprite
   for (const [kr, k] of Object.entries(MIR)) if (all[kr]) { if (!all[k]) all[k] = mirrorSvg(all[kr]); delete all[kr]; }
   // ---- 병사 · 차량 · 도로 · 구덩이 (게임의 그리기 코드에서 그대로 굽는다) + 타일 색 ----
   const ex = await p.evaluate(() => {
-    startGame({ seed: 'S1', biome: 'plain', size: 96, enemies: 1, soldiers: 12, minDist: 30 }); G.paused = true;
+    startGame({ seed: 'S1', biome: 'plain', size: 96, enemies: 1, soldiers: 12, minDist: 30, flat: true }); G.paused = true;
     const o = {}, hex = (c) => { const k = document.createElement('canvas').getContext('2d'); k.fillStyle = c; return k.fillStyle; };
     for (const pose of ['stand', 'gar', 'move0', 'move1', 'move2', 'move3', 'fuse']) { const r = sprBakeUnitBody(pose); if (r.neutral) o['ubody|' + pose] = r.neutral; if (r.tint) o['ubodyt|' + pose] = r.tint; }
     for (const ty of ['tank', 'truck']) for (let t = 0; t < 4; t++) for (let q = 0; q < 16; q++) { if (Math.min(q, (4 - q) & 15) !== q) continue; const s = sprBakeVeh(ty, t, q); if (s) o[`veh|${ty}|${t}|${q}`] = s; }   // 반대편 방향은 좌우반전

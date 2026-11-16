@@ -25,7 +25,7 @@ function sprReloadFile(file){
   for(const e of SPR.map.values()){
     if(e.file!==file)continue;
     const im=new Image(),u=sprUrl(file);if(u.startsWith('http'))im.crossOrigin='anonymous';
-    im.onload=()=>{e.img=im;e.bmp={};e.tint={};e.ready=true;e.fail=false;};im.src=u;
+    im.onload=()=>{e.img=im;e.bmp={};e.tint={};e.ready=true;e.fail=false;SPRV++;};im.src=u;
   }
 }
 function sprReloadAll(){const done=new Set();for(const e of SPR.map.values())if(e.file&&!done.has(e.file)){done.add(e.file);sprReloadFile(e.file);}}
@@ -60,7 +60,7 @@ function sprGetX(key){
   const M=typeof SPRITE_MANIFEST!=='undefined'?SPRITE_MANIFEST:null,m=M&&M[key];
   if(!m||!(m[3]>0&&m[4]>0))return null;
   e={key,ready:false,fail:false,file:m[0],x:m[1],y:m[2],w:m[3],h:m[4],img:new Image(),bmp:{}};
-  e.img.onload=()=>{e.ready=true;};e.img.onerror=()=>{e.fail=true;};sprSetSrc(e.img,m[0]);
+  e.img.onload=()=>{e.ready=true;SPRV++;};e.img.onerror=()=>{e.fail=true;};sprSetSrc(e.img,m[0]);
   SPR.map.set(key,e);SPR.files++;return e;
 }
 function sprBlit(e,sx,sy,z,snap){
@@ -86,10 +86,16 @@ function sprBlitTint(e,sx,sy,z,color,snap){
   cx.drawImage(bm,dx,dy,bm.width*k,bm.height*k);
 }
 // 좌우반전해서 찍기 (기준점 (sx,sy) 를 지나는 세로축 기준)
+const FLIPC=new WeakMap();
+function flipOf(bm){            // 좌우반전본을 한 번만 만들어 재사용: 찍을 때마다 save/scale/restore 하지 않기 위함
+  let f=FLIPC.get(bm);if(f)return f;
+  f=document.createElement('canvas');f.width=bm.width;f.height=bm.height;const g=f.getContext('2d');g.translate(f.width,0);g.scale(-1,1);g.drawImage(bm,0,0);
+  FLIPC.set(bm,f);return f;
+}
 function sprBlitFlip(e,sx,sy,z,snap,tint){
-  const b=sprBkt(z),bm=tint?sprTinted(e,b,tint):sprRaster(e,b),k=z/b;
-  const dx=-(e.x+e.w)*z,dy=e.y*z;
-  cx.save();cx.translate(snap?Math.round(sx):sx,snap?Math.round(sy):sy);cx.scale(-1,1);cx.drawImage(bm,dx,dy,bm.width*k,bm.height*k);cx.restore();
+  const b=sprBkt(z),bm=flipOf(tint?sprTinted(e,b,tint):sprRaster(e,b)),k=z/b;
+  let dx=sx+e.x*z,dy=sy+e.y*z;if(snap){dx=Math.round(dx);dy=Math.round(dy);}
+  cx.drawImage(bm,dx,dy,bm.width*k,bm.height*k);
 }
 
 // ---- 차량 ----

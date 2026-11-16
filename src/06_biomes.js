@@ -59,3 +59,40 @@ function drawReeds(x,y){
     if(k%2===0){cx.fillStyle='#6a4a2a';cx.beginPath();cx.ellipse(bx+lean,by-hgt-1.5*z,1.3*z,2.6*z,0,0,6.3);cx.fill();}
   }
 }
+
+// ---- 물 타일 일괄 렌더링: 타일마다 fill/stroke 를 하지 않고, 같은 색끼리 한 경로로 모아 한 번에 그린다 ----
+const WQ=[];
+function waterQueue(x,y,i){WQ.push(x,y,G.tt[i]);}
+function waterFlush(){
+  const n=WQ.length;if(!n)return;
+  const z=cam.z,t=(typeof WFX!=='undefined'?WFX.t:0)||0;
+  // 1) 물결 바탕: 한 경로 + 한 번의 fill (밝기는 시간에 따라 전체가 천천히 출렁)
+  cx.globalAlpha=.15+.07*Math.sin(t*1.3);cx.fillStyle='#c4e8f2';cx.beginPath();
+  const k=1-.4,hw=32*z*k,hh=16*z*k;
+  for(let q=0;q<n;q+=3){if(WQ[q+2]!==2)continue;const [sx,sy]=toS(WQ[q]+.2,WQ[q+1]+.2);cx.moveTo(sx,sy);cx.lineTo(sx+hw,sy+hh);cx.lineTo(sx,sy+2*hh);cx.lineTo(sx-hw,sy+hh);cx.closePath();}
+  cx.fill();cx.globalAlpha=1;
+  // 2) 잔물결: 확대했을 때만, 투명도 4단계로 묶어서
+  if(z>=.8){
+    const B=[[],[],[],[]],lw=Math.max(.6,z);
+    for(let q=0;q<n;q+=3){
+      if(WQ[q+2]!==2)continue;const x=WQ[q],y=WQ[q+1],kk=hsh(x,y);if(kk>.55)continue;const [sx,sy]=toS(x+.5,y+.5);   // 타일의 절반만 잔물결(비용↓)
+      for(let r=0;r<1;r++){const ph=(t*.33+kk+r*.5)%1;B[Math.min(3,((1-ph)*4)|0)].push(sx+(hsh(x+r,y)-.5)*18*z,sy+(hsh(x,y+r)-.5)*8*z,(3+ph*13)*z,(1.5+ph*6.5)*z);}
+    }
+    cx.lineWidth=lw;
+    for(let b=0;b<4;b++){const a=B[b];if(!a.length)continue;cx.strokeStyle=`rgba(215,238,245,${(.5-b*.12).toFixed(2)})`;cx.beginPath();
+      for(let m=0;m<a.length;m+=4){cx.moveTo(a[m]+a[m+2],a[m+1]);cx.ellipse(a[m],a[m+1],a[m+2],a[m+3],0,0,6.3);}cx.stroke();}
+  }
+  // 3) 얼음: 흰 균열선 / 푸른 균열선 두 경로
+  let hasIce=false;for(let q=2;q<n;q+=3)if(WQ[q]===4){hasIce=true;break;}
+  if(hasIce){
+    cx.strokeStyle='rgba(255,255,255,.55)';cx.lineWidth=Math.max(.7,1.3*z);cx.beginPath();
+    for(let q=0;q<n;q+=3){if(WQ[q+2]!==4)continue;const x=WQ[q],y=WQ[q+1],kk=hsh(x,y),[sx,sy]=toS(x+.5,y+.5),a=(kk-.5)*14*z;
+      cx.moveTo(sx-10*z+a,sy-2*z);cx.lineTo(sx-3*z+a,sy-5*z);cx.moveTo(sx+4*z-a,sy+3*z);cx.lineTo(sx+11*z-a,sy);}
+    cx.stroke();
+    cx.strokeStyle='rgba(60,100,125,.4)';cx.lineWidth=Math.max(.5,.9*z);cx.beginPath();
+    for(let q=0;q<n;q+=3){if(WQ[q+2]!==4)continue;const x=WQ[q],y=WQ[q+1],kk=hsh(x,y),[sx,sy]=toS(x+.5,y+.5);
+      cx.moveTo(sx-12*z,sy+2*z);cx.lineTo(sx-4*z+kk*6*z,sy-z);cx.lineTo(sx+3*z,sy+4*z);cx.lineTo(sx+12*z,sy+z);}
+    cx.stroke();
+  }
+  WQ.length=0;
+}

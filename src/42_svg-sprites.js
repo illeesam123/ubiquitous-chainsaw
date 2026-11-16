@@ -4,7 +4,7 @@
 // - 줌 단계(버킷)별로 SVG를 선명하게 래스터화해 캐시 → 매 프레임 수십 개의 path 대신 drawImage 1회
 // - 병사가 들어 있거나(occ), 피격 점멸, 박격포 발사 등 동적 상태는 기존 절차적 그리기로 폴백
 // - 체력바·무기고 재고 글자는 스프라이트에 굽지 않고 매 프레임 위에 덧그림
-let REC=false;
+let REC=false,SPRV=0;
 class SvgRec{
   constructor(){this.out=[];this.d='';this.cur=null;this.fillStyle='#000';this.strokeStyle='#000';this.lineWidth=1;this.globalAlpha=1;this.lineCap='butt';this.dash=null;this.font='';this.textAlign='start';
     this.x0=1e9;this.y0=1e9;this.x1=-1e9;this.y1=-1e9;this.n=0;}
@@ -77,7 +77,7 @@ function sprFromFile(key){
   if(!m||!(m[3]>0&&m[4]>0))return null;
   const old=SPR.map.get(use);if(old)return old;
   const e={key:use,ready:false,fail:false,file:m[0],x:m[1],y:m[2],w:m[3],h:m[4],img:new Image(),bmp:{}};
-  e.img.onload=()=>{e.ready=true;};e.img.onerror=()=>{e.fail=true;};sprSetSrc(e.img,m[0]);
+  e.img.onload=()=>{e.ready=true;SPRV++;};e.img.onerror=()=>{e.fail=true;};sprSetSrc(e.img,m[0]);
   SPR.map.set(use,e);SPR.files++;return e;
 }
 function sprBake(o,key){
@@ -96,7 +96,7 @@ function sprBake(o,key){
   finally{cam.x=sv.cam.x;cam.y=sv.cam.y;cam.z=sv.cam.z;G.time=sv.time;cx=sv.cx;REC=sv.rec;}
   if(e.fail||!rec.out.length){e.fail=true;return e;}
   const r=rec.svg();e.x=r.x;e.y=r.y;e.w=r.w;e.h=r.h;e.svg=r.svg;
-  const img=new Image();img.onload=()=>{e.ready=true;};img.onerror=()=>{e.fail=true;};
+  const img=new Image();img.onload=()=>{e.ready=true;SPRV++;};img.onerror=()=>{e.fail=true;};
   img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(r.svg);e.img=img;SPR.bakes++;
   return e;
 }

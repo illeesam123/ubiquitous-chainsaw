@@ -108,15 +108,18 @@ function hillWalls(x,y,i){
       cx.stroke();
     }
     cx.strokeStyle='rgba(0,0,0,.22)';cx.lineWidth=Math.max(.6,cam.z);cx.beginPath();cx.moveTo(A2[0],A2[1]);cx.lineTo(B2[0],B2[1]);cx.stroke();
+    cx.strokeStyle='rgba(255,244,210,.38)';cx.lineWidth=Math.max(.8,1.3*cam.z);cx.beginPath();cx.moveTo(A[0],A[1]);cx.lineTo(B[0],B[1]);cx.stroke();   // 윗모서리 하이라이트
   }
 }
 // 빗면 윗면: 평평한 타일 그림을 그대로 기울여(skew) 붙인다. 평면의 정사영이라 어파인 변환이 정확히 맞는다.
 function slopeTop(x,y,i,s){
   const z=cam.z,sv=G.sl[i];G.sl[i]=0;                       // 낮은 변 기준 높이로 중심을 잡는다
-  const [sx,sy]=toS(x+.5,y+.5);
+  const [sx,sy]=toS(x+.5,y+.5);G.sl[i]=sv;
   const H=2*HALF_PX,gx=s===1?1:s===2?-1:s===3?-1:1,gy=s===1?1:s===2?-1:s===3?1:-1;
   const b=-H*gx/64,d=1-H*gy/32,f=-H*z*.5+H*gx*sx/64+H*gy*sy/32;     // (sx,sy)=화면 px 중심, H=줌 전 높이 px
-  cx.save();cx.transform(1,b,0,d,0,f);
+  cx.save();
+  {const P=[[0,0],[1,0],[1,1],[0,1]].map(([a,c])=>rawS(x+a,y+c,elevIn(i,a,c)));cx.beginPath();P.forEach((p,k)=>k?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]));cx.closePath();cx.clip();}   // 변환된 그림이 이웃 타일을 덮지 않도록 윗면 모양으로 오린다
+  G.sl[i]=0;cx.transform(1,b,0,d,0,f);
   if(!tileSprite(x,y,i)){tileDia(x,y,0);cx.fillStyle=G.ground[i];cx.fill();}
   cx.restore();G.sl[i]=sv;
   // 방향에 따른 간단한 명암
@@ -127,4 +130,25 @@ function paintHill(x,y,i){
   hillWalls(x,y,i);
   if(G.sl[i]){slopeTop(x,y,i,G.sl[i]);return true;}
   return false;
+}
+
+// 언덕 주변 그림자: 더 높은 이웃과 맞닿은 낮은 타일의 가장자리를 어둡게(접지 그림자),
+// 그리고 빛(왼쪽 위)과 반대쪽인 +x/+y 쪽 낮은 땅에는 길게 드리운 그림자를 얹는다.
+const AO_DIRS=[[-1,0,[0,0],[0,1],[.55,0],[.55,1]],[1,0,[1,0],[1,1],[.45,0],[.45,1]],[0,-1,[0,0],[1,0],[0,.55],[1,.55]],[0,1,[0,1],[1,1],[0,.45],[1,.45]]];
+function hillShadow(x,y,i){
+  const w=G.w;
+  for(const [dx,dy,p0,p1,q0,q1] of AO_DIRS){
+    const a=x+dx,b=y+dy;if(a<0||b<0||a>=w||b>=G.h)continue;const n=b*w+a;
+    // 이웃 쪽 변에서의 높이 차 (이웃의 해당 변은 내 변과 같은 위치)
+    const np0=[dx===-1?1:dx===1?0:p0[0],dy===-1?1:dy===1?0:p0[1]],np1=[dx===-1?1:dx===1?0:p1[0],dy===-1?1:dy===1?0:p1[1]];
+    const d=Math.max(elevIn(n,np0[0],np0[1])-elevIn(i,p0[0],p0[1]),elevIn(n,np1[0],np1[1])-elevIn(i,p1[0],p1[1]));
+    if(d<.9)continue;
+    const P=rawS(x+p0[0],y+p0[1],elevIn(i,p0[0],p0[1])),Q=rawS(x+p1[0],y+p1[1],elevIn(i,p1[0],p1[1])),
+      Q2=rawS(x+q1[0],y+q1[1],elevIn(i,q1[0],q1[1])),P2=rawS(x+q0[0],y+q0[1],elevIn(i,q0[0],q0[1]));
+    const g=cx.createLinearGradient((P[0]+Q[0])/2,(P[1]+Q[1])/2,(P2[0]+Q2[0])/2,(P2[1]+Q2[1])/2),al=Math.min(.46,.2*d);
+    // 빛이 왼쪽 위에서 오므로, 높은 땅이 -x/-y 쪽에 있는 경우(그림자가 +x/+y 쪽으로 떨어짐)를 더 진하게
+    const k=(dx<0||dy<0)?1.25:.8;
+    g.addColorStop(0,`rgba(10,8,4,${Math.min(.6,al*k).toFixed(3)})`);g.addColorStop(1,'rgba(10,8,4,0)');
+    cx.fillStyle=g;cx.beginPath();cx.moveTo(P[0],P[1]);cx.lineTo(Q[0],Q[1]);cx.lineTo(Q2[0],Q2[1]);cx.lineTo(P2[0],P2[1]);cx.closePath();cx.fill();
+  }
 }

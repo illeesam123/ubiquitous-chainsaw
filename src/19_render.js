@@ -43,7 +43,12 @@ function diamond(x,y,s){
   cx.beginPath();cx.moveTo(px,py);cx.lineTo(px+32*cam.z,py+16*cam.z);cx.lineTo(px,py+32*cam.z);cx.lineTo(px-32*cam.z,py+16*cam.z);cx.closePath();
 }
 function tileDia(x,y,inset){
-  const [sx,sy]=toS(x+inset,y+inset),z=cam.z,k=1-2*inset;
+  const z=cam.z;
+  if(G&&G.hill&&!REC&&viewLay!==1&&x>=0&&y>=0&&x<G.w&&y<G.h){          // 높이 있는 지형: 그 타일 자신의 네 꼭짓점 높이로 그린다
+    const i=y*G.w+x,a=inset,c=1-inset,q=(v)=>v<0?0:v>1?1:v;
+    cx.beginPath();[[a,a],[c,a],[c,c],[a,c]].forEach(([fx,fy],k)=>{const p=rawS(x+fx,y+fy,elevIn(i,q(fx),q(fy)));k?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]);});cx.closePath();return;
+  }
+  const [sx,sy]=toS(x+inset,y+inset),k=1-2*inset;
   cx.beginPath();cx.moveTo(sx,sy);cx.lineTo(sx+32*z*k,sy+16*z*k);cx.lineTo(sx,sy+32*z*k);cx.lineTo(sx-32*z*k,sy+16*z*k);cx.closePath();
 }
 function cube(sx,sy,s,h,top,left,right){
@@ -133,6 +138,7 @@ function paintBase(x,y,i,w){
     tileDia(x,y,-.04);cx.fillStyle=(G.road[i]&&G.up[i]!==1)?ROADCOL[G.road[i]]:G.ground[i];cx.fill();return;
   }
   if(!slp&&!tileSprite(x,y,i)){tileDia(x,y,0);cx.fillStyle=G.ground[i];cx.fill();cx.strokeStyle=G.ground[i];cx.stroke();}
+  if(hl)hillShadow(x,y,i);
   if(G.road[i])drawRoadTile(x,y,i);
   if(G.tt[i]!==2&&G.tt[i]!==4&&G.dec[i]===3)drawReeds(x,y);
   if(G.dec[i]&&G.dec[i]<3){const [sx,sy]=toS(x+.5,y+.5);cx.fillStyle=G.dec[i]===1?'rgba(0,0,0,.14)':'rgba(255,255,255,.1)';cx.beginPath();cx.ellipse(sx+(G.dec[i]*3-5)*cam.z,sy,5*cam.z,2.5*cam.z,0,0,6.3);cx.fill();}

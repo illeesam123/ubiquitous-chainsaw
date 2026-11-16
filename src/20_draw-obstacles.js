@@ -283,7 +283,8 @@ function drawObFull(o){
 }
 
 // ---- 참호 ----
-function diaPath(x,y){const [sx,sy]=toS(x,y),z=cam.z;cx.moveTo(sx,sy);cx.lineTo(sx+32*z,sy+16*z);cx.lineTo(sx,sy+32*z);cx.lineTo(sx-32*z,sy+16*z);cx.closePath();}
+function diaPath(x,y){if(G&&G.hill&&!REC&&viewLay!==1&&x>=0&&y>=0&&x<G.w&&y<G.h){const i=y*G.w+x;[[0,0],[1,0],[1,1],[0,1]].forEach(([fx,fy],k)=>{const p=rawS(x+fx,y+fy,elevIn(i,fx,fy));k?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]);});cx.closePath();return;}
+  const [sx,sy]=toS(x,y),z=cam.z;cx.moveTo(sx,sy);cx.lineTo(sx+32*z,sy+16*z);cx.lineTo(sx,sy+32*z);cx.lineTo(sx-32*z,sy+16*z);cx.closePath();}
 function drawCrater(x,y){
   const [sx,sy]=toS(x+.5,y+.5),z=cam.z;
   cx.fillStyle='#6a5a3e';cx.beginPath();cx.ellipse(sx,sy,27*z,13.5*z,0,0,6.3);cx.fill();

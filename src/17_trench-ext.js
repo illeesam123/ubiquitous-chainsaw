@@ -103,6 +103,7 @@ function taskCheckX(team,kind,x,y,type){
   if(kind==='upg'){
     const U=UPG[type];if(!U)return '알 수 없는 개량';
     if(G.obst[i])return '장애물이 있어 불가합니다';
+    if(G.hill&&G.sl[i])return '경사면 위에는 불가합니다';
     if(padAt(x,y)>=0)return '헬리패드 위에는 불가합니다';
     if(G.mouth[i])return '동굴 입구입니다';
     if(G.tasks.has(tkey('upg',i)))return '이미 예약된 작업입니다';

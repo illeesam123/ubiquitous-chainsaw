@@ -13,7 +13,9 @@ function newGame(cfg){
   genMap(rnd);
   if(G.special==='mineshaft')genMine(rnd);else genCaves(mulberry(hashStr(cfg.seed+'#cave')()));
   genBush(rnd);
-  if(G.hill){for(let i=0;i<G.N;i++)if(G.sl[i]){G.road[i]=0;if(G.trench[i]===255)G.trench[i]=0;}layersFinalize();}
+  if(G.hill){for(let i=0;i<G.N;i++)if(G.sl[i]){G.road[i]=0;if(G.trench[i]===255)G.trench[i]=0;}
+    for(const o of [...G.obSet])if(o.cells.some(j=>G.sl[j])||(o.cells.length>1&&!flatArea(o.x,o.y,o.size)))removeOb(o);   // 경사면·비탈에 걸친 장애물은 지운다
+    layersFinalize();}
   G.gen=null;
   G.expl.fill(1);G.vis.fill(1);
   return G;
@@ -27,7 +29,7 @@ function addOb(type,x,y,team){
   const cells=footprint(type,x,y);
   for(const [ax,ay] of cells){
     if(ax<0||ay<0||ax>=G.w||ay>=G.h)return null;
-    const j=ay*G.w+ax;if(G.hill&&(cells.length>1||OB[type].building)&&!flatArea(x,y,OB[type].size||1))return null;if(G.obst[j]||G.trench[j]===255||G.tt[j]===2||(G.gen&&G.road[j]))return null;
+    const j=ay*G.w+ax;if(G.hill&&(G.sl[j]||((cells.length>1||OB[type].building)&&!flatArea(x,y,OB[type].size||1))))return null;if(G.obst[j]||G.trench[j]===255||G.tt[j]===2||(G.gen&&G.road[j]))return null;
   }
   const i=y*G.w+x;
   const d=OB[type],nat=team===undefined||team<0,rv=G.gen||Math.random;

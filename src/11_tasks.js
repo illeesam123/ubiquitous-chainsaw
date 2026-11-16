@@ -12,6 +12,7 @@ function taskCheck(team,kind,x,y,type){
   if(!inb(x,y))return '맵 밖입니다';
   const i=y*G.w+x,o=G.obst[i];
   if(kind!=='demo'&&kind!=='build'&&padAt(x,y)>=0)return '헬리패드 위에는 팔 수 없습니다';
+  if(G.hill&&G.sl[i]&&(kind==='dig'||kind==='build'))return '경사면 위에는 '+(kind==='dig'?'팔':'지을')+' 수 없습니다';
   if(kind==='dig'&&G.tt[i]===2)return '물이 차 있어 팔 수 없습니다';
   if(kind==='dig'&&G.tt[i]===4)return '얼음 위에는 팔 수 없습니다';
   if(kind==='dig'){
@@ -35,6 +36,7 @@ function taskCheck(team,kind,x,y,type){
     for(const [ax,ay] of cells){
       if(!inb(ax,ay))return '맵 밖입니다';
       const j=ay*G.w+ax;
+      if(G.hill&&G.sl[j])return '경사면 위에는 지을 수 없습니다';
       if(padAt(ax,ay)>=0)return '헬리패드 위에는 지을 수 없습니다';
       if(G.tt[j]===2)return '물 위에는 지을 수 없습니다';
       if(G.obst[j])return '이미 무언가 있습니다';
@@ -43,6 +45,7 @@ function taskCheck(team,kind,x,y,type){
       if(isVehicle&&G.trench[j]>0&&G.trench[j]!==255)return '차량은 참호 위에서 제작할 수 없습니다';
       if(chebToTrench(team,ax,ay))near=true;
     }
+    if(G.hill&&cells.length>1&&!flatArea(x,y,d.size||1))return '평평하지 않은 곳에는 지을 수 없습니다';
     if(isVehicle&&G.vehicles.some(v=>!v.dead&&Math.hypot(v.x-(x+.5),v.y-(y+.5))<.85))return '차량이 지나갈 공간이 없습니다';
     if(!near)return '참호 및 1칸 주변에만 제작할 수 있습니다';
     for(const t of G.tasks.values()){

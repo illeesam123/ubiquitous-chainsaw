@@ -16,6 +16,59 @@
   const srcOf = (c) => pending[c.file] ? dataUri(pending[c.file].svg) : EMB && !(ghView && remoteSha) ? dataUri(EMB.svgs[c.file]) : (ghView && remoteSha ? GH.raw(cfg, remoteSha, c.file) : '../assets/sprites/' + c.file);
   async function origText(file) { if (EMB) return EMB.svgs[file]; if (origCache[file] === undefined) origCache[file] = await (await fetch('../assets/sprites/' + file)).text(); return origCache[file]; }
 
+
+  // ---------- 조합 미리보기: 게임에서 여러 에셋이 합쳐진 모습 ----------
+  const cellByKey = (k) => { for (const a of CAT) for (const c of a.cells) if (c.key === k) return c; return null; };
+  const imgCache = {};
+  const loadImg = (c) => new Promise((res) => { const u = srcOf(c); if (imgCache[u]) return res(imgCache[u]); const im = new Image(); im.onload = () => res(imgCache[u] = im); im.onerror = () => res(null); im.src = u; });
+  const tinted = (im, color) => { const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const g = c.getContext('2d'); g.drawImage(im, 0, 0); g.globalCompositeOperation = 'color'; g.fillStyle = color; g.fillRect(0, 0, c.width, c.height); g.globalCompositeOperation = 'destination-in'; g.drawImage(im, 0, 0); return c; };
+  const aN = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
+  const gearPoseE = (A) => Math.abs(A) <= Math.PI / 4 + .1 ? ['side', A, false] : Math.abs(A) >= 3 * Math.PI / 4 - .1 ? ['side', A > 0 ? A - Math.PI : A + Math.PI, true] : A < 0 ? ['up', A + Math.PI / 2, false] : ['down', A - Math.PI / 2, false];
+  const CM = { mode: 'unit', pose: 'stand', ang: 0, held: 'gun', team: 0, z: 5, bType: 'house', bSize: 1, nOcc: 3, skew: .5 };
+  let cmpTok = 0;
+  async function drawComp() {
+    const tok = ++cmpTok, cv = document.createElement('canvas'); cv.width = 720; cv.height = 460; const real = $('cmpCv'), g = cv.getContext('2d'), z = CM.z; g.imageSmoothingEnabled = true;
+    const ox = cv.width / 2, oy = cv.height * .72, col = TEAMC[CM.team];
+    const put = (im, x, y) => { if (im) g.drawImage(im, x, y, im.width * z / 1 * 1, im.height * z / 1 * 1); };
+    const draw = async (key, dx, dy, o = {}) => { const c = cellByKey(key); if (!c) return; const im = await loadImg(c); if (!im || tok !== cmpTok) return; const src = o.tint ? tinted(im, col) : im; const w = c.vb[2], h = c.vb[3]; g.save(); g.translate(ox + dx * z, oy + dy * z); if (o.skew) g.transform(1, o.skew, 0, 1, 0, 0); if (o.rot) g.rotate(o.rot); if (o.flip) g.scale(-1, 1); if (o.sc) g.scale(o.sc, o.sc); g.drawImage(src, c.vb[0] * z, c.vb[1] * z, w * z, h * z); g.restore(); };
+    // 바닥 기준선
+    g.strokeStyle = 'rgba(128,128,128,.35)'; g.beginPath(); g.moveTo(ox - 90, oy); g.lineTo(ox + 90, oy); g.moveTo(ox, oy - 8); g.lineTo(ox, oy + 8); g.stroke();
+    if (CM.mode === 'unit') {
+      const A = CM.ang * Math.PI / 180, [shape, rot, flip] = gearPoseE(A), isG = CM.held === 'gun', behind = shape === 'up';
+      const hk = isG ? 'gun|rifle|' + shape : 'tool|shovel|' + shape, hy = isG ? -10 : -9;
+      const body = async () => { await draw('ubody|' + CM.pose, 0, 0); await draw('ubodyt|' + CM.pose, 0, 0, { tint: true }); };
+      const held = () => (CM.pose === 'fuse' || CM.held === 'none') ? 0 : draw(hk, 0, hy, { rot, flip });
+      if (behind) { await held(); await body(); } else { await body(); await held(); }
+    } else if (CM.mode === 'bld') {
+      const a = CAT.find(x => x.id === CM.bType); const c = a && (a.cells.find(c => c.key.split('|')[2] === String(CM.bSize) && c.key.split('|')[1] === 'plain' && /\|0\|0\|\|n\|\|/.test(c.key)) || a.cells.find(c => c.key.split('|')[2] === String(CM.bSize)));
+      if (c) await draw(c.key, 0, 0);
+      for (let j = 0; j < CM.nOcc; j++) { const k = `occ|${CM.bType}|${CM.bSize}|${j}`; if (!cellByKey(k)) break; await draw(k, 0, 0); await draw('occt|' + CM.bType + '|' + CM.bSize + '|' + j, 0, 0, { tint: true }); }
+    } else {
+      await draw('flag|pole', 0, 0); await draw('flagc|0', 0, 0, { tint: true, skew: Math.sin(CM.skew * 6.2832) * .1 });
+    }
+    if (tok === cmpTok) { const rg = real.getContext('2d'); rg.clearRect(0, 0, real.width, real.height); rg.drawImage(cv, 0, 0); }
+    $('cmpInfo').textContent = CM.mode === 'unit' ? '몸통(중립) → 몸통 팀색(명암 유지) → 총기/삽(방향에 따라 앞·뒤 레이어, 좌우반전·회전)' : CM.mode === 'bld' ? '건물 → 점령자 중립 레이어 → 점령 팀색 레이어' : '기둥 + 천(1장, 기울임으로 펄럭임)';
+  }
+  function openCompose(mode) {
+    if (mode) CM.mode = mode; $('cmp').hidden = false;
+    const opt = (arr, v) => arr.map(([k, l]) => `<option value="${k}" ${String(k) === String(v) ? 'selected' : ''}>${l}</option>`).join('');
+    const bTypes = [...new Set(CAT.filter(a => a.id !== 'occ' && a.cells.length && CAT.find(o => o.id === 'occ').cells.some(c => c.key.split('|')[1] === a.id)).map(a => a.id))];
+    const sizes = [...new Set(CAT.find(o => o.id === 'occ').cells.filter(c => c.key.split('|')[1] === CM.bType).map(c => c.key.split('|')[2]))];
+    $('cmpCtl').innerHTML = `<label>대상 <select id="cMode">${opt([['unit', '병사 (몸통+총기)'], ['bld', '점령된 건물'], ['flag', '깃발']], CM.mode)}</select></label>
+     <label>팀 <select id="cTeam">${opt([0, 1, 2, 3].map(i => [i, '팀 ' + (i + 1)]), CM.team)}</select></label>
+     ${CM.mode === 'unit' ? `<label>자세 <select id="cPose">${opt(['stand', 'move0', 'move1', 'move2', 'move3', 'gar', 'fuse'].map(k => [k, k]), CM.pose)}</select></label><label>든 것 <select id="cHeld">${opt([['gun', '소총'], ['shovel', '삽'], ['none', '없음']], CM.held)}</select></label><label>조준 각도 <input id="cAng" type="range" min="-180" max="180" value="${CM.ang}"><b id="cAngV">${CM.ang}°</b></label>` : ''}
+     ${CM.mode === 'bld' ? `<label>건물 <select id="cB">${opt(bTypes.map(k => [k, k]), CM.bType)}</select></label><label>크기 <select id="cS">${opt(sizes.map(k => [k, k]), CM.bSize)}</select></label><label>점령자 수 <input id="cN" type="range" min="0" max="6" value="${CM.nOcc}"></label>` : ''}
+     ${CM.mode === 'flag' ? `<label>펄럭임 <input id="cSk" type="range" min="0" max="1" step=".01" value="${CM.skew}"></label>` : ''}
+     <label>확대 <input id="cZ" type="range" min="2" max="9" value="${CM.z}"></label>`;
+    const on = (id, f) => { const e = $(id); if (e) e.oninput = e.onchange = () => { f(e); drawComp(); if (id === 'cMode' || id === 'cB') openCompose(); }; };
+    on('cMode', e => CM.mode = e.value); on('cTeam', e => CM.team = +e.value); on('cPose', e => CM.pose = e.value); on('cHeld', e => CM.held = e.value);
+    on('cAng', e => { CM.ang = +e.value; $('cAngV').textContent = CM.ang + '°'; }); on('cB', e => { CM.bType = e.value; CM.bSize = 1; }); on('cS', e => CM.bSize = +e.value); on('cN', e => CM.nOcc = +e.value);
+    on('cSk', e => CM.skew = +e.value); on('cZ', e => CM.z = +e.value);
+    drawComp();
+  }
+  $('bCompose').onclick = () => openCompose(cur && ['flag', 'flagc'].includes(cur.id) ? 'flag' : cur && ['occ', 'occt'].includes(cur.id) ? 'bld' : 'unit');
+  $('cmpClose').onclick = () => { $('cmp').hidden = true; };
+
   // ---------- 핫바 / 검색 ----------
   const PREF = ['ubody', 'ubodyt', 'gun', 'tool', 'occ', 'occt', 'flag', 'flagc', 'unit', 'tank', 'truck', 'tile', 'road', 'crater', 'tree', 'rock', 'house', 'apartment', 'warehouse', 'shed', 'bunker', 'tower', 'mg', 'medbay', 'armory', 'fence', 'wire', 'sandbag', 'crate', 'ruin'];
   function buildHot() {
@@ -62,7 +115,8 @@
     if (b.hidden) return; b.insertAdjacentHTML('beforeend', '<span class="dim">미리보기 팀색</span>');
     TEAMC.forEach((c, i) => { const x = document.createElement('button'); x.style.background = c; x.className = i === tintTeam ? 'on' : ''; x.title = `팀 ${i + 1}`; x.onclick = () => { tintTeam = i; renderTintBar(); renderTable(); refreshModal(); }; b.appendChild(x); });
   }
-  const imgHtml = (c, w, h, extra) => cur && cur.tint ? `<div class="tint" style="width:${w}px;height:${h}px;background:${TEAMC[tintTeam]};-webkit-mask-image:url('${srcOf(c)}');mask-image:url('${srcOf(c)}')"></div>` : `<img ${extra || ''} width="${w}" height="${h}" src="${srcOf(c)}" alt="">`;
+  // 팀색 치환형: 회색 명암은 그대로, 색상·채도만 팀 색으로 ('color' 블렌드) — 게임과 같은 방식
+  const imgHtml = (c, w, h, extra) => cur && cur.tint ? `<div class="tint" style="width:${w}px;height:${h}px;background:linear-gradient(${TEAMC[tintTeam]},${TEAMC[tintTeam]}),url('${srcOf(c)}') center/contain no-repeat;background-blend-mode:color;-webkit-mask-image:url('${srcOf(c)}');mask-image:url('${srcOf(c)}')"></div>` : `<img ${extra || ''} width="${w}" height="${h}" src="${srcOf(c)}" alt="">`;
   const AXN = { gun: '총기', biome: '바이옴', state: '상태', variant: '무늬(랜덤)', team: '팀', dir: '방향', size: '크기' };
   function renderAxes() {
     const box = $('axes'); box.innerHTML = '<span class="dim">축 배치:</span>';

@@ -53,6 +53,7 @@ const root = path.join(__dirname, '..'), out = path.join(root, 'assets', 'sprite
     for (const k of [1, 2, 3]) for (let m = 0; m < 16; m++) { const mm = ((m & 1) << 2) | ((m & 4) >> 2) | ((m & 2) << 2) | ((m & 8) >> 2); if (mm < m) continue; for (let v = 0; v < (k === 3 ? 1 : 2); v++) { const s = sprBakeRoad(k, m, v); if (s) o[`road|${k}|${m}|${v}`] = s; } }
     for (const t of ['house', 'apartment', 'warehouse', 'shed', 'ruin']) for (const r of sprBakeOcc(t)) { if (r.neutral) o[`occ|${t}|${r.size}|${r.j}`] = r.neutral; if (r.tint) o[`occt|${t}|${r.size}|${r.j}`] = r.tint; }
     o['crater|0'] = sprBakeCrater();
+    o['bridge|land'] = sprBakeBridge(false); o['bridge|water'] = sprBakeBridge(true);
     const tiles = [];
     for (const b of BIOME_KEYS) for (const kind of (b === 'snow' ? [0, 1, 2, 4] : [0, 1, 2])) for (let q = 0; q < 4; q++) {
       const g = (q + .5) / 4; tiles.push({ b, kind, q, base: hex(tileColor(b, kind, g)), lo: hex(tileColor(b, kind, Math.max(0, g - .3))), hi: hex(tileColor(b, kind, Math.min(1, g + .3))) });
@@ -87,7 +88,10 @@ const root = path.join(__dirname, '..'), out = path.join(root, 'assets', 'sprite
   all['tool|shovel|up'] = SV(-3, -10, 6, 12, '<path d="M0 0L0 -6" stroke="#8a8a84" stroke-width="1.8" fill="none"/><path d="M-2 -6L2 -6L1.6 -9.4L-1.6 -9.4Z" fill="#6d6d66"/>');
   all['tool|shovel|down'] = SV(-3, -2, 6, 13, '<path d="M0 0L0 7" stroke="#8a8a84" stroke-width="1.8" fill="none"/><path d="M-2 7L2 7L1.6 10.8L-1.6 10.8Z" fill="#6d6d66"/>');
   all['flag|pole'] = SV(-2, -42, 4, 47, '<path d="M0 4L0 -40" stroke="#ddd" stroke-width="2" fill="none"/>');
-  for (let i = 0; i < 8; i++) { const w = Math.sin((i + .5) / 8 * Math.PI * 2) * 2; all['flagc|' + i] = SV(-1, -42, 25, 18, `<path d="M0 -40L22 ${Math.round((-34 + w) * 10) / 10}L0 -26Z" fill="#fff"/>`); }
+  all['flagc|0'] = SV(-1, -42, 25, 18, '<defs><linearGradient id="tg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#b6b6b6"/><stop offset=".3" stop-color="#8c8c8c"/><stop offset=".55" stop-color="#bcbcbc"/><stop offset=".8" stop-color="#888"/><stop offset="1" stop-color="#a6a6a6"/></linearGradient></defs><path d="M0 -40L22 -34L0 -26Z" fill="url(#tg)"/>');
+  // 팀색 마스크: 평평한 마커색 → 회색 명암(위 밝고 아래 어두움). 게임은 이 명암을 유지한 채 색상만 팀 색으로 바꾼다.
+  const TG = '<defs><linearGradient id="tg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c6c6c6"/><stop offset=".55" stop-color="#a0a0a0"/><stop offset="1" stop-color="#7c7c7c"/></linearGradient></defs>';
+  for (const k of Object.keys(all)) if (k.startsWith('ubodyt|') || k.startsWith('occt|')) all[k] = all[k].replace(/fill="#fffffe"/g, 'fill="url(#tg)"').replace(/stroke="#fffffe"/g, 'stroke="#9c9c9c"').replace(/(<rect id="bounds"[^>]*\/>)/, '$1' + TG);
   const keysO = Object.keys(all);
   const meta = await p.evaluate(() => { const m = {}; for (const [k, e] of SPR.map) if (e.svg) m[k] = [e.x, e.y, e.w, e.h]; return m; });
   fs.rmSync(out, { recursive: true, force: true }); fs.mkdirSync(out, { recursive: true });
@@ -96,13 +100,13 @@ const root = path.join(__dirname, '..'), out = path.join(root, 'assets', 'sprite
   for (const k of keysO) { const n = fileOf(k); fs.writeFileSync(path.join(out, n), all[k]); const vb = /viewBox="(-?[\d.]+) (-?[\d.]+) ([\d.]+) ([\d.]+)"/.exec(all[k]); if (!vb) throw new Error('viewBox 없음: ' + k); man[k] = [n, +vb[1], +vb[2], +vb[3], +vb[4]]; names.push(n); }
   fs.writeFileSync(path.join(out, 'manifest.js'), '// 자동 생성: npm run sprites\nvar SPRITE_MANIFEST=' + JSON.stringify(man) + ';\n');
   // ---- 에디터용 카탈로그: 에셋(이름) → 모양(셀) 목록. 각 셀은 축(바이옴·상태·변형·팀·방향·크기)을 가진다 ----
-  const NAME = { tree: '나무', rock: '바위', house: '집', apartment: '아파트', warehouse: '창고', shed: '헛간', ruin: '폐허', rubble: '잔해', rubble2: '잔해2', rubble3: '잔해3', fence: '울타리', wire: '철조망', sandbag: '모래주머니', crate: '상자', bunker: '벙커', tower: '감시탑', mg: '기관총 진지', medbay: '의무막사', armory: '무기고', unit: '병사', tank: '전차', truck: '수송 트럭', tile: '타일(땅)', ubody: '병사 몸(중립)', ubodyt: '병사 상의(팀색)', gun: '총기(소총)', tool: '도구(삽)', occ: '병사 점령 모습(창문)', occt: '병사 점령 팀색(치환)', flag: '깃발 기둥', flagc: '깃발 천(팀색)', road: '도로', crater: '구덩이(포탄 자국)' };
-  const EN = { tree: 'tree', rock: 'rock', house: 'house', apartment: 'apartment', warehouse: 'warehouse', shed: 'shed', ruin: 'ruin', rubble: 'rubble', fence: 'fence', wire: 'barbed wire', sandbag: 'sandbag', crate: 'crate', bunker: 'bunker', tower: 'tower watchtower', mg: 'machine gun', medbay: 'medical', armory: 'armory', unit: 'soldier infantry', tank: 'tank vehicle', truck: 'truck vehicle', tile: 'tile ground terrain', ubody: 'soldier body unit', ubodyt: 'soldier tint team color unit', gun: 'gun rifle weapon', tool: 'tool shovel', occ: 'occupied garrison window soldier', occt: 'occupied tint team color', flag: 'flag pole', flagc: 'flag cloth tint team color', road: 'road rail path', crater: 'crater' };
+  const NAME = { tree: '나무', rock: '바위', house: '집', apartment: '아파트', warehouse: '창고', shed: '헛간', ruin: '폐허', rubble: '잔해', rubble2: '잔해2', rubble3: '잔해3', fence: '울타리', wire: '철조망', sandbag: '모래주머니', crate: '상자', bunker: '벙커', tower: '감시탑', mg: '기관총 진지', medbay: '의무막사', armory: '무기고', unit: '병사', tank: '전차', truck: '수송 트럭', tile: '타일(땅)', ubody: '병사 몸(중립)', ubodyt: '병사 상의(팀색)', gun: '총기(소총)', tool: '도구(삽)', occ: '병사 점령 모습(창문)', occt: '병사 점령 팀색(치환)', bridge: '다리', flag: '깃발 기둥', flagc: '깃발 천(팀색)', road: '도로', crater: '구덩이(포탄 자국)' };
+  const EN = { tree: 'tree', rock: 'rock', house: 'house', apartment: 'apartment', warehouse: 'warehouse', shed: 'shed', ruin: 'ruin', rubble: 'rubble', fence: 'fence', wire: 'barbed wire', sandbag: 'sandbag', crate: 'crate', bunker: 'bunker', tower: 'tower watchtower', mg: 'machine gun', medbay: 'medical', armory: 'armory', unit: 'soldier infantry', tank: 'tank vehicle', truck: 'truck vehicle', tile: 'tile ground terrain', ubody: 'soldier body unit', ubodyt: 'soldier tint team color unit', gun: 'gun rifle weapon', tool: 'tool shovel', occ: 'occupied garrison window soldier', occt: 'occupied tint team color', bridge: 'bridge', flag: 'flag pole', flagc: 'flag cloth tint team color', road: 'road rail path', crater: 'crater' };
   const BODY = { stand: '서 있음/작업', gar: '진지·대기', move: '이동', fuse: '도화선' }, SHAPE = { side: '옆모습 (왼쪽은 좌우반전)', up: '위(멀어지는 방향·몸 뒤 레이어)', down: '아래(마주 보는 방향)' }, POSE = { idle: '서 있음', fire: '사격', gidle: '진지·대기', gfire: '진지·사격', move: '이동', work: '작업(삽)', fuse: '도화선' }, KIND = { 0: '일반 땅', 1: '진흙/언 땅', 2: '얕은 물', 4: '얼음' }, ROAD = { 1: '포장도로', 2: '비포장길', 3: '철로' };
   const BIO = { plain: '평원', swamp: '습지', snow: '설원', arid: '황무지' };
   const dirName = (d, n) => n === 8 ? ['동남', '남', '남서', '서', '북서', '북', '북동', '동'][d] || d : `${d * 22.5}°`;
   const TINT = new Set(['ubodyt', 'occt', 'flagc']);   // 색상 치환형: 불투명한 곳이 팀 색으로 칠해지는 마스크
-  const NOTE = { tank: '반대편 방향은 좌우반전으로 재사용', truck: '반대편 방향은 좌우반전으로 재사용', road: '연결 모양 E↔S, W↔N 은 좌우반전으로 재사용', tile: '무늬 4종 = 이 2종 + 좌우반전', tree: '무늬 3·4번은 1·2번의 좌우반전', rock: '무늬 3·4번은 1·2번의 좌우반전', crate: '무늬 3·4번은 1·2번의 좌우반전', gun: '총기칸(u.gun)별 모양. 위·아래·옆(오른쪽)만 만들면 각도 보간·좌우반전·레이어 순서로 사용', tool: '작업 도구. 위·아래·옆(오른쪽)만 만들면 회전·좌우반전으로 사용', ubodyt: '마스크: 불투명한 영역이 팀 색으로 칠해짐', occt: '마스크: 불투명한 영역이 점령 팀 색으로 칠해짐', flagc: '마스크: 불투명한 영역이 팀 색으로 칠해짐' };
+  const NOTE = { tank: '반대편 방향은 좌우반전으로 재사용', truck: '반대편 방향은 좌우반전으로 재사용', road: '연결 모양 E↔S, W↔N 은 좌우반전으로 재사용', tile: '무늬 4종 = 이 2종 + 좌우반전', tree: '무늬 3·4번은 1·2번의 좌우반전', rock: '무늬 3·4번은 1·2번의 좌우반전', crate: '무늬 3·4번은 1·2번의 좌우반전', gun: '총기칸(u.gun)별 모양. 위·아래·옆(오른쪽)만 만들면 각도 보간·좌우반전·레이어 순서로 사용', tool: '작업 도구. 위·아래·옆(오른쪽)만 만들면 회전·좌우반전으로 사용', ubodyt: '마스크: 회색 명암은 유지하고 색상·채도만 팀 색으로 바뀜 (흰색은 색이 안 입혀지니 중간 회색 기준으로 명암을 그리세요)', occt: '마스크: 회색 명암은 유지하고 색상만 점령 팀 색으로 바뀜', flagc: '마스크: 회색 명암은 유지하고 색상만 팀 색으로 바뀜. 펄럭임은 게임에서 기울임(skew)으로 만들어 모양은 1개', bridge: '물 위/육지 두 가지. 방향은 게임에서 같은 모양을 사용' };
   const assets = {};
   const add = (id, key, axes) => { (assets[id] = assets[id] || { id, name: NAME[id] || id, search: `${NAME[id] || id} ${EN[id] || id}`, cells: [] }).cells.push({ key, file: man[key][0], axes, vb: man[key].slice(1) }); };
   for (const key of Object.keys(man)) {
@@ -111,7 +115,8 @@ const root = path.join(__dirname, '..'), out = path.join(root, 'assets', 'sprite
     else if (k[0] === 'gun' || k[0] === 'tool') add(k[0], key, { gun: k[1] === 'rifle' ? '소총' : '삽', state: SHAPE[k[2]] });
     else if (k[0] === 'occ' || k[0] === 'occt') add(k[0], key, { state: NAME[k[1]], variant: `자리 ${+k[3] + 1}` });
     else if (k[0] === 'flag') add('flag', key, {});
-    else if (k[0] === 'flagc') add('flagc', key, { state: `펄럭임 ${+k[1] + 1}` });
+    else if (k[0] === 'flagc') add('flagc', key, {});
+    else if (k[0] === 'bridge') add('bridge', key, { state: k[1] === 'water' ? '물 위 (말뚝)' : '육지·참호 위' });
     else if (k[0] === 'veh') add(k[1], key, { team: `팀 ${+k[2] + 1}`, dir: `${+k[3] * 22.5}°` });
     else if (k[0] === 'tile') add('tile', key, { biome: BIO[k[1]], state: `${KIND[k[2]]} · 음영 ${+k[3] + 1}`, variant: `무늬 ${+k[4] + 1}` });
     else if (k[0] === 'road') add('road', key, { state: ROAD[k[1]], variant: k[1] === '3' ? '-' : `무늬 ${+k[3] + 1}`, dir: `연결 ${['E', 'W', 'S', 'N'].filter((_, i) => (+k[2] >> i) & 1).join('') || '없음'}` });
@@ -124,7 +129,7 @@ const root = path.join(__dirname, '..'), out = path.join(root, 'assets', 'sprite
   const cat = Object.values(assets).map(a => {
     const vary = {}; for (const c of a.cells) for (const [ax, v] of Object.entries(c.axes)) (vary[ax] = vary[ax] || new Set()).add(v);
     a.axes = Object.keys(vary).filter(ax => vary[ax].size > 1);
-    a.group = TINT.has(a.id) ? 'tint' : ['ubody', 'gun', 'tool'].includes(a.id) ? 'unit' : ['tank', 'truck'].includes(a.id) ? 'veh' : ['tile', 'road', 'crater'].includes(a.id) ? 'terrain' : ['occ', 'flag'].includes(a.id) ? 'unit' : 'struct';
+    a.group = TINT.has(a.id) ? 'tint' : ['ubody', 'gun', 'tool'].includes(a.id) ? 'unit' : ['tank', 'truck'].includes(a.id) ? 'veh' : ['tile', 'road', 'crater', 'bridge'].includes(a.id) ? 'terrain' : ['occ', 'flag'].includes(a.id) ? 'unit' : 'struct';
     if (TINT.has(a.id)) a.tint = true;
     if (NOTE[a.id]) a.note = NOTE[a.id];
     return a;

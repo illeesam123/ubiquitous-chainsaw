@@ -18,6 +18,7 @@
   <section id="view" hidden>
     <div class="vhead"><h2 id="vTitle"></h2><span id="vCount" class="dim"></span><div class="grow"></div>
       <span id="tintBar" hidden></span>
+      <button class="btn" id="bCompose" title="몸통+총기, 건물+점령자, 깃발 등 게임에서 합쳐진 모습을 봅니다">🧩 조합 미리보기</button>
       <button class="btn pri" id="bZip" title="이 종류의 모든 모양(SVG)과 스프라이트 시트(PNG)를 zip 으로 받습니다">⬇ ZIP (이 종류 전체)</button>
       <label class="dim">확대 <input id="zoom" type="range" min="1" max="4" step=".5" value="2"></label></div>
     <div id="vNote" class="dim"></div>
@@ -26,6 +27,7 @@
   </section>
 </main>
 
+<div id="cmp" hidden><div class="card"><div class="mh"><b>조합 미리보기</b><span class="dim" id="cmpInfo"></span><div class="grow"></div><button class="btn" id="cmpClose">닫기 ✕</button></div><div id="cmpCtl"></div><canvas id="cmpCv" width="720" height="460"></canvas></div></div>
 <div id="modal" hidden><div class="card">
   <div class="mh"><b id="mTitle"></b><span id="mSub" class="dim"></span><div class="grow"></div><button class="btn" id="mClose">닫기 ✕</button></div>
   <div class="mbody">

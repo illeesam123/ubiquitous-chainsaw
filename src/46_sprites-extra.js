@@ -71,11 +71,14 @@ function sprBlit(e,sx,sy,z,snap){
 }
 const sprOk=(e)=>e&&e.ready&&!e.fail;
 const sprBkt=(z)=>{let b=SPR.buckets[SPR.buckets.length-1];for(const q of SPR.buckets)if(q>=z-.001){b=q;break;}return b;};
-// 팀색 치환형: 마스크 SVG(불투명한 곳 = 색 칠할 영역)를 팀 색으로 칠해 찍는다. (픽셀 읽기 없이 합성만 사용)
+// 팀색 치환형: 마스크 SVG(불투명한 곳 = 색이 바뀔 영역, 회색 명암은 유지)를 팀 색상으로 바꿔 찍는다. (픽셀 읽기 없이 합성만 사용)
 function sprTinted(e,b,color){
   e.tint=e.tint||{};const k=b+color;let c=e.tint[k];if(c)return c;
   const bm=sprRaster(e,b);c=document.createElement('canvas');c.width=bm.width;c.height=bm.height;
-  const g=c.getContext('2d');g.drawImage(bm,0,0);g.globalCompositeOperation='source-in';g.fillStyle=color;g.fillRect(0,0,c.width,c.height);
+  const g=c.getContext('2d');g.drawImage(bm,0,0);
+  // 명암(밝기)은 마스크 그림 그대로 두고 색상·채도만 팀 색으로 바꾼다: 'color' 블렌드 → 원래 모양(알파)으로 다시 오려 낸다
+  g.globalCompositeOperation='color';g.fillStyle=color;g.fillRect(0,0,c.width,c.height);
+  g.globalCompositeOperation='destination-in';g.drawImage(bm,0,0);
   return e.tint[k]=c;
 }
 function sprBlitTint(e,sx,sy,z,color,snap){
@@ -191,3 +194,12 @@ function sprBakeOcc(type){
   TEAM_COL[7]=sv;for(const id of ids)G.uid.delete(id);removeOb(o);
   return res;
 }
+
+// ---- 다리 ----
+function sprBakeBridge(water){const x=10,y=10,i=y*G.w+x,sv=G.tt[i];try{G.tt[i]=water?2:0;return sprRecord(()=>_dbBase(x,y),x+.5,y+.5);}finally{G.tt[i]=sv;}}
+const _dbBase=drawBridge;
+drawBridge=function(x,y){
+  const e=SPR.on?sprGetX('bridge|'+(G.tt[y*G.w+x]===2?'water':'land')):null;
+  if(!sprOk(e))return _dbBase(x,y);
+  const [sx,sy]=toS(x+.5,y+.5);sprBlit(e,sx,sy,cam.z,true);
+};

@@ -53,12 +53,12 @@ function sprBakeUnitBody(pose){
   return sprRecordSplit(()=>unitBodyParts(u,0,0,1,'#fffffe',pose==='gar'),0,0,'#fffffe');
 }
 
-// ---- 깃발: 기둥(중립) + 천(팀색 마스크, 펄럭임 8프레임) ----
+// ---- 깃발: 기둥(중립) + 천(팀색 마스크 1장). 펄럭임은 천을 기둥 축 기준으로 세로 기울임(skewY)해서 만든다 ----
 function flagSprite(f){
   if(!SPR.on)return false;
-  const ep=sprGetX('flag|pole'),ec=sprGetX('flagc|'+((((G.time*3+f.team)/6.2832)%1+1)%1*8|0));
+  const ep=sprGetX('flag|pole'),ec=sprGetX('flagc|0');
   if(!sprOk(ep)||!sprOk(ec))return false;
-  const [sx,sy]=toS(f.x+.5,f.y+.5),z=cam.z;sprBlit(ep,sx,sy,z,false);sprBlitTint(ec,sx,sy,z,TEAM_COL[f.team],false);return true;
+  const [sx,sy]=toS(f.x+.5,f.y+.5),z=cam.z,k=Math.sin(G.time*3+f.team)*.1;
+  sprBlit(ep,sx,sy,z,false);
+  cx.save();cx.translate(sx,sy);cx.transform(1,k,0,1,0,0);sprBlitTint(ec,0,0,z,TEAM_COL[f.team],false);cx.restore();return true;
 }
-// 선택한 아군 병사 발밑에 총기칸 표시 (예: 🔫 소총)
-{const _du=drawUnit;drawUnit=function(u){_du(u);if(u.sel&&u.team===0&&!u.dead){const [sx,sy]=toS(u.x,u.y),z=cam.z,g=GUNS[u.gun]||GUNS.rifle;cx.font=`${Math.max(8,9*z)}px sans-serif`;cx.textAlign='center';cx.fillStyle='rgba(0,0,0,.55)';const t='총 · '+g.n,w=cx.measureText(t).width;cx.fillRect(sx-w/2-3,sy+9*z,w+6,11*z);cx.fillStyle='#e6e4d3';cx.fillText(t,sx,sy+17.5*z);cx.textAlign='start';}};}

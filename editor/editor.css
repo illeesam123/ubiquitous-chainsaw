@@ -56,3 +56,10 @@ td.cell.mod{background:#5b4a1f55}
 #tintBar button{width:20px;height:20px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
 #tintBar button.on{border-color:#fff}
 .tint{display:block;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain}
+
+#cmp{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:30}
+#cmp[hidden]{display:none}
+#cmp .card{max-width:96vw;max-height:94vh;overflow:auto}
+#cmpCtl{display:flex;flex-wrap:wrap;gap:10px 16px;padding:8px 12px;align-items:center}
+#cmpCtl label{display:flex;gap:6px;align-items:center;font-size:12px}
+#cmpCv{display:block;max-width:100%;background:repeating-conic-gradient(#8883 0 25%,transparent 0 50%) 0 0/16px 16px}

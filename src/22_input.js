@@ -98,6 +98,7 @@ window.addEventListener('keydown',e=>{
   if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'))return;
   const k=e.key.toLowerCase();
   if('wasd'.includes(k)||k.startsWith('arrow'))keys.add(k);
+  if(G&&(k===','||k==='.')){setRot(VROT+(k==='.'?1:-1));return;}
   if(!G||G.phase==='setup')return;
   if(e.ctrlKey&&k>='1'&&k<='5'){
     e.preventDefault();

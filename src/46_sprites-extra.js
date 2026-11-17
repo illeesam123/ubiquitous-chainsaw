@@ -102,7 +102,7 @@ function sprBlitFlip(e,sx,sy,z,snap,tint){
 function vehSprite(v,flash){
   if(!(v.team>=0&&v.team<=3)){v._tuDone=false;return false;}
   v._tuDone=false;
-  const q=((Math.round(v.face/(Math.PI/8))%16)+16)%16;let ok=true;
+  const q=((Math.round(vFace(v.face)/(Math.PI/8))%16)+16)%16;let ok=true;
   if(v.type==='tank'){
     const tgt=(v.aimT>0&&v.aim!==undefined)?v.aim:v.face;if(v.turA===undefined)v.turA=v.face;
     v.turA+=Math.atan2(Math.sin(tgt-v.turA),Math.cos(tgt-v.turA))*.14;v._tuDone=true;
@@ -132,7 +132,7 @@ function tileSprite(x,y,i){
 // ---- 도로 ----
 function roadSprite(x,y,i){
   const k=G.road[i];if(!k||G.up[i]===1)return false;
-  let m=0;for(const [dx,dy] of roadLinks(x,y,k))m|=dx===1?1:dx===-1?2:dy===1?4:8;
+  let m=0;for(const [wdx,wdy] of roadLinks(x,y,k)){const [dx,dy]=rotDir(wdx,wdy);m|=dx===1?1:dx===-1?2:dy===1?4:8;}   // 보기 방향 기준 연결
   const mm=((m&1)<<2)|((m&4)>>2)|((m&2)<<2)|((m&8)>>2),mc=Math.min(m,mm);   // E↔S, W↔N 는 거울상
   const e=sprGetX('road|'+k+'|'+mc+'|'+(k===3?0:(hsh(x,y)>.5?1:0)));if(!sprOk(e)){if(!e)sprMissing('road|'+k+'|'+mc);return REC?false:true;}
   const [sx,sy]=toS(x+.5,y+.5);if(mc!==m)sprBlitFlip(e,sx,sy,cam.z,true);else sprBlit(e,sx,sy,cam.z,true);return true;

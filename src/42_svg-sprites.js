@@ -54,7 +54,7 @@ function sprKey(o,biome){
   const hp=SPR_DMG.has(t)&&o.hp<o.max?Math.min(4,Math.floor((1-o.hp/o.max)*5)):0;
   let nb='';
   if(SPR_LINEAR.has(t)||t==='rubble'||t==='rubble2'||t==='rubble3'){
-    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const x=o.x+dx,y=o.y+dy,q=inb(x,y)?G.obst[y*G.w+x]:null;nb+=q&&q.type===o.type?1:0;}
+    for(const [vdx,vdy] of [[1,0],[-1,0],[0,1],[0,-1]]){const [dx,dy]=unrotDir(vdx,vdy),x=o.x+dx,y=o.y+dy,q=inb(x,y)?G.obst[y*G.w+x]:null;nb+=q&&q.type===o.type?1:0;}
   }
   const stock=t==='armory'?Math.min(8,Math.ceil(armTotal(o)/3)):0;
   const uni=SPR_UNIFORM.has(t),vq=uni?0:(o.v*4)|0,id4=uni?0:o.id%4,bio=SPR_BIOME.has(t)?(biome||G.biome):'plain',own=o.natural?'n':o.team;
@@ -125,7 +125,7 @@ drawOb=function(o){
   // 키 계산은 비싸서 상태 서명이 바뀌거나 0.5초(게임 시간) 지났을 때만 다시 한다
   const occN=o.occ?(o.occ.size||o.occ.length||0):0;
   const hot=0;
-  const sig=o.hp*7+(o.fl>0?1e7:0)+occN*1e5+hot*5e8+(o.muz>0?3e8:0)+(o.stock?armTotal(o):0)*13,slice=(G.time*2)|0;
+  const sig=VROT*3e9+o.hp*7+(o.fl>0?1e7:0)+occN*1e5+hot*5e8+(o.muz>0?3e8:0)+(o.stock?armTotal(o):0)*13,slice=(G.time*2)|0;
   let e=o._se;
   if(o._ss!==sig||o._sl!==slice||(o._sb!==G.biome)){
     o._ss=sig;o._sl=slice;o._sb=G.biome;

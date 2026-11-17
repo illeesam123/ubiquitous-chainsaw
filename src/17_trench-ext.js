@@ -288,16 +288,16 @@ function drawMouth(x,y){
   cx.strokeStyle='rgba(120,170,200,.35)';cx.lineWidth=1.2;cx.beginPath();cx.ellipse(sx,sy,15*z,7*z,0,0,6.3);cx.stroke();
 }
 function drawBridge(x,y){
-  const z=cam.z,h=5,c0=pt(x,y,h),c1=pt(x+1,y,h),c2=pt(x+1,y+1,h),c3=pt(x,y+1,h);
+  const z=cam.z,h=5,[X,Y]=VT(x,y),P=toSV,c0=P(X,Y,h),c1=P(X+1,Y,h),c2=P(X+1,Y+1,h),c3=P(X,Y+1,h);
   if(G.tt[y*G.w+x]===2){ // 말뚝
-    for(const [a,b] of [[.12,.12],[.88,.12],[.12,.88],[.88,.88]]){const p=pt(x+a,y+b,h),q=pt(x+a,y+b,-6);wline(p,q,'#3e2e1a',3);}
+    for(const [a,b] of [[.12,.12],[.88,.12],[.12,.88],[.88,.88]]){const p=P(X+a,Y+b,h),q=P(X+a,Y+b,-6);wline(p,q,'#3e2e1a',3);}
   }
-  poly([pt(x,y+1,0),pt(x+1,y+1,0),pt(x+1,y+1,h),pt(x,y+1,h)],'#5b4630');
-  poly([pt(x+1,y,0),pt(x+1,y+1,0),pt(x+1,y+1,h),pt(x+1,y,h)],'#6a5238');
+  poly([P(X,Y+1,0),P(X+1,Y+1,0),P(X+1,Y+1,h),P(X,Y+1,h)],'#5b4630');
+  poly([P(X+1,Y,0),P(X+1,Y+1,0),P(X+1,Y+1,h),P(X+1,Y,h)],'#6a5238');
   poly([c0,c1,c2,c3],'#8d7449','#3f3120',1);
   for(let k=1;k<6;k++){const f=k/6,a=[c0[0]+(c3[0]-c0[0])*f,c0[1]+(c3[1]-c0[1])*f],b=[c1[0]+(c2[0]-c1[0])*f,c1[1]+(c2[1]-c1[1])*f];wline(a,b,k%2?'#6f5a38':'#a38a5a',1);}
   wline(c0,c1,'#3f3120',2.2);wline(c3,c2,'#3f3120',2.2);
-  for(const f of [.1,.5,.9]){const a=pt(x+f,y,h),b=pt(x+f,y,h+5),c=pt(x+f,y+1,h),d=pt(x+f,y+1,h+5);wline(a,b,'#4a3a22',2);wline(c,d,'#4a3a22',2);}
+  for(const f of [.1,.5,.9]){const a=P(X+f,Y,h),b=P(X+f,Y,h+5),c=P(X+f,Y+1,h),d=P(X+f,Y+1,h+5);wline(a,b,'#4a3a22',2);wline(c,d,'#4a3a22',2);}
 }
 function drawShaftHatch(x,y){
   const z=cam.z,[sx,sy]=toS(x+.5,y+.5),sink=3*z;

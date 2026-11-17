@@ -28,7 +28,7 @@ function snowCover(x0,y0,x1,y1){
     for(let q=0;q<L.length;q+=2){
       const x=L[q],y=L[q+1];
       if(hill){const i=y*w+x;[[0,0],[1,0],[1,1],[0,1]].forEach(([fx,fy],k)=>{const p=rawS(x+fx,y+fy,elevIn(i,fx,fy));k?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]);});cx.closePath();}
-      else{const [sx,sy]=toS(x,y),z=cam.z;cx.moveTo(sx,sy);cx.lineTo(sx+32*z,sy+16*z);cx.lineTo(sx,sy+32*z);cx.lineTo(sx-32*z,sy+16*z);cx.closePath();}
+      else{const [sx,sy]=toS(x+.5,y+.5),z=cam.z;cx.moveTo(sx,sy-16*z);cx.lineTo(sx+32*z,sy);cx.lineTo(sx,sy+16*z);cx.lineTo(sx-32*z,sy);cx.closePath();}
     }
     cx.fill();
   }

@@ -9,37 +9,48 @@ function resize(){
   cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
   clampCamera();
 }
-const toS=(x,y)=>[(x-y)*32*cam.z+cam.x,(x+y)*16*cam.z+cam.y-elevPx(x,y)*cam.z];
+// ---- 화면 회전(90° 단위): 월드 좌표를 '보기 좌표'로 돌려 투영한다. 게임 상태는 건드리지 않는다. ----
+let VROT=0;
+const rotXY=(x,y)=>VROT===0?[x,y]:VROT===1?[G.h-y,x]:VROT===2?[G.w-x,G.h-y]:[y,G.w-x];
+const unrotXY=(vx,vy)=>VROT===0?[vx,vy]:VROT===1?[vy,G.h-vx]:VROT===2?[G.w-vx,G.h-vy]:[G.w-vy,vx];
+const rotDir=(dx,dy)=>VROT===0?[dx,dy]:VROT===1?[-dy,dx]:VROT===2?[-dx,-dy]:[dy,-dx];      // 월드 방향 → 보기 방향
+const unrotDir=(a,b)=>VROT===0?[a,b]:VROT===1?[b,-a]:VROT===2?[-a,-b]:[-b,a];              // 보기 방향 → 월드 방향
+const VW=()=>VROT&1?G.h:G.w,VH=()=>VROT&1?G.w:G.h;
+const vFace=(a)=>a+VROT*Math.PI/2;                                                       // 월드 각도 → 보기 각도
+// 월드 칸(x,y)의 보기 좌표상 최소 꼭짓점(칸이 차지하는 보기 칸의 왼쪽 위)
+const VT=(x,y)=>VROT===0?[x,y]:VROT===1?[G.h-1-y,x]:VROT===2?[G.w-1-x,G.h-1-y]:[y,G.w-1-x];
+const VD=(x,y)=>{if(VROT===0)return x+y;const p=rotXY(x,y);return p[0]+p[1];};          // 그리기 깊이(앞일수록 큼)
+const toS=(x,y)=>{if(VROT===0)return [(x-y)*32*cam.z+cam.x,(x+y)*16*cam.z+cam.y-elevPx(x,y)*cam.z];const p=rotXY(x,y);return [(p[0]-p[1])*32*cam.z+cam.x,(p[0]+p[1])*16*cam.z+cam.y-elevPx(x,y)*cam.z];};
+const toSV=(vx,vy,h)=>{const q=unrotXY(vx,vy);return [(vx-vy)*32*cam.z+cam.x,(vx+vy)*16*cam.z+cam.y-(elevPx(q[0],q[1])+(h||0))*cam.z];};   // 보기 좌표에서 바로
 function toW(sx,sy){
   const gx=(sx-cam.x)/cam.z,g0=(sy-cam.y)/cam.z;
-  if(!G||!G.hill||viewLay===1)return [(gx/32+g0/16)/2,(g0/16-gx/32)/2];
+  if(!G||!G.hill||viewLay===1)return unrotXY((gx/32+g0/16)/2,(g0/16-gx/32)/2);
   // 시선 따라 내려가기: 높은 평면(가까움)부터 내려오며, 처음으로 지형 표면에 닿는 점이 보이는 점이다
-  let lastX=0,lastY=0,hit=false;
+  const W2=(gx,gy)=>unrotXY((gx/32+gy/16)/2,(gy/16-gx/32)/2);
+  let hit=false;
   for(let e=MAX_LV+1;e>=0;e-=.5){
-    const gy=g0+(e-GROUND_LV)*HALF_PX,wx=(gx/32+gy/16)/2,wy=(gy/16-gx/32)/2;
+    const gy=g0+(e-GROUND_LV)*HALF_PX,[wx,wy]=W2(gx,gy);
     if(elevH(wx,wy)>=e-.02){
       // 직전 평면과 사이를 이분해 표면 위치를 다듬는다
       let lo=e,hi=e+.5;if(!hit&&e>=MAX_LV+1)return [wx,wy];
-      for(let k=0;k<5;k++){const m=(lo+hi)/2,gm=g0+(m-GROUND_LV)*HALF_PX,mx2=(gx/32+gm/16)/2,my2=(gm/16-gx/32)/2;if(elevH(mx2,my2)>=m-.02)lo=m;else hi=m;}
-      const gm=g0+(lo-GROUND_LV)*HALF_PX;return [(gx/32+gm/16)/2,(gm/16-gx/32)/2];
+      for(let k=0;k<5;k++){const m=(lo+hi)/2,gm=g0+(m-GROUND_LV)*HALF_PX,q=W2(gx,gm);if(elevH(q[0],q[1])>=m-.02)lo=m;else hi=m;}
+      return W2(gx,g0+(lo-GROUND_LV)*HALF_PX);
     }
     hit=true;
   }
-  return [(gx/32+g0/16)/2,(g0/16-gx/32)/2];
+  return W2(gx,g0);
 }
 function clampCamera(){
   if(!G||!W||!H)return;
-  const minX=-(G.h*32+32)*cam.z,maxX=(G.w*32+32)*cam.z;
-  const minY=G.hill?-100*cam.z:0,maxY=((G.w+G.h)*16+32+(G.hill?60:0))*cam.z;
+  const vw=VW(),vh=VH(),minX=-(vh*32+32)*cam.z,maxX=(vw*32+32)*cam.z;
+  const minY=G.hill?-100*cam.z:0,maxY=((vw+vh)*16+32+(G.hill?60:0))*cam.z;
   const spanX=maxX-minX,spanY=maxY-minY;
   cam.x=spanX<=W?(W-spanX)/2-minX:clamp(cam.x,W-maxX,-minX);
   cam.y=spanY<=H?(H-spanY)/2-minY:clamp(cam.y,H-maxY,-minY);
 }
-function centerCam(x,y){cam.x=W/2-(x-y)*32*cam.z;cam.y=H/2-(x+y)*16*cam.z;clampCamera();}
+function centerCam(x,y){const [vx,vy]=rotXY(x,y);cam.x=W/2-(vx-vy)*32*cam.z;cam.y=H/2-(vx+vy)*16*cam.z;clampCamera();}
 function diamond(x,y,s){
-  const [sx,sy]=toS(x,y),hw=32*cam.z*s,hh=16*cam.z*s;
-  cx.beginPath();cx.moveTo(sx,sy-0);cx.lineTo(sx+hw*0,sy);cx.closePath();
-  const px=sx,py=sy;
+  const [px,py]=toS(x,y);
   cx.beginPath();cx.moveTo(px,py);cx.lineTo(px+32*cam.z,py+16*cam.z);cx.lineTo(px,py+32*cam.z);cx.lineTo(px-32*cam.z,py+16*cam.z);cx.closePath();
 }
 function tileDia(x,y,inset){
@@ -48,8 +59,8 @@ function tileDia(x,y,inset){
     const i=y*G.w+x,a=inset,c=1-inset,q=(v)=>v<0?0:v>1?1:v;
     cx.beginPath();[[a,a],[c,a],[c,c],[a,c]].forEach(([fx,fy],k)=>{const p=rawS(x+fx,y+fy,elevIn(i,q(fx),q(fy)));k?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]);});cx.closePath();return;
   }
-  const [sx,sy]=toS(x+inset,y+inset),k=1-2*inset;
-  cx.beginPath();cx.moveTo(sx,sy);cx.lineTo(sx+32*z*k,sy+16*z*k);cx.lineTo(sx,sy+32*z*k);cx.lineTo(sx-32*z*k,sy+16*z*k);cx.closePath();
+  const [sx,sy]=toS(x+.5,y+.5),k=1-2*inset;                          // 칸 가운데 기준(회전해도 같은 모양)
+  cx.beginPath();cx.moveTo(sx,sy-16*z*k);cx.lineTo(sx+32*z*k,sy);cx.lineTo(sx,sy+16*z*k);cx.lineTo(sx-32*z*k,sy);cx.closePath();
 }
 function cube(sx,sy,s,h,top,left,right){
   // (sx,sy)=타일 중심 바닥. s=크기비율, h=높이(px, 줌 적용 전)
@@ -81,7 +92,7 @@ function unitBodyParts(u,sx,by,z,body,inG){
 // 들고 있는 것: 폭탄 · 삽 · 총
 function unitHeld(u,sx,by,z,body){
   const bob=(u.state==='move'||u.state==='flee')?Math.sin(u.anim*(u.state==='flee'?17:12))*1.2*z:0;
-  const c=Math.cos(u.face),s=Math.sin(u.face),ix=(c-s)*.9,iy=(c+s)*.5;
+  const c=Math.cos(vFace(u.face)),s=Math.sin(vFace(u.face)),ix=(c-s)*.9,iy=(c+s)*.5;
   if(u.state==='fuse')return;
   if(u.state==='work'&&u.task&&u.task.bomb){
     const sw=Math.sin(u.anim*6),bx=sx+ix*8*z,byy=by-5*z+iy*6*z+sw*1.2*z;
@@ -126,6 +137,7 @@ function drawFlag(f){
   cx.fillStyle=TEAM_COL[f.team];cx.beginPath();cx.moveTo(sx,sy-40*z);cx.lineTo(sx+22*z,sy-34*z+Math.sin(G.time*3+f.team)*2*z);cx.lineTo(sx,sy-26*z);cx.closePath();cx.fill();
 }
 function visRange(y,x0,x1){
+  if(VROT)return [x0,x1];   // 회전했을 때는 줄 단위 절단 대신 경계 상자 전체
   const z=cam.z,m=70*z,dl=(-m-cam.x)/(32*z),dr=(W+m-cam.x)/(32*z),sl=(-50*z-cam.y)/(16*z),sr=(H+100*z-cam.y)/(16*z);
   return [Math.max(x0,Math.ceil(y+dl),Math.ceil(sl-y)),Math.min(x1,Math.floor(y+dr),Math.floor(sr-y))];
 }
@@ -147,21 +159,28 @@ function paintBase(x,y,i,w){
 const CHK=16,CHB=[.5,.7,1,1.25],CHMAX=140;
 let chunkMap=new Map(),chunkG=null,chunkPix=0;
 function chunkSig(a,b){
-  const w=G.w,x1=Math.min(G.w,a*CHK+CHK),y1=Math.min(G.h,b*CHK+CHK);let h=(SPR.on?7:3)+SPRV*131+(G.biome.length*17)+(G.shV|0)*7919;const hv=G.hill;
+  const w=G.w,x1=Math.min(G.w,a*CHK+CHK),y1=Math.min(G.h,b*CHK+CHK);let h=(SPR.on?7:3)+SPRV*131+(G.biome.length*17)+(G.shV|0)*7919+VROT*104729;const hv=G.hill;
   for(let y=b*CHK;y<y1;y++)for(let x=a*CHK,i=y*w+x;x<x1;x++,i++)h=(h*31+G.tt[i]*5+G.gq[i]*3+G.road[i]*11+G.dec[i]*13+(G.up[i]===1?7:0)+(G.mm[i]?1:0)+(hv?G.lv[i]*17+G.sl[i]*19:0))|0;
   if(hv){for(let y=b*CHK;y<y1;y++){if(x1<G.w){const i=y*w+x1;h=(h*31+G.lv[i]*17+G.sl[i]*19)|0;}}if(y1<G.h)for(let x=a*CHK;x<x1;x++){const i=y1*w+x;h=(h*31+G.lv[i]*17+G.sl[i]*19)|0;}}
   return h;
 }
+// 깊이 순(뒤→앞)으로 칸을 돈다. 회전에 따라 가로·세로 방향이 바뀐다.
+function forTiles(x0,y0,x1,y1,fn){
+  const ys=VROT===1||VROT===2,xs=VROT===2||VROT===3;
+  for(let yy=0;yy<y1-y0;yy++){const y=ys?y1-1-yy:y0+yy;for(let xx=0;xx<x1-x0;xx++)fn(xs?x1-1-xx:x0+xx,y);}
+}
 function chunkGet(a,b,zb){
   const key=(a*512+b)*8+CHB.indexOf(zb),sig=chunkSig(a,b);let c=chunkMap.get(key);
   if(c&&c.sig===sig)return c;
-  const pad=8,padT=G.hill?110:8,padB=G.hill?60:8,minX=(a*CHK-b*CHK-CHK)*32,maxX=(a*CHK+CHK-b*CHK)*32,minY=(a*CHK+b*CHK)*16,maxY=(a*CHK+b*CHK+CHK*2)*16;
+  const pad=8,padT=G.hill?110:8,padB=G.hill?60:8;
+  let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
+  for(const [px,py] of [[a*CHK,b*CHK],[a*CHK+CHK,b*CHK],[a*CHK,b*CHK+CHK],[a*CHK+CHK,b*CHK+CHK]]){const [vx,vy]=rotXY(px,py),sx=(vx-vy)*32,sy=(vx+vy)*16;minX=Math.min(minX,sx);maxX=Math.max(maxX,sx);minY=Math.min(minY,sy);maxY=Math.max(maxY,sy);}
   const cv2=c?c.cv:document.createElement('canvas');cv2.width=Math.ceil((maxX-minX+pad*2)*zb);cv2.height=Math.ceil((maxY-minY+padT+padB)*zb);
   const sv={cx:cx,x:cam.x,y:cam.y,z:cam.z};
   cx=cv2.getContext('2d');cx.setTransform(1,0,0,1,0,0);cam.z=zb;cam.x=(-minX+pad)*zb;cam.y=(-minY+padT)*zb;
   try{
     const x1=Math.min(G.w,a*CHK+CHK),y1=Math.min(G.h,b*CHK+CHK);cx.lineWidth=1;
-    for(let y=b*CHK;y<y1;y++)for(let x=a*CHK;x<x1;x++)paintBase(x,y,y*G.w+x,G.w);
+    forTiles(a*CHK,b*CHK,x1,y1,(x,y)=>paintBase(x,y,y*G.w+x,G.w));
   }finally{cx=sv.cx;cam.x=sv.x;cam.y=sv.y;cam.z=sv.z;}
   c={cv:cv2,sig,ox:minX-pad,oy:minY-padT};chunkMap.set(key,c);return c;
 }
@@ -172,14 +191,15 @@ function drawGround(x0,y0,x1,y1){
   const zb=CHB.find(q=>q>=cam.z-.001);
   if(zb!==undefined&&cam.z>=.4){
     if(chunkMap.size>CHMAX)chunkMap.clear();
-    for(let b=Math.floor(y0/CHK);b<=Math.floor(y1/CHK);b++)for(let a=Math.floor(x0/CHK);a<=Math.floor(x1/CHK);a++){
-      if(a*CHK>=G.w||b*CHK>=G.h)continue;
+    {const ba=Math.floor(y0/CHK),bb=Math.floor(y1/CHK),aa=Math.floor(x0/CHK),ab=Math.floor(x1/CHK);
+    forTiles(aa,ba,ab+1,bb+1,(a,b)=>{
+      if(a*CHK>=G.w||b*CHK>=G.h)return;
       const c=chunkGet(a,b,zb),k=cam.z/zb;
       cx.drawImage(c.cv,cam.x+c.ox*cam.z,cam.y+c.oy*cam.z,c.cv.width*k,c.cv.height*k);
-    }
+    });}
     if(cam.z>=.8)for(let y=y0;y<=y1;y++){const [xa,xb]=visRange(y,x0,x1);for(let x=xa;x<=xb;x++){const i=y*w+x;if(G.tt[i]===2||G.tt[i]===4)waterQueue(x,y,i);}}
   }else{
-    for(let y=y0;y<=y1;y++){const [xa,xb]=visRange(y,x0,x1);for(let x=xa;x<=xb;x++){const i=y*w+x;paintBase(x,y,i,w);if(cam.z>=.8&&(G.tt[i]===2||G.tt[i]===4))waterQueue(x,y,i);}}
+    forTiles(x0,y0,x1+1,y1+1,(x,y)=>{const i=y*w+x;paintBase(x,y,i,w);if(cam.z>=.8&&(G.tt[i]===2||G.tt[i]===4))waterQueue(x,y,i);});
   }
   waterFlush();
   if(WFX.acc>.03)snowCover(x0,y0,x1,y1);   // 눈은 참호 그리기 전에 깔고, 참호·구덩이 칸은 건너뛴다
@@ -216,13 +236,13 @@ function render(){
   for(const T of G.teams)if(T.pad)drawHeliShadow(T);
   // 엔티티 정렬 그리기
   const list=[];
-  for(let y=y0;y<=y1;y++){const [xa,xb]=visRange(y,x0,x1);for(let x=xa;x<=xb;x++){const o=G.obst[y*G.w+x];if(o&&o.idx===y*G.w+x)list.push({d:x+y+o.size,o});}}
-  for(let y=y0;y<=y1;y++){const [xa,xb]=visRange(y,x0,x1);for(let x=xa;x<=xb;x++){const i=y*G.w+x;if(roofedI(i))list.push({d:x+y+1.02,roof:i});if(G.brush[i])list.push({d:x+y+1.1,bush:[x,y]});}}
+  for(let y=y0;y<=y1;y++){const [xa,xb]=visRange(y,x0,x1);for(let x=xa;x<=xb;x++){const o=G.obst[y*G.w+x];if(o&&o.idx===y*G.w+x)list.push({d:VD(o.x+o.size/2,o.y+o.size/2),o});}}
+  for(let y=y0;y<=y1;y++){const [xa,xb]=visRange(y,x0,x1);for(let x=xa;x<=xb;x++){const i=y*G.w+x;if(roofedI(i))list.push({d:VD(x+.5,y+.5)+.02,roof:i});if(G.brush[i])list.push({d:VD(x+.5,y+.5)+.1,bush:[x,y]});}}
   const P0=G.units.filter(p=>p.team===0&&!p.dead&&!p.lay);
-  for(const u of G.units){if(u.state==='gar'||u.state==='crew'||u.state==='med'||u.lay)continue;if(inRoof(u)){const rv=u.team!==0&&(u.reveal||0)>0;if(u.team!==0&&!rv)continue;if(u.x>=x0-1&&u.x<=x1+2&&u.y>=y0-1&&u.y<=y1+2)list.push({d:u.x+u.y+1.6,u,ghost:!rv});continue;}{let hd=hiddenUnit(u);if(hd&&u.team!==0){if(P0.some(p=>Math.hypot(p.x-u.x,p.y-u.y)<=1.6))hd=false;else continue;}if(u.x>=x0-1&&u.x<=x1+2&&u.y>=y0-1&&u.y<=y1+2)list.push({d:u.x+u.y+(u.state==='gar'?.6:.2),u,ghost:hd});}}
-  for(const v of G.vehicles)if(v.x>=x0-2&&v.x<=x1+2&&v.y>=y0-2&&v.y<=y1+2)list.push({d:v.x+v.y+.35,v});
-  if(G.civs)for(const c of G.civs)if(!c.dead&&c.x>=x0-1&&c.x<=x1+2&&c.y>=y0-1&&c.y<=y1+2)list.push({d:c.x+c.y+.3,civ:c});
-  for(const f of G.flags)list.push({d:f.x+f.y+1.2,f});
+  for(const u of G.units){if(u.state==='gar'||u.state==='crew'||u.state==='med'||u.lay)continue;if(inRoof(u)){const rv=u.team!==0&&(u.reveal||0)>0;if(u.team!==0&&!rv)continue;if(u.x>=x0-1&&u.x<=x1+2&&u.y>=y0-1&&u.y<=y1+2)list.push({d:VD(u.x,u.y)+1.6,u,ghost:!rv});continue;}{let hd=hiddenUnit(u);if(hd&&u.team!==0){if(P0.some(p=>Math.hypot(p.x-u.x,p.y-u.y)<=1.6))hd=false;else continue;}if(u.x>=x0-1&&u.x<=x1+2&&u.y>=y0-1&&u.y<=y1+2)list.push({d:VD(u.x,u.y)+(u.state==='gar'?.6:.2),u,ghost:hd});}}
+  for(const v of G.vehicles)if(v.x>=x0-2&&v.x<=x1+2&&v.y>=y0-2&&v.y<=y1+2)list.push({d:VD(v.x,v.y)+.35,v});
+  if(G.civs)for(const c of G.civs)if(!c.dead&&c.x>=x0-1&&c.x<=x1+2&&c.y>=y0-1&&c.y<=y1+2)list.push({d:VD(c.x,c.y)+.3,civ:c});
+  for(const f of G.flags)list.push({d:VD(f.x+.5,f.y+.5)+.2,f});
   list.sort((a,b)=>a.d-b.d);
   const glOn=glBegin();
   try{

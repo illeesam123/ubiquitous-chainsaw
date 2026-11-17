@@ -160,7 +160,7 @@ function glBake(key,zb,w,h,ox,oy,wx,wy,fn){
   if(GL.bakes.size>4000)GL.bakes.clear();
   c=document.createElement('canvas');c.width=Math.max(1,Math.ceil(w));c.height=Math.max(1,Math.ceil(h));
   const real=cx,sv={x:cam.x,y:cam.y,z:cam.z},sk=ELK;
-  cx=c.getContext('2d');cx.setTransform(1,0,0,1,0,0);cam.z=zb;cam.x=ox-(wx-wy)*32*zb;cam.y=oy-(wx+wy)*16*zb;ELK=0;
+  const rp=rotXY(wx,wy);cx=c.getContext('2d');cx.setTransform(1,0,0,1,0,0);cam.z=zb;cam.x=ox-(rp[0]-rp[1])*32*zb;cam.y=oy-(rp[0]+rp[1])*16*zb;ELK=0;
   try{fn();}finally{cx=real;cam.x=sv.x;cam.y=sv.y;cam.z=sv.z;ELK=sk;}
   GL.bakes.set(key,c);return c;
 }
@@ -178,22 +178,22 @@ const _glBush=drawBush;
 drawBush=function(x,y){
   if(!GL.active)return _glBush(x,y);
   const z=cam.z,zb=sprBkt(z),[sx,sy]=toS(x+.5,y+.5),ox=34*zb,oy=40*zb;
-  const c=glBake('bush|'+x+'|'+y+'|'+zb,zb,68*zb,56*zb,ox,oy,x+.5,y+.5,()=>_glBush(x,y));
+  const c=glBake('bush|'+x+'|'+y+'|'+zb+'|'+VROT,zb,68*zb,56*zb,ox,oy,x+.5,y+.5,()=>_glBush(x,y));
   glPlace(c,sx,sy,ox,oy,z,zb);
 };
 const _glRoof=drawRoof;
 drawRoof=function(i){
   if(!GL.active)return _glRoof(i);
   const w=G.w,x=i%w,y=(i/w)|0,z=cam.z,zb=sprBkt(z),[sx,sy]=toS(x+.5,y+.5),ox=40*zb,oy=56*zb;
-  const c=glBake('roof|'+i+'|'+(G.up[i]===3?1:0)+'|'+zb,zb,80*zb,88*zb,ox,oy,x+.5,y+.5,()=>_glRoof(i));
+  const c=glBake('roof|'+i+'|'+(G.up[i]===3?1:0)+'|'+zb+'|'+VROT,zb,80*zb,88*zb,ox,oy,x+.5,y+.5,()=>_glRoof(i));
   glPlace(c,sx,sy,ox,oy,z,zb);
 };
 const _glCiv=drawCiv;
 drawCiv=function(c){
   if(!GL.active)return _glCiv(c);
   const z=cam.z,zb=sprBkt(z),[sx,sy]=toS(c.x,c.y),ox=36*zb,oy=60*zb;
-  const swS=Math.round(Math.sin(c.anim*9)*2),fq=Math.round(((c.face||0)/(Math.PI/4)))&7,mv=(c.mode==='wander'&&c.moving)||c.mode==='flee'||c.mode==='melee'||c.mode==='shoot';
-  const key=['civ',c.variant||0,c.mode,mv?swS:9,c.flash>0?1:0,c.armed?1:0,c.armed?fq:0,c.muz>0?1:0,zb].join('|');
+  const swS=Math.round(Math.sin(c.anim*9)*2),fq=Math.round((vFace(c.face||0)/(Math.PI/4)))&7,mv=(c.mode==='wander'&&c.moving)||c.mode==='flee'||c.mode==='melee'||c.mode==='shoot';
+  const key=['civ',c.variant||0,c.mode,mv?swS:9,c.flash>0?1:0,c.armed?1:0,c.armed?fq:0,c.muz>0?1:0,zb,VROT].join('|');
   const fk=Object.assign({},c,{x:10,y:10,hp:1,max:1,anim:mv?Math.asin(Math.max(-1,Math.min(1,swS/2)))/9:0,face:fq*Math.PI/4});
   const cv2=glBake(key,zb,72*zb,76*zb,ox,oy,10,10,()=>_glCiv(fk));
   glPlace(cv2,sx,sy,ox,oy,z,zb);

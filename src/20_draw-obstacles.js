@@ -287,7 +287,7 @@ function drawObFull(o){
 
 // ---- 참호 ----
 function diaPath(x,y){if(G&&G.hill&&!REC&&viewLay!==1&&x>=0&&y>=0&&x<G.w&&y<G.h){const i=y*G.w+x;[[0,0],[1,0],[1,1],[0,1]].forEach(([fx,fy],k)=>{const p=rawS(x+fx,y+fy,elevIn(i,fx,fy));k?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]);});cx.closePath();return;}
-  const [sx,sy]=toS(x,y),z=cam.z;cx.moveTo(sx,sy);cx.lineTo(sx+32*z,sy+16*z);cx.lineTo(sx,sy+32*z);cx.lineTo(sx-32*z,sy+16*z);cx.closePath();}
+  const [sx,sy]=toS(x+.5,y+.5),z=cam.z;cx.moveTo(sx,sy-16*z);cx.lineTo(sx+32*z,sy);cx.lineTo(sx,sy+16*z);cx.lineTo(sx-32*z,sy);cx.closePath();}
 function drawCrater(x,y){
   const [sx,sy]=toS(x+.5,y+.5),z=cam.z;
   cx.fillStyle='#6a5a3e';cx.beginPath();cx.ellipse(sx,sy,27*z,13.5*z,0,0,6.3);cx.fill();
@@ -296,38 +296,38 @@ function drawCrater(x,y){
   cx.strokeStyle='rgba(255,240,200,.18)';cx.lineWidth=1.3*z;cx.beginPath();cx.ellipse(sx,sy,27*z,13.5*z,0,3.4,5.6);cx.stroke();
 }
 function drawTrenchTile(x,y,v){
-  const w=G.w,z=cam.z,d=8;
-  const nb=(dx,dy)=>{const a=x+dx,b=y+dy;const q=inb(a,b)?G.trench[b*w+a]:0;return q>0&&q!==255;};
+  const w=G.w,z=cam.z,d=8,[X,Y]=VT(x,y),P=toSV;
+  const nb=(va,vb)=>{const [dx,dy]=unrotDir(va,vb),a=x+dx,b=y+dy;const q=inb(a,b)?G.trench[b*w+a]:0;return q>0&&q!==255;};
   const W=nb(-1,0),Nn=nb(0,-1),E=nb(1,0),S=nb(0,1);
   cx.save();
   cx.beginPath();diaPath(x,y);
-  if(W)diaPath(x-1,y);if(Nn)diaPath(x,y-1);if(E)diaPath(x+1,y);if(S)diaPath(x,y+1);
+  {const dp=(va,vb)=>{const [dx,dy]=unrotDir(va,vb);diaPath(x+dx,y+dy);};if(W)dp(-1,0);if(Nn)dp(0,-1);if(E)dp(1,0);if(S)dp(0,1);}
   cx.clip();
   // 바닥
-  poly([pt(x,y,-d),pt(x+1,y,-d),pt(x+1,y+1,-d),pt(x,y+1,-d)],'#3a2d1e');
-  poly([pt(x,y,-d),pt(x+1,y,-d),pt(x+1,y+1,-d),pt(x,y+1,-d)],TEAM_COL[v-1]+'1f');
+  poly([P(X,Y,-d),P(X+1,Y,-d),P(X+1,Y+1,-d),P(X,Y+1,-d)],'#3a2d1e');
+  poly([P(X,Y,-d),P(X+1,Y,-d),P(X+1,Y+1,-d),P(X,Y+1,-d)],TEAM_COL[v-1]+'1f');
   // 발판 널
-  for(let k=0;k<4;k++){const f=.14+k*.24;wline(pt(x+f,y,-d),pt(x+f,y+1,-d),'rgba(104,82,52,.7)',2.4);wline(pt(x+f+.07,y,-d),pt(x+f+.07,y+1,-d),'rgba(20,14,8,.35)',1);}
+  for(let k=0;k<4;k++){const f=.14+k*.24;wline(P(X+f,Y,-d),P(X+f,Y+1,-d),'rgba(104,82,52,.7)',2.4);wline(P(X+f+.07,Y,-d),P(X+f+.07,Y+1,-d),'rgba(20,14,8,.35)',1);}
   // 벽면 (뒤쪽 두 변)
   if(!W){
-    poly([pt(x,y,0),pt(x,y+1,0),pt(x,y+1,-d),pt(x,y,-d)],'#6d583b');
-    for(let k=1;k<4;k++){const hh=-d*k/4;wline(pt(x,y,hh),pt(x,y+1,hh),'rgba(40,28,14,.35)',1);}
-    for(let k=0;k<5;k++){const yy=y+.1+k*.2;wline(pt(x,yy,0),pt(x,yy,-d),'rgba(40,28,14,.5)',1.6);}
+    poly([P(X,Y,0),P(X,Y+1,0),P(X,Y+1,-d),P(X,Y,-d)],'#6d583b');
+    for(let k=1;k<4;k++){const hh=-d*k/4;wline(P(X,Y,hh),P(X,Y+1,hh),'rgba(40,28,14,.35)',1);}
+    for(let k=0;k<5;k++){const yy=Y+.1+k*.2;wline(P(X,yy,0),P(X,yy,-d),'rgba(40,28,14,.5)',1.6);}
   }
   if(!Nn){
-    poly([pt(x,y,0),pt(x+1,y,0),pt(x+1,y,-d),pt(x,y,-d)],'#5a4730');
-    for(let k=1;k<4;k++){const hh=-d*k/4;wline(pt(x,y,hh),pt(x+1,y,hh),'rgba(30,20,10,.4)',1);}
-    for(let k=0;k<5;k++){const xx=x+.1+k*.2;wline(pt(xx,y,0),pt(xx,y,-d),'rgba(30,20,10,.5)',1.6);}
+    poly([P(X,Y,0),P(X+1,Y,0),P(X+1,Y,-d),P(X,Y,-d)],'#5a4730');
+    for(let k=1;k<4;k++){const hh=-d*k/4;wline(P(X,Y,hh),P(X+1,Y,hh),'rgba(30,20,10,.4)',1);}
+    for(let k=0;k<5;k++){const xx=X+.1+k*.2;wline(P(xx,Y,0),P(xx,Y,-d),'rgba(30,20,10,.5)',1.6);}
   }
   // 앞쪽 가장자리 그림자
-  if(!S)wline(pt(x,y+1,-d),pt(x+1,y+1,-d),'rgba(0,0,0,.35)',2);
-  if(!E)wline(pt(x+1,y,-d),pt(x+1,y+1,-d),'rgba(0,0,0,.35)',2);
+  if(!S)wline(P(X,Y+1,-d),P(X+1,Y+1,-d),'rgba(0,0,0,.35)',2);
+  if(!E)wline(P(X+1,Y,-d),P(X+1,Y+1,-d),'rgba(0,0,0,.35)',2);
   cx.restore();
   // 흙더미 (뒤쪽 바깥) + 앞쪽 입술
-  if(!Nn){poly([pt(x-.02,y,0),pt(x+1.02,y,0),pt(x+1.02,y-.22,3.2),pt(x-.02,y-.22,3.2)],'#7d6845');wline(pt(x,y-.22,3.2),pt(x+1,y-.22,3.2),'rgba(255,235,190,.3)',1);}
-  if(!W){poly([pt(x,y-.02,0),pt(x,y+1.02,0),pt(x-.22,y+1.02,3.2),pt(x-.22,y-.02,3.2)],'#6b5838');}
-  if(!E)wline(pt(x+1,y,0),pt(x+1,y+1,0),'#8f7a52',3);
-  if(!S)wline(pt(x,y+1,0),pt(x+1,y+1,0),'#8f7a52',3);
-  if(!E||!S){ if(!E)wline(pt(x+1,y,0),pt(x+1,y+1,0),'rgba(255,240,200,.25)',1);if(!S)wline(pt(x,y+1,0),pt(x+1,y+1,0),'rgba(255,240,200,.25)',1);}
-  const ti=y*w+x,hp=G.trenchHP[ti]||0;if(hp>0&&hp<80){const q=pt(x+.5,y+.5,1);cx.strokeStyle='rgba(25,17,10,.8)';cx.lineWidth=1.8*z;cx.beginPath();cx.moveTo(q[0]-5*z,q[1]-3*z);cx.lineTo(q[0]-1*z,q[1]+1*z);cx.lineTo(q[0]-3*z,q[1]+5*z);cx.moveTo(q[0]+2*z,q[1]-4*z);cx.lineTo(q[0]+5*z,q[1]);cx.stroke();}
+  if(!Nn){poly([P(X-.02,Y,0),P(X+1.02,Y,0),P(X+1.02,Y-.22,3.2),P(X-.02,Y-.22,3.2)],'#7d6845');wline(P(X,Y-.22,3.2),P(X+1,Y-.22,3.2),'rgba(255,235,190,.3)',1);}
+  if(!W){poly([P(X,Y-.02,0),P(X,Y+1.02,0),P(X-.22,Y+1.02,3.2),P(X-.22,Y-.02,3.2)],'#6b5838');}
+  if(!E)wline(P(X+1,Y,0),P(X+1,Y+1,0),'#8f7a52',3);
+  if(!S)wline(P(X,Y+1,0),P(X+1,Y+1,0),'#8f7a52',3);
+  if(!E||!S){ if(!E)wline(P(X+1,Y,0),P(X+1,Y+1,0),'rgba(255,240,200,.25)',1);if(!S)wline(P(X,Y+1,0),P(X+1,Y+1,0),'rgba(255,240,200,.25)',1);}
+  const ti=y*w+x,hp=G.trenchHP[ti]||0;if(hp>0&&hp<80){const q=P(X+.5,Y+.5,1);cx.strokeStyle='rgba(25,17,10,.8)';cx.lineWidth=1.8*z;cx.beginPath();cx.moveTo(q[0]-5*z,q[1]-3*z);cx.lineTo(q[0]-1*z,q[1]+1*z);cx.lineTo(q[0]-3*z,q[1]+5*z);cx.moveTo(q[0]+2*z,q[1]-4*z);cx.lineTo(q[0]+5*z,q[1]);cx.stroke();}
 }

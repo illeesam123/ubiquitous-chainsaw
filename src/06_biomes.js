@@ -69,7 +69,7 @@ function waterFlush(){
   // 1) 물결 바탕: 한 경로 + 한 번의 fill (밝기는 시간에 따라 전체가 천천히 출렁)
   cx.globalAlpha=.15+.07*Math.sin(t*1.3);cx.fillStyle='#c4e8f2';cx.beginPath();
   const k=1-.4,hw=32*z*k,hh=16*z*k;
-  for(let q=0;q<n;q+=3){if(WQ[q+2]!==2)continue;const [sx,sy]=toS(WQ[q]+.2,WQ[q+1]+.2);cx.moveTo(sx,sy);cx.lineTo(sx+hw,sy+hh);cx.lineTo(sx,sy+2*hh);cx.lineTo(sx-hw,sy+hh);cx.closePath();}
+  for(let q=0;q<n;q+=3){if(WQ[q+2]!==2)continue;const [sx,sy]=toS(WQ[q]+.5,WQ[q+1]+.5);cx.moveTo(sx,sy-hh);cx.lineTo(sx+hw,sy);cx.lineTo(sx,sy+hh);cx.lineTo(sx-hw,sy);cx.closePath();}
   cx.fill();cx.globalAlpha=1;
   // 2) 잔물결: 확대했을 때만, 투명도 4단계로 묶어서
   if(z>=.8){

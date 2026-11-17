@@ -4,6 +4,7 @@
 const LOAD={on:false};
 const _ldStart=startGame;
 startGame=function(cfg){
+  VROT=0;chunkMap.clear();
   LOAD.on=true;const el=document.getElementById('loading');if(el)el.hidden=false;
   try{_ldStart(cfg);}catch(e){LOAD.on=false;if(el)el.hidden=true;throw e;}
   ldRun(el).catch(e=>console.error('로딩 오류:',e)).finally(()=>{LOAD.on=false;if(el)el.hidden=true;});
@@ -43,3 +44,14 @@ async function ldRun(el){
   set(.99,'마무리…');
   cam.x=sv.x;cam.y=sv.y;cam.z=sv.z;clampCamera();render();await ldRaf();set(1,'완료');
 }
+
+// ---- 화면 회전 (90° 단위) ----
+function setRot(r){
+  r=((r%4)+4)%4;if(!G||r===VROT||LOAD.on)return;
+  const c=toW(W/2,H/2);                          // 화면 가운데에 있던 월드 지점을 회전 후에도 가운데에 둔다
+  VROT=r;chunkMap.clear();TBM.clear();
+  if(G.hill)computeShade();                      // 해가 화면 왼쪽 위에서 비추도록 그림자를 다시 계산
+  centerCam(c[0],c[1]);
+  if(typeof toast==='function')toast('화면 방향 '+(r*90)+'°');
+}
+{const l=document.getElementById('bRotL'),r=document.getElementById('bRotR');if(l)l.onclick=()=>setRot(VROT-1);if(r)r.onclick=()=>setRot(VROT+1);}

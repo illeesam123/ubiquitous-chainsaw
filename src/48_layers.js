@@ -96,14 +96,18 @@ function dimCol(c,f){
   if(c[0]==='#')return shadeCol(c,f);
   const m=/hsl\((\d+) (\d+)% (\d+)%\)/.exec(c);return m?`hsl(${m[1]} ${m[2]}% ${Math.max(0,m[3]*f)|0}%)`:c;
 }
-const rawS=(x,y,hh)=>[(x-y)*32*cam.z+cam.x,(x+y)*16*cam.z+cam.y-(hh-GROUND_LV)*HALF_PX*cam.z];
+const rawS=(x,y,hh)=>{const p=VROT===0?[x,y]:rotXY(x,y);return [(p[0]-p[1])*32*cam.z+cam.x,(p[0]+p[1])*16*cam.z+cam.y-(hh-GROUND_LV)*HALF_PX*cam.z];};
 function hillWalls(x,y,i){
   const w=G.w,base=G.ground[i];
   // [이웃 칸, 내 쪽 꼭짓점 둘, 이웃 쪽 꼭짓점 둘, 면 색 배율]
-  const faces=[
-    [x+1<w?i+1:-1,[1,0],[1,1],[0,0],[0,1],.7],   // +x 면
-    [y+1<G.h?i+w:-1,[0,1],[1,1],[0,0],[1,0],.9],  // +y 면
-  ];
+  // 월드의 네 면 중 화면 쪽(보기 좌표에서 +x, +y 로 향하는) 두 면만 그린다. 면 색은 보기 방향 기준.
+  const all=[
+    [1,0,x+1<w?i+1:-1,[1,0],[1,1],[0,0],[0,1]],
+    [-1,0,x>0?i-1:-1,[0,0],[0,1],[1,0],[1,1]],
+    [0,1,y+1<G.h?i+w:-1,[0,1],[1,1],[0,0],[1,0]],
+    [0,-1,y>0?i-w:-1,[0,0],[1,0],[0,1],[1,1]],
+  ],faces=[];
+  for(const [dx,dy,nb,pa,pb,na,nb2] of all){const [a,c]=rotDir(dx,dy);if(a===1&&c===0)faces.push([nb,pa,pb,na,nb2,.7]);else if(a===0&&c===1)faces.push([nb,pa,pb,na,nb2,.9]);}
   for(const [nb,pa,pb,na,nb2,f] of faces){
     const hA=elevIn(i,pa[0],pa[1]),hB=elevIn(i,pb[0],pb[1]);
     let nA=nb>=0?elevIn(nb,na[0],na[1]):hA-4,nB=nb>=0?elevIn(nb,nb2[0],nb2[1]):hB-4;
@@ -122,17 +126,18 @@ function hillWalls(x,y,i){
 }
 // 빗면 윗면: 평평한 타일 그림을 그대로 기울여(skew) 붙인다. 평면의 정사영이라 어파인 변환이 정확히 맞는다.
 function slopeTop(x,y,i,s){
-  const z=cam.z,sv=G.sl[i];G.sl[i]=0;                       // 낮은 변 기준 높이로 중심을 잡는다
-  const [sx,sy]=toS(x+.5,y+.5);G.sl[i]=sv;
-  const H=2*HALF_PX,gx=s===1?1:s===2?-1:s===3?-1:1,gy=s===1?1:s===2?-1:s===3?1:-1;
-  const b=-H*gx/64,d=1-H*gy/32,f=-H*z*.5+H*gx*sx/64+H*gy*sy/32;     // (sx,sy)=화면 px 중심, H=줌 전 높이 px
+  // 평평한 타일 그림(낮은 변 기준 높이 lv 에 놓인 모양)을 경사 윗면 모양으로 옮기는 어파인 변환을 세 꼭짓점으로 직접 푼다(회전해도 그대로 맞는다).
+  const lv=G.lv[i],Q=[[0,0],[1,0],[0,1]].map(([a,c])=>rawS(x+a,y+c,lv)),P3=[[0,0],[1,0],[0,1]].map(([a,c])=>rawS(x+a,y+c,elevIn(i,a,c)));
+  const q1x=Q[1][0]-Q[0][0],q1y=Q[1][1]-Q[0][1],q2x=Q[2][0]-Q[0][0],q2y=Q[2][1]-Q[0][1],p1x=P3[1][0]-P3[0][0],p1y=P3[1][1]-P3[0][1],p2x=P3[2][0]-P3[0][0],p2y=P3[2][1]-P3[0][1],det=q1x*q2y-q1y*q2x;
+  const ma=(p1x*q2y-p2x*q1y)/det,mc=(q1x*p2x-q2x*p1x)/det,mb=(p1y*q2y-p2y*q1y)/det,md=(q1x*p2y-q2x*p1y)/det,me=P3[0][0]-ma*Q[0][0]-mc*Q[0][1],mf=P3[0][1]-mb*Q[0][0]-md*Q[0][1];
   cx.save();
   {const P=[[0,0],[1,0],[1,1],[0,1]].map(([a,c])=>rawS(x+a,y+c,elevIn(i,a,c)));cx.beginPath();P.forEach((p,k)=>k?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]));cx.closePath();cx.clip();}   // 변환된 그림이 이웃 타일을 덮지 않도록 윗면 모양으로 오린다
-  G.sl[i]=0;cx.transform(1,b,0,d,0,f);
+  const sv=G.sl[i];G.sl[i]=0;cx.transform(ma,mb,mc,md,me,mf);
   if(!tileSprite(x,y,i)){tileDia(x,y,0);cx.fillStyle=G.ground[i];cx.fill();}
   cx.restore();G.sl[i]=sv;
   // 방향에 따른 간단한 명암
-  const sh=s===1?.10:s===2?-.12:s===3?.05:-.06,pts=[[0,0],[1,0],[1,1],[0,1]].map(([a,c])=>rawS(x+a,y+c,elevIn(i,a,c)));
+  const hd=s===1?[1,0]:s===2?[-1,0]:s===3?[0,1]:[0,-1],[ha,hb]=rotDir(hd[0],hd[1]),vs=ha===1?1:ha===-1?2:hb===1?3:4;   // 높은 쪽 방향을 보기 기준으로
+  const sh=vs===1?.10:vs===2?-.12:vs===3?.05:-.06,pts=[[0,0],[1,0],[1,1],[0,1]].map(([a,c])=>rawS(x+a,y+c,elevIn(i,a,c)));
   cx.fillStyle=sh>0?`rgba(255,248,220,${sh})`:`rgba(0,0,0,${-sh})`;cx.beginPath();pts.forEach((p,k)=>k?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]));cx.closePath();cx.fill();
 }
 function paintHill(x,y,i){
@@ -156,7 +161,7 @@ function computeShade(){
   }
   const hAt=(x,y)=>{x=x<0?0:x>w?w:x;y=y<0?0:y>h?h:y;const x0=Math.min(w-1,x|0),y0=Math.min(h-1,y|0),fx=x-x0,fy=y-y0;
     return (V[y0*W1+x0]*(1-fx)+V[y0*W1+x0+1]*fx)*(1-fy)+(V[(y0+1)*W1+x0]*(1-fx)+V[(y0+1)*W1+x0+1]*fx)*fy;};
-  const Lx=-.92,Ly=-.38,TAN=1.15,dark=new Float32Array(W1*H1);
+  const [Lx,Ly]=unrotDir(-.92,-.38),TAN=1.15,dark=new Float32Array(W1*H1);
   for(let vy=0;vy<H1;vy++)for(let vx=0;vx<W1;vx++){
     const h0=V[vy*W1+vx];let sh=0;
     for(let t=.5;t<=11;t+=.5){
@@ -182,13 +187,13 @@ function paintShade(x,y,i){
 const TBM=new Map();
 function tileBmp(j,zb){
   const w=G.w,x=j%w,y=(j/w)|0,key=j*8+CHB.indexOf(zb);
-  let sg=(SPRV*131+(G.shV|0)*7919+G.lv[j]*17+G.sl[j]*19+G.road[j]*3+G.tt[j]+G.dec[j])|0;
+  let sg=(SPRV*131+VROT*104729+(G.shV|0)*7919+G.lv[j]*17+G.sl[j]*19+G.road[j]*3+G.tt[j]+G.dec[j])|0;
   for(const o of [1,w,-1,-w,w+1])if(j+o>=0&&j+o<G.N)sg=(sg*31+G.lv[j+o]*5+G.sl[j+o]*7)|0;
   let c=TBM.get(key);if(c&&c.sg===sg)return c;
   const pad=6,top=Math.max(0,(maxH(j)-GROUND_LV)*HALF_PX)+24,bot=70,ox=pad+34,oy=top+pad;
   const cv=c?c.cv:document.createElement('canvas');cv.width=Math.ceil((68+pad*2)*zb);cv.height=Math.ceil((top+32+bot+pad*2)*zb);
   const sv={cx:cx,x:cam.x,y:cam.y,z:cam.z};
-  cx=cv.getContext('2d');cx.setTransform(1,0,0,1,0,0);cam.z=zb;cam.x=ox*zb;cam.y=oy*zb;
+  cx=cv.getContext('2d');cx.setTransform(1,0,0,1,0,0);{const [X,Y]=VT(x,y);cam.z=zb;cam.x=ox*zb-(X-Y)*32*zb;cam.y=oy*zb-(X+Y)*16*zb;}      // 칸의 보기 좌표 최소 꼭짓점이 캔버스 (ox,oy)에 오도록
   try{cx.lineWidth=1;paintBase(x,y,j,w);const v=G.trench[j];if(v){if(v===255)drawCrater(x,y);else drawTrenchTile(x,y,v);}if(G.mouth[j])drawMouth(x,y);const u=G.up[j];if(u===1)drawBridge(x,y);else if(u===4)drawShaftHatch(x,y);}
   finally{cx=sv.cx;cam.x=sv.x;cam.y=sv.y;cam.z=sv.z;}
   cv._v=(cv._v||0)+1;   // 내용이 바뀌었음을 아틀라스에 알린다
@@ -206,8 +211,10 @@ function hillOcclude(e){
   if(!OCQ[ty*w+tx]&&!(e.o&&e.o.size>1))return;
   const lvE=elevH(px,py);let list=null;
   const R=size>1?size:0;
-  for(let y=ty;y<=ty+6&&y<G.h;y++)for(let x=tx;x<=tx+6&&x<w;x++){
-    if(x<tx+(e.o?size:1)&&y<ty+(e.o?size:1)&&(!e.o||(x>=e.o.x&&y>=e.o.y)))continue;   // 개체 자신이 서 있는 칸 제외
+  const own=(x,y)=>e.o?(x>=e.o.x&&x<e.o.x+size&&y>=e.o.y&&y<e.o.y+size):(x===tx&&y===ty);
+  for(let a=0;a<=6;a++)for(let c=0;c<=6;c++){            // 보기 좌표에서 앞쪽(+,+)에 있는 칸들
+    const [dx,dy]=unrotDir(a,c),x=tx+dx,y=ty+dy;
+    if(x<0||y<0||x>=w||y>=G.h||own(x,y))continue;       // 개체 자신이 서 있는 칸 제외
     const j=y*w+x;if(!G.hl[j]||maxH(j)<=lvE+.5)continue;
     (list||(list=[])).push(j);
   }
@@ -227,7 +234,7 @@ function hillOcclude(e){
     if(ovH<5*z||ovW<8*z)continue;
     hit=true;
     if(zb!==undefined){
-      const c=tileBmp(j,zb),k=z/zb,o0=rawS(x,y,GROUND_LV),dx=o0[0]-c.ox*z,dy=o0[1]-c.oy*z,iw=c.cv.width*k,ih=c.cv.height*k;
+      const c=tileBmp(j,zb),k=z/zb,[VX,VY]=VT(x,y),o0=[(VX-VY)*32*z+cam.x,(VX+VY)*16*z+cam.y],dx=o0[0]-c.ox*z,dy=o0[1]-c.oy*z,iw=c.cv.width*k,ih=c.cv.height*k;
       const ix0=Math.max(dx,bx0),iy0=Math.max(dy,by0),ix1=Math.min(dx+iw,bx1),iy1=Math.min(dy+ih,by1);
       if(ix1>ix0&&iy1>iy0)cx.drawImage(c.cv,(ix0-dx)/k,(iy0-dy)/k,(ix1-ix0)/k,(iy1-iy0)/k,ix0,iy0,ix1-ix0,iy1-iy0);
     }else{paintBase(x,y,j,w);const v=G.trench[j];if(v){if(v===255)drawCrater(x,y);else drawTrenchTile(x,y,v);}if(G.mouth[j])drawMouth(x,y);const up2=G.up[j];if(up2===1)drawBridge(x,y);else if(up2===4)drawShaftHatch(x,y);}

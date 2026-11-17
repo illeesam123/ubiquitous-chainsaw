@@ -218,7 +218,8 @@ function render(){
   const list=[];
   for(let y=y0;y<=y1;y++){const [xa,xb]=visRange(y,x0,x1);for(let x=xa;x<=xb;x++){const o=G.obst[y*G.w+x];if(o&&o.idx===y*G.w+x)list.push({d:x+y+o.size,o});}}
   for(let y=y0;y<=y1;y++){const [xa,xb]=visRange(y,x0,x1);for(let x=xa;x<=xb;x++){const i=y*G.w+x;if(roofedI(i))list.push({d:x+y+1.02,roof:i});if(G.brush[i])list.push({d:x+y+1.1,bush:[x,y]});}}
-  for(const u of G.units){if(u.state==='gar'||u.state==='crew'||u.state==='med'||u.lay)continue;if(inRoof(u)){if(u.team!==0)continue;if(u.x>=x0-1&&u.x<=x1+2&&u.y>=y0-1&&u.y<=y1+2)list.push({d:u.x+u.y+1.6,u,ghost:true});continue;}{const hd=hiddenUnit(u);if(hd&&u.team!==0)continue;if(u.x>=x0-1&&u.x<=x1+2&&u.y>=y0-1&&u.y<=y1+2)list.push({d:u.x+u.y+(u.state==='gar'?.6:.2),u,ghost:hd});}}
+  const P0=G.units.filter(p=>p.team===0&&!p.dead&&!p.lay);
+  for(const u of G.units){if(u.state==='gar'||u.state==='crew'||u.state==='med'||u.lay)continue;if(inRoof(u)){const rv=u.team!==0&&(u.reveal||0)>0;if(u.team!==0&&!rv)continue;if(u.x>=x0-1&&u.x<=x1+2&&u.y>=y0-1&&u.y<=y1+2)list.push({d:u.x+u.y+1.6,u,ghost:!rv});continue;}{let hd=hiddenUnit(u);if(hd&&u.team!==0){if(P0.some(p=>Math.hypot(p.x-u.x,p.y-u.y)<=1.6))hd=false;else continue;}if(u.x>=x0-1&&u.x<=x1+2&&u.y>=y0-1&&u.y<=y1+2)list.push({d:u.x+u.y+(u.state==='gar'?.6:.2),u,ghost:hd});}}
   for(const v of G.vehicles)if(v.x>=x0-2&&v.x<=x1+2&&v.y>=y0-2&&v.y<=y1+2)list.push({d:v.x+v.y+.35,v});
   if(G.civs)for(const c of G.civs)if(!c.dead&&c.x>=x0-1&&c.x<=x1+2&&c.y>=y0-1&&c.y<=y1+2)list.push({d:c.x+c.y+.3,civ:c});
   for(const f of G.flags)list.push({d:f.x+f.y+1.2,f});

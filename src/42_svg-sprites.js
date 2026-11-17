@@ -147,7 +147,9 @@ drawOb=function(o){
   }
   const z=cam.z,[sx,sy]=toS(o.x+o.size/2,o.y+o.size/2);
   if(o._sfl)sprBlitFlip(e,sx,sy,z,false);else{const b=sprBkt(z),bm=sprRaster(e,b),k=z/b;cx.drawImage(bm,sx+e.x*z,sy+e.y*z,bm.width*k,bm.height*k);}
-  if(ovs){const col=TEAM_COL[o.occTeam];for(let i=0;i<ovs.length;i+=2){sprBlit(ovs[i],sx,sy,z,false);sprBlitTint(ovs[i+1],sx,sy,z,col,false);}drawOccMarks(o,occUnits(o));}
+  if(ovs){const col=TEAM_COL[o.occTeam];for(let i=0;i<ovs.length;i+=2){sprBlit(ovs[i],sx,sy,z,false);sprBlitTint(ovs[i+1],sx,sy,z,col,false);}}
+  // 슬롯형 건물(벙커·감시탑·포탑 등)은 병사 오버레이가 없으므로 슬롯 표시를, 그 외에도 선택 링을 항상 그린다(에셋이 아직 안 읽혔어도)
+  if(occN||OB[o.type].slots)drawOccMarks(o,occUnits(o));
   SPR.hits++;
   if(o.hp<o.max)drawObHp(o);
   if(o.type==='armory')drawArmoryLabel(o);

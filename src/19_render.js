@@ -102,7 +102,7 @@ function drawUnit(u){
   const tv=G.trench[Math.floor(u.y)*G.w+Math.floor(u.x)],sink=(tv>0&&tv!==255)?7*z:0;
   if(sink){cx.save();cx.beginPath();cx.rect(sx-40*z,sy-90*z,80*z,(90+3)*z);cx.clip();sy+=sink;}
   const col=TEAM_COL[u.team],inG=u.state==='gar'||u.state==='med';
-  cx.fillStyle='rgba(0,0,0,.3)';cx.beginPath();cx.ellipse(sx,sy,7*z,3.5*z,0,0,6.3);cx.fill();
+  shadowEll(sx,sy,7*z,3.5*z,.3);
   if(G.tt[Math.floor(u.y)*G.w+Math.floor(u.x)]===2){cx.strokeStyle='rgba(215,238,245,.65)';cx.lineWidth=Math.max(.7,z);cx.beginPath();cx.ellipse(sx,sy,(9+Math.sin(u.anim*6))*z,4.5*z,0,0,6.3);cx.stroke();}
   const inTr=sameTeamTrench(u);
   let by=sy,lift=inTr?-3*z:0;
@@ -223,7 +223,10 @@ function render(){
   if(G.civs)for(const c of G.civs)if(!c.dead&&c.x>=x0-1&&c.x<=x1+2&&c.y>=y0-1&&c.y<=y1+2)list.push({d:c.x+c.y+.3,civ:c});
   for(const f of G.flags)list.push({d:f.x+f.y+1.2,f});
   list.sort((a,b)=>a.d-b.d);
+  const glOn=glBegin();
+  try{
   for(const e of list){const ea=e.u||e.v||e.civ;if(G.hill&&ea){ELK=null;ELK=elevPx(ea.x,ea.y);}if(e.o){drawOb(e.o);drawCharges(e.o);}else if(e.bush)drawBush(e.bush[0],e.bush[1]);else if(e.roof!==undefined)drawRoof(e.roof);else if(e.u){if(e.ghost)cx.globalAlpha=.4;drawUnit(e.u);cx.globalAlpha=1;}else if(e.v)drawVehicle(e.v);else if(e.civ)drawCiv(e.civ);else drawFlag(e.f);ELK=null;if(G.hill)hillOcclude(e);}
+  }finally{if(glOn)glEnd();}
   for(const T of G.teams)if(T.pad&&T.heli.state!=='wait')drawHeli(T);
   for(const sh of G.shells){const p=Math.min(1,sh.t/sh.d),x=sh.x+(sh.tx-sh.x)*p,y=sh.y+(sh.ty-sh.y)*p,arc=Math.sin(p*Math.PI)*3.2,[sx,sy]=toS(x,y);cx.fillStyle='#27251d';cx.beginPath();cx.arc(sx,sy-arc*cam.z,3.2*cam.z,0,6.3);cx.fill();cx.fillStyle='rgba(255,190,90,.7)';cx.beginPath();cx.arc(sx-1*cam.z,sy-(arc+1)*cam.z,1.2*cam.z,0,6.3);cx.fill();}
   for(const f of G.fx){

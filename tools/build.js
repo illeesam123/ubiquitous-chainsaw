@@ -12,8 +12,9 @@ for (const f of manifest) {
 }
 fs.writeFileSync(path.join(dist, 'game.js'), out);
 let html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-html = html.replace(/<script src="src\/[^"]+"><\/script>\n?/g, '').replace('</body>', '<script src="game.js"></script>\n</body>');
+html = html.replace(/<script src="src\/[^"]+"><\/script>\n?/g, '').replace('</body>', '<script src="pixi.min.js"></script>\n<script src="game.js"></script>\n</body>');
 fs.writeFileSync(path.join(dist, 'index.html'), html);
 fs.copyFileSync(path.join(root, 'style.css'), path.join(dist, 'style.css'));
+fs.copyFileSync(path.join(root, 'vendor/pixi.min.js'), path.join(dist, 'pixi.min.js'));
 fs.cpSync(path.join(root, 'assets'), path.join(dist, 'assets'), { recursive: true });
 console.log(`build ok: ${manifest.length} modules → dist/game.js (${(out.length / 1024).toFixed(0)} KB)`);

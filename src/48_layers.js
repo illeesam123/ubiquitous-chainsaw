@@ -191,6 +191,7 @@ function tileBmp(j,zb){
   cx=cv.getContext('2d');cx.setTransform(1,0,0,1,0,0);cam.z=zb;cam.x=ox*zb;cam.y=oy*zb;
   try{cx.lineWidth=1;paintBase(x,y,j,w);const v=G.trench[j];if(v){if(v===255)drawCrater(x,y);else drawTrenchTile(x,y,v);}if(G.mouth[j])drawMouth(x,y);const u=G.up[j];if(u===1)drawBridge(x,y);else if(u===4)drawShaftHatch(x,y);}
   finally{cx=sv.cx;cam.x=sv.x;cam.y=sv.y;cam.z=sv.z;}
+  cv._v=(cv._v||0)+1;   // 내용이 바뀌었음을 아틀라스에 알린다
   // 타일 기준점 = rawS(x,y,GROUND) = 캔버스 (ox,oy)*zb 에 해당. 원점은 현재 카메라에서의 같은 좌표로 맞춰 찍는다
   c={cv,sg,ox:ox,oy:oy,zb};if(TBM.size>1500)TBM.clear();TBM.set(key,c);return c;
 }

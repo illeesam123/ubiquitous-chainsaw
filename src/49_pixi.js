@@ -5,18 +5,16 @@
 //  - 좌우반전·기울임(깃발)·회전(총)·알파는 Pixi 변환으로 처리(반전 캔버스는 더 이상 필요 없음).
 //  - 참호 안 병사처럼 clip() 으로 잘리는 그림은 스프라이트의 그림 영역(UV)을 잘라 같은 결과를 낸다.
 //  - 순서가 중요한 벡터 그림(그림자·덤불·지붕·민간인)은 비트맵으로 구워 아틀라스에 넣고, 체력바·선택링·글자 등은 맨 위 벡터 층에 그린다.
-//  - 실패하거나 WebGL 이 없으면 자동으로 기존 Canvas 경로로 돌아간다. 헤더 ⚡ 버튼으로 끄고 켠다.
+//  - 실패하거나 WebGL 이 없으면 자동으로 기존 Canvas 경로로 돌아간다. 항상 켜져 있다(맵 로딩 때 청크·스프라이트를 미리 만들어 둔다).
 const GL={on:true,ready:false,fail:'',app:null,cv:null,pool:[],n:0,pages:[],ents:new WeakMap(),tc:new Map(),bakes:new Map(),epoch:0,needReset:false,
   active:false,real:null,v:null,vcv:null,M:[1,0,0,1,0,0],alpha:1,clip:null,lastRect:null,stack:[],w:0,h:0,dpr:0,
-  stat:{spr:0,pages:0,uploads:0,crops:0,skipped:0,ms:0},PAGE:1024,MAXP:10,shadow:null};
-try{if(localStorage.getItem('trench.gl')==='0')GL.on=false;}catch(e){}
+  stat:{spr:0,pages:0,uploads:0,crops:0,skipped:0,ms:0},PAGE:2048,MAXP:12,shadow:null};
 (async function(){
   try{
     if(typeof PIXI==='undefined')throw new Error('PIXI 없음');
     const t=document.createElement('canvas'),gl=t.getContext('webgl2')||t.getContext('webgl');if(!gl)throw new Error('WebGL 없음');
     try{const di=gl.getExtension('WEBGL_debug_renderer_info'),r=di?String(gl.getParameter(di.UNMASKED_RENDERER_WEBGL)):'';GL.gpu=r;
-      // 소프트웨어 렌더러(GPU 없음)에서는 WebGL 이 Canvas 보다 느리므로, 사용자가 저장한 선택이 없으면 끈다
-      if(/swiftshader|llvmpipe|software|basic render/i.test(r)&&localStorage.getItem('trench.gl')===null)GL.on=false;}catch(e){}
+    }catch(e){}
     GL.cv=document.createElement('canvas');
     const app=new PIXI.Application();
     await app.init({canvas:GL.cv,width:Math.max(1,W||800),height:Math.max(1,H||600),resolution:DPR||1,autoDensity:false,backgroundAlpha:0,antialias:false,preference:'webgl',autoStart:false,sharedTicker:false,powerPreference:'high-performance'});
@@ -25,8 +23,7 @@ try{if(localStorage.getItem('trench.gl')==='0')GL.on=false;}catch(e){}
     GL.ready=true;glSync();
   }catch(e){GL.fail=String(e&&e.message||e);console.warn('[GL] 사용 불가 → Canvas 경로:',GL.fail);glSync();}
 })();
-function glSync(){const b=document.getElementById('bGl');if(!b)return;b.classList.toggle('on',GL.ready&&GL.on);b.disabled=!GL.ready;b.title='WebGL 일괄 그리기 (PixiJS) '+(GL.ready?(GL.on?'켜짐':'꺼짐'):'사용 불가: '+GL.fail);}
-(function(){const b=document.getElementById('bGl');if(!b)return;b.onclick=()=>{GL.on=!GL.on;try{localStorage.setItem('trench.gl',GL.on?'1':'0');}catch(e){}glSync();};glSync();})();
+function glSync(){}
 
 // ---- 아틀라스 ----
 function glPageNew(w,h){

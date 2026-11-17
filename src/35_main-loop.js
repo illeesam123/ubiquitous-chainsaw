@@ -13,6 +13,7 @@ function startGame(cfg){
 let last=performance.now();
 function frame(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
+  if(G&&typeof LOAD!=='undefined'&&LOAD.on){requestAnimationFrame(frame);return;}
   if(G){
     try{
       const sp=600*dt/Math.max(.65,cam.z);

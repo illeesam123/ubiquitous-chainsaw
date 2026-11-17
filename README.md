@@ -89,6 +89,7 @@ npm run dist         # 설치 파일 생성 (Windows NSIS / macOS dmg / Linux Ap
 ## WebGL 일괄 그리기 (PixiJS)
 - 엔티티 층(병사·차량·건물·나무·깃발·가림 타일)의 `drawImage` 를 `src/49_pixi.js` 가 가로채 **아틀라스 페이지(1024²) + Pixi 스프라이트**로 그린다. 바닥·날씨·FX·UI 는 기존 Canvas 2D 그대로이고, GL 결과는 `drawImage` 한 번으로 합성한다.
 - 좌우반전·깃발 기울임·총 회전·알파는 Pixi 변환, 참호 속 병사처럼 `clip()` 으로 잘리는 그림은 UV 를 잘라 같은 모양을 낸다. 덤불·지붕·민간인은 구워서(`glBake`) 아틀라스에 넣고 그림자는 부드러운 방사형 한 장을 늘려 쓴다.
-- 헤더 ⚡ 로 켜고 끈다(저장됨). 소프트웨어 렌더러(GPU 없음)로 감지되면 WebGL 이 오히려 느려 기본값이 꺼짐이다. WebGL 오류 시 자동으로 Canvas 경로로 돌아간다.
+- 항상 켜져 있으며(토글 없음), WebGL 을 쓸 수 없거나 오류가 나면 자동으로 Canvas 경로로 돌아간다.
+- 맵 로딩창(`src/50_loading.js`): 시작할 때 맵 전체를 훑으며 에셋을 읽고, 청크 캐시·아틀라스·언덕 가림 타일을 미리 만든다. 로딩 중에는 시뮬레이션이 멈춘다.
 - 스프라이트가 캔버스를 오염(tainted)시키면 WebGL 로 올릴 수 없어, Electron 은 `dist` 를 `trench://app/` 스킴으로 서빙한다. 브라우저에서는 `file://` 대신 http 로 여는 것을 권장.
 - `vendor/pixi.min.js` (PixiJS 8.23.0) 를 빌드가 `dist/` 로 복사한다.

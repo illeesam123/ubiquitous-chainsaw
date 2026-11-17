@@ -144,7 +144,7 @@ function paintBase(x,y,i,w){
   if(G.dec[i]&&G.dec[i]<3){const [sx,sy]=toS(x+.5,y+.5);cx.fillStyle=G.dec[i]===1?'rgba(0,0,0,.14)':'rgba(255,255,255,.1)';cx.beginPath();cx.ellipse(sx+(G.dec[i]*3-5)*cam.z,sy,5*cam.z,2.5*cam.z,0,0,6.3);cx.fill();}
 }
 // ---- 바닥 청크 캐시: 16×16 타일을 한 장의 오프스크린 캔버스에 미리 그려 두고, 화면을 움직일 때는 그 몇 장만 찍는다 ----
-const CHK=16,CHB=[.5,.7,1,1.25];
+const CHK=16,CHB=[.5,.7,1,1.25],CHMAX=140;
 let chunkMap=new Map(),chunkG=null,chunkPix=0;
 function chunkSig(a,b){
   const w=G.w,x1=Math.min(G.w,a*CHK+CHK),y1=Math.min(G.h,b*CHK+CHK);let h=(SPR.on?7:3)+SPRV*131+(G.biome.length*17)+(G.shV|0)*7919;const hv=G.hill;
@@ -171,7 +171,7 @@ function drawGround(x0,y0,x1,y1){
   if(chunkG!==G){chunkMap=new Map();chunkG=G;}
   const zb=CHB.find(q=>q>=cam.z-.001);
   if(zb!==undefined&&cam.z>=.4){
-    if(chunkMap.size>90)chunkMap.clear();
+    if(chunkMap.size>CHMAX)chunkMap.clear();
     for(let b=Math.floor(y0/CHK);b<=Math.floor(y1/CHK);b++)for(let a=Math.floor(x0/CHK);a<=Math.floor(x1/CHK);a++){
       if(a*CHK>=G.w||b*CHK>=G.h)continue;
       const c=chunkGet(a,b,zb),k=cam.z/zb;

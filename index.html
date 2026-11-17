@@ -120,6 +120,12 @@ table.st{width:100%;border-collapse:collapse;margin:10px 0 16px;font:13px var(--
 table.st td,table.st th{text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)}
 @media (max-width:560px){.grid{grid-template-columns:1fr}#sel{display:none}.brand{font-size:18px}}
 @media (prefers-reduced-motion:reduce){#toast{transition:none}}
+#loading{position:absolute;inset:0;z-index:50;background:#0b0c08;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+#loading[hidden]{display:none}
+#loading .ttl{font:28px var(--display);color:var(--accent);letter-spacing:.06em}
+#loading .bar{width:min(420px,70vw);height:8px;background:var(--panel2);border:1px solid var(--line);border-radius:4px;overflow:hidden}
+#loading .bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .12s}
+#loading .msg{font:12px var(--mono);color:var(--dim);min-height:1.4em}
 </style>
 
 <div id="app">
@@ -129,7 +135,6 @@ table.st td,table.st th{text-align:left;padding:4px 6px;border-bottom:1px solid 
     <span id="seedro"></span>
     <button class="btn on" id="bSfx" title="효과음 (N)">🔊</button>
     <button class="btn" id="bGh" title="에셋 소스: 로컬 파일 (클릭해서 GitHub와 전환)">☁</button>
-    <button class="btn" id="bGl" title="WebGL 일괄 그리기" disabled>⚡</button>
     <button class="btn on" id="bFx" title="시각 효과">✨</button>
     <button class="btn on" id="bMusic" title="음악 (M)">♪</button>
     <button class="btn" id="bPause" title="일시정지 (P)">⏸</button>
@@ -138,6 +143,7 @@ table.st td,table.st th{text-align:left;padding:4px 6px;border-bottom:1px solid 
     <button class="btn" id="bNew">새 게임</button>
   </header>
   <main id="stage">
+    <div id="loading" hidden><div class="ttl">참호전</div><div class="bar"><i id="loadBar"></i></div><div class="msg" id="loadMsg"></div></div>
     <canvas id="cv"></canvas>
     <div id="res"></div>
     <div id="teams"></div>

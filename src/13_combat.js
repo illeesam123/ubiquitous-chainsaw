@@ -57,8 +57,8 @@ function mortarImpact(team,x,y,def){
 }
 function stepMortars(dt){
   for(const o of G.obSet){if(o.type!=='mortar')continue;if(o.occ.length<OB.mortar.slots){o.cd=Math.max(o.cd||0,1);continue;}o.cd=(o.cd||1.5)-dt;if(o.cd>0)continue;const def=OB.mortar,T=G.teams[o.team];if(!T||T.res.bullets<5){o.cd=.8;continue;}
-    let target=null,tx=0,ty=0,bd=Math.pow(def.range*weatherSight(),2);for(const u of G.units){if(u.dead||u.state==='crew'||u.team===o.team||u.lay||inRoof(u)||hiddenUnit(u))continue;const dx=u.x-(o.x+.5),dy=u.y-(o.y+.5),d=dx*dx+dy*dy;if(d<bd){bd=d;target=u;tx=u.x;ty=u.y;}}
-    for(const v of G.vehicles){if(v.dead||v.team===o.team)continue;const dx=v.x-(o.x+.5),dy=v.y-(o.y+.5),d=dx*dx+dy*dy;if(d<bd){bd=d;target=v;tx=v.x;ty=v.y;}}
+    let target=null,tx=0,ty=0,bd=Math.pow(def.range*weatherSight(),2);for(const u of G.units){if(u.dead||u.state==='crew'||u.team===o.team||u.lay||inRoof(u)||hiddenUnit(u))continue;const dx=u.x-(o.x+.5),dy=u.y-(o.y+.5),d=shotQ({x:o.x+.5,y:o.y+.5},u,dx*dx+dy*dy,bd,true);if(d<bd){bd=d;target=u;tx=u.x;ty=u.y;}}
+    for(const v of G.vehicles){if(v.dead||v.team===o.team)continue;const dx=v.x-(o.x+.5),dy=v.y-(o.y+.5),d=shotQ({x:o.x+.5,y:o.y+.5},v,dx*dx+dy*dy,bd,true);if(d<bd){bd=d;target=v;tx=v.x;ty=v.y;}}
     if(!target){o.cd=.8;continue;}T.res.bullets-=5;const scatter=(1-weatherAccuracy())*2.2;tx+=(Math.random()-.5)*scatter;ty+=(Math.random()-.5)*scatter;o.cd=def.interval*(.88+Math.random()*.24);o.aim=Math.atan2(ty-(o.y+.5),tx-(o.x+.5));o.muz=.22;fxPush({k:'smoke',x:o.x+.5,y:o.y+.5,t:0,d:1.2});sfx('mortar',o.x+.5,o.y+.5);G.shells.push({team:o.team,x:o.x+.5,y:o.y+.5,tx,ty,t:0,d:.95,def});
   }
 }
@@ -71,14 +71,15 @@ function findTarget(u,range){
   let best=null,bd=range*range;
   for(const e of G.units){
     if(e.dead||e.state==='crew'||e.team===u.team||(e.lay|0)!==(u.lay|0))continue;
-    const dx=e.x-u.x,dy=e.y-u.y,d=dx*dx+dy*dy;
-    if((inRoof(e)||inRoof(u))&&d>20)continue;
+    const dx=e.x-u.x,dy=e.y-u.y,d0=dx*dx+dy*dy;
+    if((inRoof(e)||inRoof(u))&&d0>20)continue;
     if(hiddenUnit(e,u.x,u.y))continue;
+    const d=shotQ(u,e,d0,bd);
     if(d<bd){bd=d;best=e;}
   }
   if(!u.lay)for(const v of G.vehicles){
     if(v.dead||v.team===u.team)continue;
-    const dx=v.x-u.x,dy=v.y-u.y,d=dx*dx+dy*dy;
+    const dx=v.x-u.x,dy=v.y-u.y,d=shotQ(u,v,dx*dx+dy*dy,bd);
     if(d<bd){bd=d;best=v;}
   }
   return best;
@@ -94,4 +95,30 @@ function fire(u,gun,origin){
   resolveHit(u,e,gun);
   sfx(gun.int<.35?'mg':'rifle',origin.x,origin.y);
   return true;
+}
+
+// ---- 높이와 사격 (층 2단계) ----
+// 시뮬레이션용 높이: elevH 는 화면 보기(지하 보기·REC)에 따라 달라지므로 쓰지 않는다.
+function simH(x,y){
+  if(!G.hill)return GROUND_LV;
+  let tx=Math.floor(x),ty=Math.floor(y);
+  if(tx<0)tx=0;else if(tx>=G.w)tx=G.w-1;if(ty<0)ty=0;else if(ty>=G.h)ty=G.h-1;
+  return elevIn(ty*G.w+tx,x-tx,y-ty);
+}
+const EYE_SHOOT=1.2,EYE_TARGET=.9,HIGH_BONUS=.07;   // 반층 단위
+// a 에서 b 로 시선이 지형(언덕·벽)에 막히지 않는가
+function losOk(a,b){
+  if(!G.hill)return true;
+  const x0=a.x,y0=a.y,dx=b.x-x0,dy=b.y-y0,L=Math.hypot(dx,dy);if(L<1.2)return true;
+  const h0=simH(x0,y0)+EYE_SHOOT,h1=simH(b.x,b.y)+EYE_TARGET,n=Math.ceil(L/.35);
+  for(let k=1;k<n;k++){const t=k/n;if(simH(x0+dx*t,y0+dy*t)>h0+(h1-h0)*t+.15)return false;}
+  return true;
+}
+// 거리제곱 q 를 '유효 거리제곱'으로: 높은 곳에서 쏘면 사거리가 늘고(반층당 +7%, 최대 +35%) 낮은 곳에서 쏘면 줄어든다(최대 -25%).
+// 한계(lim)를 넘거나 시선이 막히면 Infinity. arc=true 는 곡사(박격포): 시선은 보지 않고 사거리만 보정한다.
+function shotQ(a,b,q,lim,arc){
+  if(!G.hill)return q;
+  const m=1+Math.max(-.25,Math.min(.35,(simH(a.x,a.y)-simH(b.x,b.y))*HIGH_BONUS)),e=q/(m*m);
+  if(!(e<lim))return Infinity;
+  return (arc||losOk(a,b))?e:Infinity;
 }

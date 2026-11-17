@@ -158,7 +158,7 @@ function stepCivs(dt){
       if(c.mode==='wander'||c.mode==='flee'){
         for(const u of G.units){
           if(u.dead||u.surr>0||u.state==='crew'||u.lay||c.seen[u.team])continue;
-          if(Math.hypot(u.x-c.x,u.y-c.y)<=CIV.sight&&!hiddenUnit(u,c.x,c.y)){civReact(c,u);break;}
+          if(Math.hypot(u.x-c.x,u.y-c.y)<=CIV.sight&&!hiddenUnit(u,c.x,c.y)&&losOk(c,u)){civReact(c,u);break;}
         }
         // 패닉: 병사가 가까이 있으면 확률적으로 겁에 질린다
         if(c.mode==='wander'&&Math.random()<.04){

@@ -100,15 +100,15 @@ function fire(u,gun,origin){
 // ---- 높이와 사격 (층 2단계) ----
 // 시뮬레이션용 높이: elevH 는 화면 보기(지하 보기·REC)에 따라 달라지므로 쓰지 않는다.
 function simH(x,y){
-  if(!G.hill)return GROUND_LV;
+  if(!G.hill)return GROUND_LV-pitAt(x,y)*PIT_SIM;
   let tx=Math.floor(x),ty=Math.floor(y);
   if(tx<0)tx=0;else if(tx>=G.w)tx=G.w-1;if(ty<0)ty=0;else if(ty>=G.h)ty=G.h-1;
-  return elevIn(ty*G.w+tx,x-tx,y-ty);
+  return elevIn(ty*G.w+tx,x-tx,y-ty)-G.pit[ty*G.w+tx]*PIT_SIM;
 }
 const EYE_SHOOT=1.2,EYE_TARGET=.9,HIGH_BONUS=.07;   // 반층 단위
 // a 에서 b 로 시선이 지형(언덕·벽)에 막히지 않는가
 function losOk(a,b){
-  if(!G.hill)return true;
+  if(!G.hill&&!G.npit)return true;
   const x0=a.x,y0=a.y,dx=b.x-x0,dy=b.y-y0,L=Math.hypot(dx,dy);if(L<1.2)return true;
   const h0=simH(x0,y0)+EYE_SHOOT,h1=simH(b.x,b.y)+EYE_TARGET,n=Math.ceil(L/.35);
   for(let k=1;k<n;k++){const t=k/n;if(simH(x0+dx*t,y0+dy*t)>h0+(h1-h0)*t+.15)return false;}
@@ -117,7 +117,7 @@ function losOk(a,b){
 // 거리제곱 q 를 '유효 거리제곱'으로: 높은 곳에서 쏘면 사거리가 늘고(반층당 +7%, 최대 +35%) 낮은 곳에서 쏘면 줄어든다(최대 -25%).
 // 한계(lim)를 넘거나 시선이 막히면 Infinity. arc=true 는 곡사(박격포): 시선은 보지 않고 사거리만 보정한다.
 function shotQ(a,b,q,lim,arc){
-  if(!G.hill)return q;
+  if(!G.hill&&!G.npit)return q;
   const m=1+Math.max(-.25,Math.min(.35,(simH(a.x,a.y)-simH(b.x,b.y))*HIGH_BONUS)),e=q/(m*m);
   if(!(e<lim))return Infinity;
   return (arc||losOk(a,b))?e:Infinity;

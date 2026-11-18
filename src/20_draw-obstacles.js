@@ -296,7 +296,7 @@ function drawCrater(x,y){
   cx.strokeStyle='rgba(255,240,200,.18)';cx.lineWidth=1.3*z;cx.beginPath();cx.ellipse(sx,sy,27*z,13.5*z,0,3.4,5.6);cx.stroke();
 }
 function drawTrenchTile(x,y,v){
-  const w=G.w,z=cam.z,d=8,[X,Y]=VT(x,y),P=toSV;
+  const w=G.w,z=cam.z,d=PIT_PX,[X,Y]=VT(x,y),P=toSV;
   const nb=(va,vb)=>{const [dx,dy]=unrotDir(va,vb),a=x+dx,b=y+dy;const q=inb(a,b)?G.trench[b*w+a]:0;return q>0&&q!==255;};
   const W=nb(-1,0),Nn=nb(0,-1),E=nb(1,0),S=nb(0,1);
   cx.save();

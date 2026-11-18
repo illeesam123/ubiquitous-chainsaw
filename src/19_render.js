@@ -110,7 +110,7 @@ function unitHeld(u,sx,by,z,body){
 function unitBody(u,sx,by,z,body,inG){unitBodyParts(u,sx,by,z,body,inG);unitHeld(u,sx,by,z,body);}
 function drawUnit(u){
   const z=cam.z;let [sx,sy]=toS(u.x,u.y);
-  const tv=G.trench[Math.floor(u.y)*G.w+Math.floor(u.x)],sink=(tv>0&&tv!==255)?7*z:0;
+  const sink=0;
   if(sink){cx.save();cx.beginPath();cx.rect(sx-40*z,sy-90*z,80*z,(90+3)*z);cx.clip();sy+=sink;}
   const col=TEAM_COL[u.team],inG=u.state==='gar'||u.state==='med';
   shadowEll(sx,sy,7*z,3.5*z,.3);
@@ -220,6 +220,7 @@ function render(){
   cx.setTransform(DPR,0,0,DPR,0,0);
   cx.fillStyle='#0b0c08';cx.fillRect(0,0,W,H);
   if(!G)return;
+  pitSync();
   updateWfx();
   const eh=G.hill?13*HALF_PX*cam.z:0;   // 높은 곳의 개체는 화면에서 위로 올라가 보이므로, 화면 아래쪽 바깥의 개체도 목록에 포함한다
   const cs=[[0,0],[W,0],[0,H+eh],[W,H+eh]].map(p=>toW(p[0],p[1]));
@@ -247,7 +248,7 @@ function render(){
   list.sort((a,b)=>a.d-b.d);
   const glOn=glBegin();
   try{
-  for(const e of list){const ea=e.u||e.v||e.civ;if(G.hill&&ea){ELK=null;ELK=elevPx(ea.x,ea.y);}if(e.o){drawOb(e.o);drawCharges(e.o);}else if(e.bush)drawBush(e.bush[0],e.bush[1]);else if(e.roof!==undefined)drawRoof(e.roof);else if(e.u){if(e.ghost)cx.globalAlpha=.4;drawUnit(e.u);cx.globalAlpha=1;}else if(e.v)drawVehicle(e.v);else if(e.civ)drawCiv(e.civ);else drawFlag(e.f);ELK=null;if(G.hill)hillOcclude(e);}
+  for(const e of list){const ea=e.u||e.v||e.civ;if((G.hill||G.npit)&&ea){ELK=null;ELK=elevPx(ea.x,ea.y)-(e.u?pitAt(ea.x,ea.y)*PIT_PX:0);}if(e.o){drawOb(e.o);drawCharges(e.o);}else if(e.bush)drawBush(e.bush[0],e.bush[1]);else if(e.roof!==undefined)drawRoof(e.roof);else if(e.u){if(e.ghost)cx.globalAlpha=.4;drawUnit(e.u);cx.globalAlpha=1;}else if(e.v)drawVehicle(e.v);else if(e.civ)drawCiv(e.civ);else drawFlag(e.f);ELK=null;if(G.hill)hillOcclude(e);}
   }finally{if(glOn)glEnd();}
   for(const T of G.teams)if(T.pad&&T.heli.state!=='wait')drawHeli(T);
   for(const sh of G.shells){const p=Math.min(1,sh.t/sh.d),x=sh.x+(sh.tx-sh.x)*p,y=sh.y+(sh.ty-sh.y)*p,arc=Math.sin(p*Math.PI)*3.2,[sx,sy]=toS(x,y);cx.fillStyle='#27251d';cx.beginPath();cx.arc(sx,sy-arc*cam.z,3.2*cam.z,0,6.3);cx.fill();cx.fillStyle='rgba(255,190,90,.7)';cx.beginPath();cx.arc(sx-1*cam.z,sy-(arc+1)*cam.z,1.2*cam.z,0,6.3);cx.fill();}

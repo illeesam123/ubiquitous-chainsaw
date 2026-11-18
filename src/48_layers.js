@@ -7,7 +7,17 @@
 const FLOOR_PX=28,HALF_PX=14,GROUND_LV=6,UNDER_LV=2,MAX_LV=12;
 let OCQ=null,ELK=null;   // ELK: 개체를 그리는 동안 고도를 한 값으로 고정(차량 등이 경사에서 부위별로 다른 높이로 찌그러지는 것 방지)
    // 타일별: 앞쪽에 이 타일의 서 있는 것을 가릴 만큼 높은 타일이 있는가
-function initLayers(){G.lv=new Uint8Array(G.N).fill(GROUND_LV);G.sl=new Uint8Array(G.N);G.hl=new Uint8Array(G.N);G.occ=new Uint8Array(G.N);G.hill=false;}
+function initLayers(){G.lv=new Uint8Array(G.N).fill(GROUND_LV);G.sl=new Uint8Array(G.N);G.hl=new Uint8Array(G.N);G.occ=new Uint8Array(G.N);G.hill=false;G.pit=new Uint8Array(G.N);G.npit=0;}
+// ---- 참호 = 반층 구덩이 (층 3단계-1) ----
+// 팀 참호 칸(1..254)은 주변보다 반층(14px) 낮다. 지형 메쉬는 건드리지 않고, 그 칸 위 병사의 높이(그리기·사격 계산)에만 반영한다.
+const PIT_PX=HALF_PX,PIT_SIM=.6;
+function pitSync(){
+  if(!G.pit||G.pit.length!==G.N){G.pit=new Uint8Array(G.N);G.npit=0;}
+  let n=0;const t=G.trench,p=G.pit;
+  for(let i=0;i<G.N;i++){const v=t[i]>0&&t[i]!==255?1:0;p[i]=v;n+=v;}
+  G.npit=n;
+}
+const pitAt=(x,y)=>{if(!G||!G.npit)return 0;const tx=Math.floor(x),ty=Math.floor(y);return tx>=0&&ty>=0&&tx<G.w&&ty<G.h?G.pit[ty*G.w+tx]:0;};
 function elevIn(i,fx,fy){
   const s=G.sl[i];let a=0;
   if(s===1)a=2*fx;else if(s===2)a=2*(1-fx);else if(s===3)a=2*fy;else if(s===4)a=2*(1-fy);

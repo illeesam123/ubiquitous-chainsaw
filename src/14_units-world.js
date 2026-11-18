@@ -29,7 +29,8 @@ function stepUnit(u,dt){
   else if(movingState&&u.path.length){
     const ni=u.path[0],nx=(ni%G.w)+.5,ny=((ni/G.w)|0)+.5;
     const vehicleBlock=!u.lay&&G.vehicles.some(v=>!v.dead&&Math.hypot(v.x-nx,v.y-ny)<.82);
-    if(vehicleBlock){u.path=[];if(u.state==='flee')u.state='fuse';else if(u.state==='medmove'||u.state==='medqueue'){u.state='idle';u.medCooldown=2;clearMedical(u);}else{u.state='idle';u.wait=.2;}}
+    if(!u.lay&&climbStep(u,ni,dt)){if(!u.path.length)arrive(u);}
+    else if(vehicleBlock){u.path=[];if(u.state==='flee')u.state='fuse';else if(u.state==='medmove'||u.state==='medqueue'){u.state='idle';u.medCooldown=2;clearMedical(u);}else{u.state='idle';u.wait=.2;}}
     else{
       const dx=nx-u.x,dy=ny-u.y,d=Math.hypot(dx,dy),step=SPEED*weatherSpeed()*dt*(u.lay?.9:terrainSpeed(u.x,u.y))*(u.state==='flee'?1.5:1);
       if(d<=step){u.x=nx;u.y=ny;u.path.shift();if(!u.lay&&G.trench[ni]===255&&u.path.length){u.stuck=6+Math.random()*5;fxPush({k:'dust',x:nx,y:ny,t:0,d:.5});}}

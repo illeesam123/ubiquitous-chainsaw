@@ -10,7 +10,7 @@ function uiGround(x0,y0,x1,y1){
     }
     return;
   }
-  const single=tool!=='dig'&&tool!=='demo'&&tool!=='sandbag'&&tool!=='wire'&&(!(tool.startsWith('u:')||tool.startsWith('r:'))||tool==='u:shaft');
+  const single=tool!=='dig'&&tool!=='demo'&&tool!=='sandbag'&&tool!=='wire'&&(!(tool.startsWith('u:')||tool.startsWith('r:'))||tool==='u:shaft'||tool==='u:climb');
   if(drag&&drag.mode==='path'){
     const tiles=single?[drag.tiles[0]]:(drag.rect&&drag.moved&&drag.cur?rectTiles(drag.t0,drag.cur):drag.tiles);
     for(const [x,y] of tiles){

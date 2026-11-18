@@ -3,6 +3,7 @@ const UPG={
   bridge:{n:'다리',cost:{wood:14,metal:4},work:5,desc:'참호·얕은 물 위에 놓아 전차가 건넙니다'},
   roof:{n:'금속 천장',cost:{metal:8},work:6,desc:'포격 면역 · 사격 대부분 차단 · 사다리로만 출입'},
   ladder:{n:'사다리 출구',cost:{metal:4,wood:4},work:4,desc:'천장 구간의 출입구(천장 먼저)'},
+  climb:{n:'절벽 사다리',cost:{wood:10,metal:2},work:5,desc:'높이 차가 큰 절벽(걸어서 못 넘는 곳) 위아래를 잇는다 · 절벽 옆 칸에 클릭'},
   shaft:{n:'수직갱',cost:{metal:6,wood:10},work:8,desc:'지하로 내려가는 입구 · 지하 땅굴 끝에서는 지상 출구'}
 };
 const UPCODE={bridge:1,roof:2,ladder:3,shaft:4};
@@ -11,7 +12,7 @@ let viewLay=0,areaMode=true,pfLay=0,pfTeam=0;
 
 function roofedI(i){const v=G.up[i];return v===2||v===3;}
 function inRoof(u){return !u.lay&&roofedI(Math.floor(u.y)*G.w+Math.floor(u.x));}
-function stepOK(a,b){if(G.hill&&!stepH(a,b))return false;const ra=roofedI(a),rb=roofedI(b);if(ra===rb)return true;return ra?G.up[a]===3:G.up[b]===3;}
+function stepOK(a,b){if(G.hill&&!stepH(a,b)&&!ladderLink(a,b))return false;const ra=roofedI(a),rb=roofedI(b);if(ra===rb)return true;return ra?G.up[a]===3:G.up[b]===3;}
 function underOK(i,team){return G.under[i]!==0&&G.open[team][i]===1;}
 function transitOK(team,i){return (G.mouth[i]===1&&G.under[i]!==0)||(G.up[i]===4&&G.under[i]!==0&&G.open[team][i]===1);}
 function findPathL(lay,team,sx,sy,gx,gy,adj,size,vehicle){
@@ -107,6 +108,7 @@ function taskCheckX(team,kind,x,y,type){
     if(padAt(x,y)>=0)return '헬리패드 위에는 불가합니다';
     if(G.mouth[i])return '동굴 입구입니다';
     if(G.tasks.has(tkey('upg',i)))return '이미 예약된 작업입니다';
+    if(type==='climb'){const r=climbCheck(i);if(r)return r;if(!canAfford(T,U.cost))return '자원이 부족합니다';return null;}
     const own=G.trench[i]===team+1,water=G.tt[i]===2,up=G.up[i];
     if(type==='bridge'){
       if(!own&&!water)return '내 참호나 얕은 물 위에만 놓을 수 있습니다';
@@ -188,7 +190,7 @@ finishTask=function(t){
   G.tasks.delete(t.key);
   const T=G.teams[t.team],i=t.idx;
   if(t.kind==='upg'){
-    G.up[i]=UPCODE[t.type];
+    if(t.type==='climb')addLadder(i);else G.up[i]=UPCODE[t.type];
     if(t.type==='shaft'){
       if(!G.under[i])setUnder(i,t.team);else G.open[t.team][i]=1;
       if(!G.trans.includes(i))G.trans.push(i);
@@ -233,7 +235,7 @@ function demoOrFill(tiles,sel){
   return err;
 }
 function commandTiles(tiles,sel,vsel,t){
-  if(tool==='u:shaft')tiles=[tiles[0]];
+  if(tool==='u:shaft'||tool==='u:climb')tiles=[tiles[0]];
   if(tool==='dig'){
     if(viewLay===1)return issueWork(0,'tun',tiles,null,assignN,sel);
     if(vsel.length){orderVehicles(vsel,t[0],t[1]);return null;}

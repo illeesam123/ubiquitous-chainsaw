@@ -240,6 +240,7 @@ function render(){
   const list=[];
   for(let y=y0;y<=y1;y++){const [xa,xb]=visRange(y,x0,x1);for(let x=xa;x<=xb;x++){const o=G.obst[y*G.w+x];if(o&&o.idx===y*G.w+x)list.push({d:VD(o.x+o.size/2,o.y+o.size/2),o});}}
   for(let y=y0;y<=y1;y++){const [xa,xb]=visRange(y,x0,x1);for(let x=xa;x<=xb;x++){const i=y*G.w+x;if(roofedI(i))list.push({d:VD(x+.5,y+.5)+.02,roof:i});if(G.brush[i])list.push({d:VD(x+.5,y+.5)+.1,bush:[x,y]});}}
+  if(G.cl&&G.cl.size)for(const [a,s] of G.cl){const ax=a%G.w,ay=(a/G.w)|0;if(ax<x0||ax>x1||ay<y0||ay>y1)continue;for(const b of s)if(G.lv[b]>G.lv[a])list.push({d:VD(ax+.5+((b%G.w)-ax)*.5,ay+.5+(((b/G.w)|0)-ay)*.5)+.12,lad:[a,b]});}
   const P0=G.units.filter(p=>p.team===0&&!p.dead&&!p.lay);
   for(const u of G.units){if(u.state==='gar'||u.state==='crew'||u.state==='med'||u.lay)continue;if(inRoof(u)){const rv=u.team!==0&&(u.reveal||0)>0;if(u.team!==0&&!rv)continue;if(u.x>=x0-1&&u.x<=x1+2&&u.y>=y0-1&&u.y<=y1+2)list.push({d:VD(u.x,u.y)+1.6,u,ghost:!rv});continue;}{let hd=hiddenUnit(u);if(hd&&u.team!==0){if(P0.some(p=>Math.hypot(p.x-u.x,p.y-u.y)<=1.6))hd=false;else continue;}if(u.x>=x0-1&&u.x<=x1+2&&u.y>=y0-1&&u.y<=y1+2)list.push({d:VD(u.x,u.y)+(u.state==='gar'?.6:.2),u,ghost:hd});}}
   for(const v of G.vehicles)if(v.x>=x0-2&&v.x<=x1+2&&v.y>=y0-2&&v.y<=y1+2)list.push({d:VD(v.x,v.y)+.35,v});
@@ -248,7 +249,7 @@ function render(){
   list.sort((a,b)=>a.d-b.d);
   const glOn=glBegin();
   try{
-  for(const e of list){const ea=e.u||e.v||e.civ;if((G.hill||G.npit)&&ea){ELK=null;ELK=elevPx(ea.x,ea.y)-(e.u?pitAt(ea.x,ea.y)*PIT_PX:0);}if(e.o){drawOb(e.o);drawCharges(e.o);}else if(e.bush)drawBush(e.bush[0],e.bush[1]);else if(e.roof!==undefined)drawRoof(e.roof);else if(e.u){if(e.ghost)cx.globalAlpha=.4;drawUnit(e.u);cx.globalAlpha=1;}else if(e.v)drawVehicle(e.v);else if(e.civ)drawCiv(e.civ);else drawFlag(e.f);ELK=null;if(G.hill)hillOcclude(e);}
+  for(const e of list){const ea=e.u||e.v||e.civ;if((G.hill||G.npit)&&ea){ELK=null;ELK=elevPx(ea.x,ea.y)-(e.u?pitAt(ea.x,ea.y)*PIT_PX:0)+(e.u&&e.u.cz?e.u.cz*HALF_PX:0);}if(e.o){drawOb(e.o);drawCharges(e.o);}else if(e.lad)drawLadder(e.lad[0],e.lad[1]);else if(e.bush)drawBush(e.bush[0],e.bush[1]);else if(e.roof!==undefined)drawRoof(e.roof);else if(e.u){if(e.ghost)cx.globalAlpha=.4;drawUnit(e.u);cx.globalAlpha=1;}else if(e.v)drawVehicle(e.v);else if(e.civ)drawCiv(e.civ);else drawFlag(e.f);ELK=null;if(G.hill)hillOcclude(e);}
   }finally{if(glOn)glEnd();}
   for(const T of G.teams)if(T.pad&&T.heli.state!=='wait')drawHeli(T);
   for(const sh of G.shells){const p=Math.min(1,sh.t/sh.d),x=sh.x+(sh.tx-sh.x)*p,y=sh.y+(sh.ty-sh.y)*p,arc=Math.sin(p*Math.PI)*3.2,[sx,sy]=toS(x,y);cx.fillStyle='#27251d';cx.beginPath();cx.arc(sx,sy-arc*cam.z,3.2*cam.z,0,6.3);cx.fill();cx.fillStyle='rgba(255,190,90,.7)';cx.beginPath();cx.arc(sx-1*cam.z,sy-(arc+1)*cam.z,1.2*cam.z,0,6.3);cx.fill();}

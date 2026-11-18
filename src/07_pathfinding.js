@@ -29,7 +29,7 @@ function findPath(sx,sy,gx,gy,adj,size,vehicle){
       if(!(pass(n)||(!adj&&n===gi)))continue;
       if(dx&&dy&&(!pass(cy*w+nx)||!pass(ny*w+cx)||(G.hill&&(!stepH(c,cy*w+nx)||!stepH(c,ny*w+cx)))))continue;
       if(!pfLay){if(!stepOK(c,n))continue;if(dx&&dy&&(roofedI(c)||roofedI(n)))continue;}
-      const tr=pfLay?1:(G.trench[n]===255?3:G.trench[n]>0?.8:1)*(G.tt[n]===2&&G.up[n]!==1?2.4:G.tt[n]===1?1.15:1)*(vehicle?roadCost(n):(G.brush[n]?1.4:1)),ng=pfG[c]+cs*tr;
+      const tr=pfLay?1:(G.trench[n]===255?3:G.trench[n]>0?.8:1)*(G.tt[n]===2&&G.up[n]!==1?2.4:G.tt[n]===1?1.15:1)*(vehicle?roadCost(n):(G.brush[n]?1.4:1)),ng=pfG[c]+cs*tr+(G.cl&&G.cl.size&&ladderLink(c,n)?4:0);
       if(pfS[n]!==pfStamp||ng<pfG[n]){pfS[n]=pfStamp;pfG[n]=ng;pfP[n]=c;push(ng+hh(nx,ny),n);}
     }
   }

@@ -7,7 +7,7 @@
 const FLOOR_PX=28,HALF_PX=14,GROUND_LV=6,UNDER_LV=2,MAX_LV=12;
 let OCQ=null,ELK=null;   // ELK: 개체를 그리는 동안 고도를 한 값으로 고정(차량 등이 경사에서 부위별로 다른 높이로 찌그러지는 것 방지)
    // 타일별: 앞쪽에 이 타일의 서 있는 것을 가릴 만큼 높은 타일이 있는가
-function initLayers(){G.lv=new Uint8Array(G.N).fill(GROUND_LV);G.sl=new Uint8Array(G.N);G.hl=new Uint8Array(G.N);G.occ=new Uint8Array(G.N);G.hill=false;G.pit=new Uint8Array(G.N);G.npit=0;}
+function initLayers(){G.lv=new Uint8Array(G.N).fill(GROUND_LV);G.sl=new Uint8Array(G.N);G.hl=new Uint8Array(G.N);G.occ=new Uint8Array(G.N);G.hill=false;G.pit=new Uint8Array(G.N);G.npit=0;G.cl=new Map();}
 // ---- 참호 = 반층 구덩이 (층 3단계-1) ----
 // 팀 참호 칸(1..254)은 주변보다 반층(14px) 낮다. 지형 메쉬는 건드리지 않고, 그 칸 위 병사의 높이(그리기·사격 계산)에만 반영한다.
 const PIT_PX=HALF_PX,PIT_SIM=.6;
@@ -216,7 +216,7 @@ function hillOcclude(e){
   let px,py,size=1,mine=false;
   if(e.u){px=e.u.x;py=e.u.y;mine=e.u.team===0&&!e.ghost;}else if(e.v){px=e.v.x;py=e.v.y;size=1.3;}else if(e.civ){px=e.civ.x;py=e.civ.y;}
   else if(e.o){px=e.o.x+e.o.size/2;py=e.o.y+e.o.size/2;size=e.o.size;}else if(e.bush){px=e.bush[0]+.5;py=e.bush[1]+.5;}
-  else if(e.f){px=e.f.x+.5;py=e.f.y+.5;}else return;
+  else if(e.f){px=e.f.x+.5;py=e.f.y+.5;}else if(e.lad){px=(e.lad[0]%G.w)+.5;py=((e.lad[0]/G.w)|0)+.5;}else return;
   const w=G.w,tx=Math.floor(px),ty=Math.floor(py);if(tx<0||ty<0||tx>=w||ty>=G.h)return;
   if(!OCQ[ty*w+tx]&&!(e.o&&e.o.size>1))return;
   const lvE=elevH(px,py);let list=null;
@@ -231,7 +231,7 @@ function hillOcclude(e){
   if(!list)return;
   const z=cam.z,[sx,sy]=toS(px,py);
   // 개체 크기에 맞춘 상자: 병사·민간인은 작게, 건물은 크기에 비례, 나무·바위 등은 중간
-  const big=e.o&&size>1,Wd=(e.u||e.civ?16:big?size*34+16:e.v?30:34)*z,up=(e.u||e.civ?36:big?size*38+30:e.v?30:66)*z,dn=(e.u||e.civ?6:big?size*14:e.v?10:12)*z;
+  const big=e.o&&size>1,Wd=(e.u||e.civ?16:big?size*34+16:e.v?30:34)*z,up=(e.lad?(G.lv[e.lad[1]]-G.lv[e.lad[0]])*HALF_PX+30:e.u||e.civ?36:big?size*38+30:e.v?30:66)*z,dn=(e.u||e.civ?6:big?size*14:e.v?10:12)*z;
   let hit=false;const zb=CHB.find(q=>q>=z-.001),bx0=sx-Wd,by0=sy-up,bx1=sx+Wd,by1=sy+dn;
   cx.save();if(zb===undefined){cx.beginPath();cx.rect(bx0,by0,bx1-bx0,by1-by0);cx.clip();}
   for(const j of list){

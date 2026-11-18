@@ -23,9 +23,10 @@ function tileColor(b,kind,g){
 }
 function terrainSpeed(x,y){
   const i=Math.floor(y)*G.w+Math.floor(x);
-  if(G.trench[i]===255)return .55;
+  const fl=G.flood&&G.flood[i]?.6:1;
+  if(G.trench[i]===255)return .55*fl;
   if(G.up[i]===1)return 1;
-  if(G.trench[i]>0)return 1.1;
+  if(G.trench[i]>0)return 1.1*fl;
   if(G.brush[i])return BIOME[G.biome].speed*.62;
   const k=G.tt[i];
   return BIOME[G.biome].speed*(k===2?.5:k===1?.88:k===4?1.08:1);

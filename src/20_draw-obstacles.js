@@ -294,6 +294,7 @@ function drawCrater(x,y){
   cx.fillStyle='#2b2216';cx.beginPath();cx.ellipse(sx,sy+1.5*z,21*z,10*z,0,0,6.3);cx.fill();
   cx.fillStyle='#1b150d';cx.beginPath();cx.ellipse(sx,sy+3*z,14*z,6*z,0,0,6.3);cx.fill();
   cx.strokeStyle='rgba(255,240,200,.18)';cx.lineWidth=1.3*z;cx.beginPath();cx.ellipse(sx,sy,27*z,13.5*z,0,3.4,5.6);cx.stroke();
+  if(G.flood&&G.flood[Math.floor(y)*G.w+Math.floor(x)]){cx.fillStyle='rgba(52,108,138,.66)';cx.beginPath();cx.ellipse(sx,sy+2*z,20*z,9.5*z,0,0,6.3);cx.fill();cx.strokeStyle='rgba(205,236,246,.3)';cx.lineWidth=Math.max(.7,z);cx.beginPath();cx.ellipse(sx-4*z,sy+1*z,7*z,2.6*z,0,0,6.3);cx.stroke();}
 }
 function drawTrenchTile(x,y,v){
   const w=G.w,z=cam.z,d=PIT_PX,[X,Y]=VT(x,y),P=toSV;
@@ -318,6 +319,14 @@ function drawTrenchTile(x,y,v){
     poly([P(X,Y,0),P(X+1,Y,0),P(X+1,Y,-d),P(X,Y,-d)],'#5a4730');
     for(let k=1;k<4;k++){const hh=-d*k/4;wline(P(X,Y,hh),P(X+1,Y,hh),'rgba(30,20,10,.4)',1);}
     for(let k=0;k<5;k++){const xx=X+.1+k*.2;wline(P(xx,Y,0),P(xx,Y,-d),'rgba(30,20,10,.5)',1.6);}
+  }
+  // 물이 찬 구덩이: 바닥과 벽 아래쪽을 덮는 반투명 수면
+  if(G.flood&&G.flood[y*w+x]){
+    const wl=-d*.42,tt=((typeof WFX!=='undefined'?WFX.t:0)||0);
+    poly([P(X,Y,wl),P(X+1,Y,wl),P(X+1,Y+1,wl),P(X,Y+1,wl)],'rgba(52,108,138,.6)');
+    cx.strokeStyle='rgba(205,236,246,'+(.22+.1*Math.sin(tt*1.7+x*2+y)).toFixed(2)+')';cx.lineWidth=Math.max(.7,z);cx.beginPath();
+    for(let k=0;k<3;k++){const f=.2+k*.28,a=P(X+f,Y+.25+((k*.31+tt*.12)%.5),wl),c=P(X+f+.14,Y+.25+((k*.31+tt*.12)%.5),wl);cx.moveTo(a[0],a[1]);cx.lineTo(c[0],c[1]);}
+    cx.stroke();
   }
   // 앞쪽 가장자리 그림자
   if(!S)wline(P(X,Y+1,-d),P(X+1,Y+1,-d),'rgba(0,0,0,.35)',2);

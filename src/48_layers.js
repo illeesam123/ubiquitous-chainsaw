@@ -13,9 +13,20 @@ function initLayers(){G.lv=new Uint8Array(G.N).fill(GROUND_LV);G.sl=new Uint8Arr
 const PIT_PX=HALF_PX,PIT_SIM=.6;
 function pitSync(){
   if(!G.pit||G.pit.length!==G.N){G.pit=new Uint8Array(G.N);G.npit=0;}
-  let n=0;const t=G.trench,p=G.pit;
-  for(let i=0;i<G.N;i++){const v=t[i]>0&&t[i]!==255?1:0;p[i]=v;n+=v;}
+  let n=0,chg=!G.flood||G.flood.length!==G.N;const t=G.trench,p=G.pit;
+  if(chg){G.flood=new Uint8Array(G.N);G._pt=new Uint8Array(G.N);}
+  const q=G._pt;
+  for(let i=0;i<G.N;i++){const v=t[i]>0&&t[i]!==255?1:0;p[i]=v;n+=v;const o=t[i]>0?1:0;if(q[i]!==o){q[i]=o;chg=true;}}
   G.npit=n;
+  if(chg)floodPits();
+}
+// 물가에 닿은 구덩이(참호·포탄 구덩이)와 거기에 이어진 구덩이는 물이 찬다 (반투명 물, 이동 느려짐)
+function floodPits(){
+  const w=G.w,h=G.h,f=G.flood,q=G._pt,st=[];f.fill(0);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(!q[i]||G.tt[i]===2)continue;
+    if((x>0&&G.tt[i-1]===2)||(x<w-1&&G.tt[i+1]===2)||(y>0&&G.tt[i-w]===2)||(y<h-1&&G.tt[i+w]===2)){f[i]=1;st.push(i);}}
+  while(st.length){const c=st.pop(),x=c%w,y=(c/w)|0;
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const a=x+dx,b=y+dy;if(a<0||b<0||a>=w||b>=h)continue;const j=b*w+a;if(q[j]&&!f[j]&&G.tt[j]!==2){f[j]=1;st.push(j);}}}
 }
 const pitAt=(x,y)=>{if(!G||!G.npit)return 0;const tx=Math.floor(x),ty=Math.floor(y);return tx>=0&&ty>=0&&tx<G.w&&ty<G.h?G.pit[ty*G.w+tx]:0;};
 function elevIn(i,fx,fy){

@@ -114,7 +114,7 @@ function drawUnit(u){
   if(sink){cx.save();cx.beginPath();cx.rect(sx-40*z,sy-90*z,80*z,(90+3)*z);cx.clip();sy+=sink;}
   const col=TEAM_COL[u.team],inG=u.state==='gar'||u.state==='med';
   shadowEll(sx,sy,7*z,3.5*z,.3);
-  if(G.tt[Math.floor(u.y)*G.w+Math.floor(u.x)]===2){cx.strokeStyle='rgba(215,238,245,.65)';cx.lineWidth=Math.max(.7,z);cx.beginPath();cx.ellipse(sx,sy,(9+Math.sin(u.anim*6))*z,4.5*z,0,0,6.3);cx.stroke();}
+  if(G.tt[Math.floor(u.y)*G.w+Math.floor(u.x)]===2||(G.flood&&G.flood[Math.floor(u.y)*G.w+Math.floor(u.x)])){cx.strokeStyle='rgba(215,238,245,.65)';cx.lineWidth=Math.max(.7,z);cx.beginPath();cx.ellipse(sx,sy,(9+Math.sin(u.anim*6))*z,4.5*z,0,0,6.3);cx.stroke();}
   const inTr=sameTeamTrench(u);
   let by=sy,lift=inTr?-3*z:0;
   if(inG){by=sy-20*z;}

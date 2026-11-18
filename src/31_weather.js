@@ -44,13 +44,14 @@ function drawWeatherGround(x0,y0,x1,y1){
     const ph=t*1.5+hsh(i,7)*5,seed=Math.floor(ph),p=ph-seed;
     const wx=x0+hsh(i,seed*3+11)*(x1-x0+1),wy=y0+hsh(i,seed*3+23)*(y1-y0+1);
     if(!inb(Math.floor(wx),Math.floor(wy)))continue;
+    if(G.hill&&(OCQ[Math.floor(wy)*G.w+Math.floor(wx)]||G.sl[Math.floor(wy)*G.w+Math.floor(wx)]))continue;   // 가려질 수 있는 칸은 물결을 그리지 않는다
     const [sx,sy]=toS(wx,wy);
     cx.strokeStyle=`rgba(215,230,240,${(1-p)*.5*k})`;
     cx.beginPath();cx.ellipse(sx,sy,(2+p*12)*z,(1+p*6)*z,0,0,6.3);cx.stroke();
   }
   // 젖은 땅: 약한 푸른 반사
   cx.globalAlpha=.1*k;cx.fillStyle='#8fb0c8';
-  for(let y=y0;y<=y1;y+=1)for(let x=x0;x<=x1;x++){if(hsh(x*3.1,y*1.9)>.86){tileDia(x,y,.18);cx.fill();}}
+  for(let y=y0;y<=y1;y+=1)for(let x=x0;x<=x1;x++){if(hsh(x*3.1,y*1.9)>.86&&!(G.hill&&(OCQ[y*G.w+x]||G.sl[y*G.w+x]))){tileDia(x,y,.18);cx.fill();}}
   cx.globalAlpha=1;
 }
 function drawRainLayers(){

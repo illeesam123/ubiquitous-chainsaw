@@ -201,8 +201,10 @@ function drawGround(x0,y0,x1,y1){
   }else{
     forTiles(x0,y0,x1+1,y1+1,(x,y)=>{const i=y*w+x;paintBase(x,y,i,w);if(cam.z>=.8&&(G.tt[i]===2||G.tt[i]===4))waterQueue(x,y,i);});
   }
+  const hadWQ=WQ.length>0;
   waterFlush();
-  if(WFX.acc>.03)snowCover(x0,y0,x1,y1);   // 눈은 참호 그리기 전에 깔고, 참호·구덩이 칸은 건너뛴다
+  if(WFX.acc>.03)snowCover(x0,y0,x1,y1);
+  if(G.hill&&(hadWQ||WFX.acc>.03))hillRepaint(x0,y0,x1,y1);   // 물·눈 효과가 앞쪽 높은 타일(절벽·언덕)을 덮어 그리지 않도록 그 타일만 다시 찍는다   // 눈은 참호 그리기 전에 깔고, 참호·구덩이 칸은 건너뛴다
   for(let y=y0;y<=y1;y++){const [xa,xb]=visRange(y,x0,x1);for(let x=xa;x<=xb;x++){
     const v=G.trench[y*w+x];if(!v)continue;
     if(v===255)drawCrater(x,y);else drawTrenchTile(x,y,v);

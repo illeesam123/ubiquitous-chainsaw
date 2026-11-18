@@ -253,3 +253,22 @@ function hillOcclude(e){
   // 가려진 아군 병사는 윤곽만 흐리게 한 번 더 보여 준다 (선택·확인용)
   if(hit&&mine){cx.globalAlpha=.42;drawUnit(e.u);cx.globalAlpha=1;}
 }
+
+// 땅 위 효과(물결·쌓인 눈)는 바닥을 다 그린 뒤에 얹기 때문에 앞쪽의 높은 타일(뒤를 가리는 타일, G.occ)을 덮어 버린다.
+// 그런 타일만 뒤→앞 순서로 다시 찍고, 그 타일 윗면의 눈은 다시 얹는다.
+function hillRepaint(x0,y0,x1,y1){
+  const w=G.w,z=cam.z,zb=CHB.find(q=>q>=z-.001),a=WFX.acc;
+  forTiles(x0,y0,x1+1,y1+1,(x,y)=>{
+    const j=y*w+x;if(!G.occ[j])return;
+    if(zb!==undefined){
+      const c=tileBmp(j,zb),k=z/zb,[VX,VY]=VT(x,y),ox=(VX-VY)*32*z+cam.x-c.ox*z,oy=(VX+VY)*16*z+cam.y-c.oy*z;
+      cx.drawImage(c.cv,ox,oy,c.cv.width*k,c.cv.height*k);
+    }else{cx.save();cx.lineWidth=1;paintBase(x,y,j,w);const v=G.trench[j];if(v){if(v===255)drawCrater(x,y);else drawTrenchTile(x,y,v);}cx.restore();}
+    if(a>.03&&!(G.trench[j]||G.tt[j]===2||G.mouth[j]||G.up[j]===1||G.up[j]===4)){
+      const b=Math.min(3,((hsh(x*1.7,y*2.3))*4)|0);
+      cx.globalAlpha=a*(.3+.32*(b+.5)/4);cx.fillStyle='rgb(233,239,245)';cx.beginPath();
+      [[0,0],[1,0],[1,1],[0,1]].forEach(([fx,fy],kk)=>{const p=rawS(x+fx,y+fy,elevIn(j,fx,fy));kk?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]);});
+      cx.closePath();cx.fill();cx.globalAlpha=1;
+    }
+  });
+}

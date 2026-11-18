@@ -156,8 +156,9 @@ function paintBase(x,y,i,w){
   if(G.dec[i]&&G.dec[i]<3){const [sx,sy]=toS(x+.5,y+.5);cx.fillStyle=G.dec[i]===1?'rgba(0,0,0,.14)':'rgba(255,255,255,.1)';cx.beginPath();cx.ellipse(sx+(G.dec[i]*3-5)*cam.z,sy,5*cam.z,2.5*cam.z,0,0,6.3);cx.fill();}
 }
 // ---- 바닥 청크 캐시: 16×16 타일을 한 장의 오프스크린 캔버스에 미리 그려 두고, 화면을 움직일 때는 그 몇 장만 찍는다 ----
-const CHK=16,CHB=[.5,.7,1,1.25],CHMAX=140;
+const CHK=16,CHB=[.5,.7,1,1.25],CHBYTES=150*1048576;   // 청크 캔버스 총량 상한(바이트) — 넘으면 오래 안 쓴 것부터 버린다
 let chunkMap=new Map(),chunkG=null,chunkPix=0;
+function chunkEvict(keep){let t=0;for(const c of chunkMap.values())t+=c.cv.width*c.cv.height*4;if(t<=CHBYTES)return;for(const [k,c] of chunkMap){if(t<=CHBYTES)break;if(c===keep)continue;t-=c.cv.width*c.cv.height*4;c.cv.width=c.cv.height=0;chunkMap.delete(k);}}
 function chunkSig(a,b){
   const w=G.w,x1=Math.min(G.w,a*CHK+CHK),y1=Math.min(G.h,b*CHK+CHK);let h=(SPR.on?7:3)+SPRV*131+(G.biome.length*17)+(G.shV|0)*7919+VROT*104729;const hv=G.hill;
   for(let y=b*CHK;y<y1;y++)for(let x=a*CHK,i=y*w+x;x<x1;x++,i++)h=(h*31+G.tt[i]*5+G.gq[i]*3+G.road[i]*11+G.dec[i]*13+(G.up[i]===1?7:0)+(G.mm[i]?1:0)+(hv?G.lv[i]*17+G.sl[i]*19:0))|0;
@@ -171,7 +172,7 @@ function forTiles(x0,y0,x1,y1,fn){
 }
 function chunkGet(a,b,zb){
   const key=(a*512+b)*8+CHB.indexOf(zb),sig=chunkSig(a,b);let c=chunkMap.get(key);
-  if(c&&c.sig===sig)return c;
+  if(c&&c.sig===sig){chunkMap.delete(key);chunkMap.set(key,c);return c;}
   const pad=8,padT=G.hill?110:8,padB=G.hill?60:8;
   let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
   for(const [px,py] of [[a*CHK,b*CHK],[a*CHK+CHK,b*CHK],[a*CHK,b*CHK+CHK],[a*CHK+CHK,b*CHK+CHK]]){const [vx,vy]=rotXY(px,py),sx=(vx-vy)*32,sy=(vx+vy)*16;minX=Math.min(minX,sx);maxX=Math.max(maxX,sx);minY=Math.min(minY,sy);maxY=Math.max(maxY,sy);}
@@ -182,15 +183,14 @@ function chunkGet(a,b,zb){
     const x1=Math.min(G.w,a*CHK+CHK),y1=Math.min(G.h,b*CHK+CHK);cx.lineWidth=1;
     forTiles(a*CHK,b*CHK,x1,y1,(x,y)=>paintBase(x,y,y*G.w+x,G.w));
   }finally{cx=sv.cx;cam.x=sv.x;cam.y=sv.y;cam.z=sv.z;}
-  c={cv:cv2,sig,ox:minX-pad,oy:minY-padT};chunkMap.set(key,c);return c;
+  c={cv:cv2,sig,ox:minX-pad,oy:minY-padT};chunkMap.delete(key);chunkMap.set(key,c);chunkEvict(c);return c;
 }
 function drawGround(x0,y0,x1,y1){
   const w=G.w;
   cx.lineWidth=1;
-  if(chunkG!==G){chunkMap=new Map();chunkG=G;}
+  if(chunkG!==G){for(const c of chunkMap.values())c.cv.width=c.cv.height=0;chunkMap=new Map();TBM.clear();chunkG=G;}
   const zb=CHB.find(q=>q>=cam.z-.001);
   if(zb!==undefined&&cam.z>=.4){
-    if(chunkMap.size>CHMAX)chunkMap.clear();
     {const ba=Math.floor(y0/CHK),bb=Math.floor(y1/CHK),aa=Math.floor(x0/CHK),ab=Math.floor(x1/CHK);
     forTiles(aa,ba,ab+1,bb+1,(a,b)=>{
       if(a*CHK>=G.w||b*CHK>=G.h)return;
@@ -221,7 +221,8 @@ function render(){
   cx.fillStyle='#0b0c08';cx.fillRect(0,0,W,H);
   if(!G)return;
   updateWfx();
-  const cs=[[0,0],[W,0],[0,H],[W,H]].map(p=>toW(p[0],p[1]));
+  const eh=G.hill?13*HALF_PX*cam.z:0;   // 높은 곳의 개체는 화면에서 위로 올라가 보이므로, 화면 아래쪽 바깥의 개체도 목록에 포함한다
+  const cs=[[0,0],[W,0],[0,H+eh],[W,H+eh]].map(p=>toW(p[0],p[1]));
   const x0=clamp(Math.floor(Math.min(...cs.map(c=>c[0])))-2,0,G.w-1),x1=clamp(Math.ceil(Math.max(...cs.map(c=>c[0])))+2,0,G.w-1);
   const y0=clamp(Math.floor(Math.min(...cs.map(c=>c[1])))-2,0,G.h-1),y1=clamp(Math.ceil(Math.max(...cs.map(c=>c[1])))+3,0,G.h-1);
   if(viewLay===1&&G.phase!=='setup'){renderUnder(x0,y0,x1,y1);return;}

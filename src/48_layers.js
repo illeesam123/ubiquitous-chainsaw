@@ -184,7 +184,7 @@ function paintShade(x,y,i){
   cx.drawImage(G.shC,x+.5,y+.5,1,1,0,0,1,1);cx.restore();
 }
 // ---- 타일 비트맵 캐시: 가림용 타일을 개체마다 벡터로 다시 그리지 않고 한 장씩 찍는다 ----
-const TBM=new Map();
+const TBM=new Map(),TBMAX=600;   // 가림 타일 비트맵 상한(오래된 것부터 버림)
 function tileBmp(j,zb){
   const w=G.w,x=j%w,y=(j/w)|0,key=j*8+CHB.indexOf(zb);
   let sg=(SPRV*131+VROT*104729+(G.shV|0)*7919+G.lv[j]*17+G.sl[j]*19+G.road[j]*3+G.tt[j]+G.dec[j])|0;
@@ -198,7 +198,7 @@ function tileBmp(j,zb){
   finally{cx=sv.cx;cam.x=sv.x;cam.y=sv.y;cam.z=sv.z;}
   cv._v=(cv._v||0)+1;   // 내용이 바뀌었음을 아틀라스에 알린다
   // 타일 기준점 = rawS(x,y,GROUND) = 캔버스 (ox,oy)*zb 에 해당. 원점은 현재 카메라에서의 같은 좌표로 맞춰 찍는다
-  c={cv,sg,ox:ox,oy:oy,zb};if(TBM.size>1500)TBM.clear();TBM.set(key,c);return c;
+  c={cv,sg,ox:ox,oy:oy,zb};if(TBM.size>=TBMAX){const k0=TBM.keys().next().value;const o=TBM.get(k0);if(o&&o.cv){o.cv.width=o.cv.height=0;}TBM.delete(k0);}TBM.set(key,c);return c;
 }
 // 개체 가림: 개체를 그린 뒤, 그 앞(더 큰 x+y)에 있으면서 더 높은 타일(절벽·언덕)이 개체를 가리는 부분만 다시 덮는다.
 // 타일은 이미 올바른 순서로 한 번 그려졌으므로, 덮는 범위를 개체 주변 상자로 한정하면 다른 곳의 표시(오버레이)는 건드리지 않는다.

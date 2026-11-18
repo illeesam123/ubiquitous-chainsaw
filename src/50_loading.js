@@ -38,7 +38,7 @@ async function ldRun(el){
   }
   await sweep(.4,.55,'청크·스프라이트 생성');
   if(G.hill){   // 언덕 가림용 타일 비트맵도 미리 만든다
-    cam.z=z;const hs=[];for(let j=0;j<G.N;j++)if(G.hl[j])hs.push(j);
+    cam.z=z;const hs=[];for(let j=0;j<G.N;j++)if(G.hl[j])hs.push(j);if(hs.length>TBMAX*.7)hs.length=Math.floor(TBMAX*.7);
     for(let i=0;i<hs.length;i+=40){for(let k=i;k<Math.min(hs.length,i+40);k++)tileBmp(hs[k],1);set(.95+.04*i/hs.length,'언덕 타일 준비 중');await ldRaf();}
   }
   set(.99,'마무리…');

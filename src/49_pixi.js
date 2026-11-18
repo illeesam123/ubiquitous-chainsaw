@@ -8,7 +8,7 @@
 //  - 실패하거나 WebGL 이 없으면 자동으로 기존 Canvas 경로로 돌아간다. 항상 켜져 있다(맵 로딩 때 청크·스프라이트를 미리 만들어 둔다).
 const GL={on:true,ready:false,fail:'',app:null,cv:null,pool:[],n:0,pages:[],ents:new WeakMap(),tc:new Map(),bakes:new Map(),epoch:0,needReset:false,
   active:false,real:null,v:null,vcv:null,M:[1,0,0,1,0,0],alpha:1,clip:null,lastRect:null,stack:[],w:0,h:0,dpr:0,
-  stat:{spr:0,pages:0,uploads:0,crops:0,skipped:0,ms:0},PAGE:2048,MAXP:12,shadow:null};
+  stat:{spr:0,pages:0,uploads:0,crops:0,skipped:0,ms:0},PAGE:2048,MAXP:6,shadow:null};
 (async function(){
   try{
     if(typeof PIXI==='undefined')throw new Error('PIXI 없음');

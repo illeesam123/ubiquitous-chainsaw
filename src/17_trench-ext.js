@@ -298,9 +298,10 @@ function drawBridge(x,y){
   poly([P(X,Y+1,0),P(X+1,Y+1,0),P(X+1,Y+1,h),P(X,Y+1,h)],'#5b4630');
   poly([P(X+1,Y,0),P(X+1,Y+1,0),P(X+1,Y+1,h),P(X+1,Y,h)],'#6a5238');
   poly([c0,c1,c2,c3],'#8d7449','#3f3120',1);
-  for(let k=1;k<6;k++){const f=k/6,a=[c0[0]+(c3[0]-c0[0])*f,c0[1]+(c3[1]-c0[1])*f],b=[c1[0]+(c2[0]-c1[0])*f,c1[1]+(c2[1]-c1[1])*f];wline(a,b,k%2?'#6f5a38':'#a38a5a',1);}
+  const fl=hsh(x*1.9,y*2.7)>.5?1:0;   // 좌우반전 변형: 널 명암·말뚝 높이 순서를 뒤집는다
+  for(let k=1;k<6;k++){const f=k/6,a=[c0[0]+(c3[0]-c0[0])*f,c0[1]+(c3[1]-c0[1])*f],b=[c1[0]+(c2[0]-c1[0])*f,c1[1]+(c2[1]-c1[1])*f];wline(a,b,(k+fl)%2?'#6f5a38':'#a38a5a',1);}
   wline(c0,c1,'#3f3120',2.2);wline(c3,c2,'#3f3120',2.2);
-  for(const f of [.1,.5,.9]){const a=P(X+f,Y,h),b=P(X+f,Y,h+5),c=P(X+f,Y+1,h),d=P(X+f,Y+1,h+5);wline(a,b,'#4a3a22',2);wline(c,d,'#4a3a22',2);}
+  for(const f of [.1,.5,.9]){const hh=5+(((f*10|0)+fl)%2?1.6:0),a=P(X+f,Y,h),b=P(X+f,Y,h+hh),c=P(X+f,Y+1,h),d=P(X+f,Y+1,h+hh);wline(a,b,'#4a3a22',2);wline(c,d,'#4a3a22',2);}
 }
 function drawShaftHatch(x,y){
   const z=cam.z,[sx,sy]=toS(x+.5,y+.5),sink=3*z;

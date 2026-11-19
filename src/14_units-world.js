@@ -80,7 +80,7 @@ function stepWorld(dt){
     if(t.bomb){stepBomb(t,dt);continue;}
     const n=t.workers.size;
     if(n>0){
-      t.prog+=n*dt*weatherWork()*(t.kind==='dig'?BIOME[G.biome].dig:1);
+      t.prog+=n*dt*weatherWork()*(t.kind==='dig'?BIOME[G.biome].dig:1)*(typeof taskSpeed==='function'?taskSpeed(t):1);
       if(Math.random()<dt*3){fxPush({k:'chip',x:t.x+.5,y:t.y+.5,t:0,d:.3,kind:t.kind});sfx(t.kind==='demo'?'hammer':'dig',t.x+.5,t.y+.5);}
       if(t.kind==='build'&&VEH[t.type]&&n<VEH[t.type].crew)t.prog=Math.min(t.prog,t.work-.001);
       if(t.prog>=t.work)finishTask(t);

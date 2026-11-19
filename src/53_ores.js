@@ -89,7 +89,8 @@ function drawOre(x,y,i){
   const blob=(ox,oy,rx,ry,c)=>{cx.fillStyle=c;cx.beginPath();cx.ellipse(sx+ox*z,sy+oy*z,rx*z,ry*z,0,0,6.3);cx.fill();};
   cx.fillStyle='rgba(0,0,0,.28)';cx.beginPath();cx.ellipse(sx,sy+2*z,18*z,7.5*z,0,0,6.3);cx.fill();
   if(k===3){   // 광산 수레: 철로 위의 쇠 수레 + 돈 되는 광석 더미
-    const P=(ax,ay)=>[sx+ax*z,sy+ay*z];
+    const fx=hsh(x*3.1,y*1.3)>.5?-1:1;   // 좌우반전 변형
+    const P=(ax,ay)=>[sx+ax*fx*z,sy+ay*z];
     poly([P(-14,-4),P(14,-4),P(11,-17),P(-11,-17)],'#7a5a3a','#2b1d10',1.2);
     poly([P(-14,-4),P(0,2),P(0,-11),P(-11,-17)],'#8c6a44');
     poly([P(0,2),P(14,-4),P(11,-17),P(0,-11)],'#5f4529');
@@ -106,3 +107,12 @@ function drawOre(x,y,i){
   }
   if(t&&t.prog>0){cx.fillStyle='rgba(0,0,0,.6)';cx.fillRect(sx-12*z,sy-30*z,24*z,4);cx.fillStyle='#d9ad4e';cx.fillRect(sx-12*z,sy-30*z,24*z*(t.prog/t.work),4);}
 }
+
+// 디펜스: 웨이브가 오를수록 채굴·해체 수입 증가
+const _finishTaskG=finishTask;
+finishTask=function(t){
+  if(!(typeof isDef==='function'&&isDef())||t.team!==0||(t.kind!=='mine'&&t.kind!=='demo'))return _finishTaskG(t);
+  const R=G.teams[0].res,b={money:R.money,metal:R.metal,wood:R.wood},m=gainMul();
+  _finishTaskG(t);
+  for(const k in b){const d=R[k]-b[k];if(d>0)R[k]+=Math.round(d*(m-1));}
+};

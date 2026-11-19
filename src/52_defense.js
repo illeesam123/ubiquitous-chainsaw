@@ -1,6 +1,6 @@
 // ================= 디펜스 모드: 웨이브 · 보상 · 저장 =================
 // 적 기지 없이 맵 가장자리에서 웨이브가 몰려온다. 웨이브를 전멸시키면 자원을 받는다. 병사가 전멸하면 끝나며, 결과(맵+진행)를 저장해 이어서 할 수 있다.
-const DEF={first:75,interval:120,aiTick:1.4,saveKey:'trench.saves',maxSaves:12};
+const DEF={first:75,interval:90,aiTick:1.4,saveKey:'trench.saves',maxSaves:12,workMul:1.8,hill:2.6};   // interval: 웨이브를 제압한 뒤 다음 웨이브까지 / workMul: 해체·채굴 속도 / hill: 언덕 사거리 보정 배수
 const DEF_SIDE=['북동','남동','남서','북서'];   // 월드 가장자리 y=0 / x=max / y=max / x=0 (기본 화면 기준)
 const isDef=()=>!!(G&&G.cfg&&G.cfg.mode==='defense');
 function waveSpec(n){
@@ -8,7 +8,9 @@ function waveSpec(n){
   if(n<=10)return {dirs:2,per:n*4,tanks:0,trucks:0,either:1};
   return {dirs:3,per:n*3,tanks:1+Math.floor((n-11)/5),trucks:1,either:0};
 }
-function waveReward(n){return {money:60+n*28,bullets:50+n*18,metal:8+n*4,wood:8+n*3};}
+function waveReward(n){return {money:80+n*45,metal:12+n*7,wood:12+n*5};}
+function gainMul(){return G&&G.def?1+G.def.wave*.08:1;}   // 웨이브가 오를수록 채굴·해체로 얻는 재화도 늘어난다
+function taskSpeed(t){return isDef()&&t.team===0&&(t.kind==='demo'||t.kind==='mine')?DEF.workMul:1;}
 // ---- 시작/생성 훅 ----
 const _newGameD=newGame;
 newGame=function(cfg){const g=_newGameD(cfg);if(cfg.mode==='defense')g.def={wave:0,next:DEF.first,waves:[],cleared:0,t:0,got:{money:0,bullets:0,metal:0,wood:0}};return g;};
@@ -60,19 +62,29 @@ function defCommand(W){
   const ik=trucks.filter(v=>v.state==='idle'||!v.path.length);
   if(ik.length){const bx=Math.round(cx0+(gx-cx0)*.55),by=Math.round(cy0+(gy-cy0)*.55);orderVehicles(ik,bx,by);}
 }
+function defHeal(){
+  for(const o of G.obSet)if(o.team===0&&!o.dead)o.hp=o.max;
+  for(const i of G.teams[0].trench)if(G.trench[i]===1)G.trenchHP[i]=160;
+}
 function stepDefense(dt){
   const D=G.def;if(!D||G.phase!=='play')return;
-  D.t+=dt;D.next-=dt;
-  if(D.next<=0){D.wave++;spawnWave(D.wave);D.next=DEF.interval;}
+  const T0=G.teams[0];D.t+=dt;
+  T0.res.bullets=99999;   // 총알 무한
+  const active=D.waves.some(W=>!W.cleared);
+  if(!active){   // 웨이브를 제압하기 전에는 다음 웨이브 카운트가 시작되지 않는다
+    D.next-=dt;
+    if(D.next<=0){D.wave++;D.bgm=false;D.lost0=T0.lost||0;D.start0=G.units.filter(u=>u.team===0&&!u.dead).length;spawnWave(D.wave);D.next=DEF.interval;}
+  }else if(!D.bgm&&(T0.lost||0)-D.lost0>=Math.ceil(D.start0/2))D.bgm=true;   // 웨이브 시작 때 아군의 절반 이상 전사 → 최종 결전 BGM
   D.ai=(D.ai||0)-dt;
   if(D.ai<=0){D.ai=DEF.aiTick;for(const W of D.waves)if(!W.cleared)defCommand(W);}
   for(const W of D.waves){
     if(W.cleared)continue;
     if(waveAlive(W)===0){
-      W.cleared=true;D.cleared++;
-      const R=waveReward(W.n),T0=G.teams[0];
-      for(const k in R){T0.res[k]+=R[k];D.got[k]+=R[k];}
-      toast(`✔ 웨이브 ${W.n} 제압! 보상: 달러 ${R.money} · 총알 ${R.bullets} · 금속 ${R.metal} · 나무 ${R.wood}`);
+      W.cleared=true;D.cleared++;D.bgm=false;D.next=DEF.interval;
+      const R=waveReward(W.n);
+      for(const k in R){T0.res[k]+=R[k];D.got[k]=(D.got[k]||0)+R[k];}
+      defHeal();
+      toast(`✔ 웨이브 ${W.n} 제압! 보상: 달러 ${R.money} · 금속 ${R.metal} · 나무 ${R.wood} · 시설 체력 전부 회복`);
       sfx('win');
     }
   }
@@ -83,6 +95,7 @@ stepWorld=function(dt){_stepWorldD(dt);if(isDef())stepDefense(dt);};
 const _checkEndD=checkEnd;
 checkEnd=function(){
   if(!isDef())return _checkEndD();
+  updateEndgame();
   if(G.phase!=='play')return;
   G.teams[0].alive=teamCount(0)>0;
   if(!G.teams[0].alive){G.over='lose';G.phase='over';showOver();}
@@ -92,8 +105,9 @@ const _updateHUDD=updateHUD;
 updateHUD=function(){
   _updateHUDD();
   if(!isDef()||!G.def)return;
-  const D=G.def,nx=Math.max(0,Math.ceil(D.next)),al=defAlive();
-  $('res').insertAdjacentHTML('beforeend',`<span class="chip" title="디펜스 모드: 웨이브를 전멸시키면 보상">⚔ 웨이브 <b>${D.wave}</b> · 다음 <b>${Math.floor(nx/60)}:${String(nx%60).padStart(2,'0')}</b> · 적 <b>${al}</b> · 제압 <b>${D.cleared}</b></span>`);
+  const D=G.def,nx=Math.max(0,Math.ceil(D.next)),al=defAlive(),act=D.waves.some(W=>!W.cleared);
+  for(const c of $('res').children)if(/^총알/.test(c.textContent)){const b=c.querySelector('b');if(b)b.textContent='∞';}
+  $('res').insertAdjacentHTML('beforeend',`<span class="chip" title="디펜스 모드: 웨이브를 전멸시키면 보상">⚔ 웨이브 <b>${D.wave}</b> · ${act?'<b>교전 중</b>':`다음 <b>${Math.floor(nx/60)}:${String(nx%60).padStart(2,'0')}</b>`} · 적 <b>${al}</b> · 제압 <b>${D.cleared}</b></span>`);
 };
 // ---- 결과 화면 · 저장 ----
 const _showOverD=showOver;
@@ -134,7 +148,7 @@ function defApplyResume(s){
   for(const [i,hp,up] of s.trench){if(G.trench[i]===255||G.tt[i]===2)continue;G.trench[i]=1;G.trenchHP[i]=hp;if(up&&up!==4)G.up[i]=up;if(!T0.trench.includes(i))T0.trench.push(i);}
   for(const [type,x,y,hp] of s.obs){if(!OB[type])continue;const o=addOb(type,x,y,0);if(o)o.hp=Math.min(o.max,hp);}
   Object.assign(T0.res,s.res);T0.kills=s.kills||0;
-  G.def.wave=s.wave;G.def.cleared=s.cleared||0;G.def.t=s.time||0;G.def.next=DEF.first;
+  G.def.wave=s.wave;G.def.cleared=s.cleared||0;G.def.t=s.time||0;G.def.next=DEF.first;G.def.bgm=false;
   centerCam(s.flag[0]+.5,s.flag[1]+.5);beginCountdown();
 }
 const _startGameD=startGame;
@@ -165,3 +179,13 @@ function defRefreshSaves(){
   $('bSaveDel').onclick=()=>{const l=defSaves();l.splice(+$('fSave').value,1);try{localStorage.setItem(DEF.saveKey,JSON.stringify(l));}catch(e){}defRefreshSaves();};
   defRefreshSaves();
 })();
+
+// ---- 최종 결전 BGM: 웨이브 시작 때 아군의 절반 이상이 전사하면 그 웨이브를 제압할 때까지 재생 ----
+const _updateEndgameD=updateEndgame;
+updateEndgame=function(){
+  if(!isDef())return _updateEndgameD();
+  if(!G||G.phase!=='play'){if(G)G.endgame=false;return;}
+  const e=!!(G.def&&G.def.bgm);
+  if(e&&!G.endgame){EG.t=0;toast('⚠ 아군 피해 심각 — 최종 결전!');}
+  G.endgame=e;
+};

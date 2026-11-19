@@ -65,7 +65,8 @@ function railGfx(x,y,L,gravel,col){
   for(const [dx,dy] of L){
     const M=toS(x+.5+dx*.5,y+.5+dy*.5),vx=M[0]-C[0],vy=M[1]-C[1],len=Math.hypot(vx,vy)||1,ux=vx/len,uy=vy/len,px=-uy,py=ux;
     cx.strokeStyle='#4a3a28';cx.lineWidth=Math.max(1,2.2*z);cx.beginPath();
-    for(const t of [.15,.4,.65,.9]){const bx=C[0]+vx*t,by=C[1]+vy*t;cx.moveTo(bx-px*7*z,by-py*7*z*.9);cx.lineTo(bx+px*7*z,by+py*7*z*.9);}
+    const fl=hsh(x*2.3,y*1.7)>.5?-1:1;   // 침목 기울기·간격을 칸마다 좌우반전해 반복감을 줄인다
+    [.15,.4,.65,.9].forEach((t0,n)=>{const t=fl>0?t0:t0-.05,bx=C[0]+vx*t,by=C[1]+vy*t,lean=((n%2)?1:-1)*fl*1.3*z;cx.moveTo(bx-px*7*z-ux*lean,by-py*7*z*.9-uy*lean);cx.lineTo(bx+px*7*z+ux*lean,by+py*7*z*.9+uy*lean);});
     cx.stroke();
     cx.strokeStyle='#aeb3b8';cx.lineWidth=Math.max(1,1.5*z);cx.beginPath();
     for(const s of [-1,1]){cx.moveTo(C[0]+px*3.6*z*s,C[1]+py*3.2*z*s);cx.lineTo(M[0]+px*3.6*z*s,M[1]+py*3.2*z*s);}

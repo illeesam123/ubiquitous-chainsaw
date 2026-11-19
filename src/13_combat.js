@@ -118,7 +118,7 @@ function losOk(a,b){
 // 한계(lim)를 넘거나 시선이 막히면 Infinity. arc=true 는 곡사(박격포): 시선은 보지 않고 사거리만 보정한다.
 function shotQ(a,b,q,lim,arc){
   if(!G.hill&&!G.npit)return q;
-  const m=1+Math.max(-.25,Math.min(.35,(simH(a.x,a.y)-simH(b.x,b.y))*HIGH_BONUS)),e=q/(m*m);
+  const hb=(typeof isDef==='function'&&isDef())?HIGH_BONUS*DEF.hill:HIGH_BONUS,m=1+Math.max(-.25,Math.min(typeof isDef==='function'&&isDef()?.7:.35,(simH(a.x,a.y)-simH(b.x,b.y))*hb)),e=q/(m*m);
   if(!(e<lim))return Infinity;
   return (arc||losOk(a,b))?e:Infinity;
 }

@@ -75,9 +75,9 @@ function genMap(r){
     if(r()<.5){const dx=r()<.5?1:0,dy=1-dx;if(G.tt[(cy+dy)*w+cx+dx]!==2)G.trench[(cy+dy)*w+cx+dx]=255;}}
   for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
     const f=vn(C,x*fs+o3,y*fs+o1),rk=vn(D,x*.09+o2,y*.09+o3);
-    if(f>.6&&r()<(f-.52)*1.6*BI.tree)addOb('tree',x,y);
-    else if(rk>(SP==='mineshaft'?.5:bio==='arid'?.58:.68)&&r()<(rk-.6)*1.1*BI.rock*(SP==='mineshaft'?1.6:1))addOb('rock',x,y);
-    else if(r()<.006)addOb(r()<(bio==='arid'?.2:.6)?'tree':'rock',x,y);
+    if(f>.57&&r()<(f-.5)*1.95*BI.tree)addOb('tree',x,y);
+    else if(rk>(SP==='mineshaft'?.56:bio==='arid'?.64:.73)&&r()<(rk-.6)*.5*BI.rock*(SP==='mineshaft'?1.6:1))addOb('rock',x,y);
+    else if(r()<.005)addOb(r()<(bio==='arid'?.35:.82)?'tree':'rock',x,y);
   }
   // 마을: 건물을 한 칸 간격으로 밀집 배치 (소도시는 아파트·창고·폐허 포함)
   const nv=SP==='mineshaft'?0:Math.floor(w/(SP==='coast'?20:13))+rint(r,0,2);
@@ -103,7 +103,6 @@ function genMap(r){
     }
     const nf=rint(r,3,8);
     for(let j=0;j<nf;j++){const x=cx+rint(r,-R-1,R+1),y=cy+rint(r,-R-1,R+1);if(inb2(x,y)&&gapOK(hs,x,y,1)||inb2(x,y)&&r()<.3&&!hs.some(p=>x>=p.x&&x<p.x+p.s&&y>=p.y&&y<p.y+p.s))addOb('fence',x,y);}
-    const nk=rint(r,1,3);for(let j=0;j<nk;j++)addOb('crate',cx+rint(r,-R,R),cy+rint(r,-R,R));
   }
   // 마을 사이 비포장도로 + 철로
   for(let i=1;i<VC.length;i++){let bj=0,bd=1e9;for(let j=0;j<i;j++){const d=Math.hypot(VC[i][0]-VC[j][0],VC[i][1]-VC[j][1]);if(d<bd){bd=d;bj=j;}}roadLine(VC[i][0],VC[i][1],VC[bj][0],VC[bj][1],2,SP!=='coast',r);}
@@ -116,6 +115,4 @@ function genMap(r){
   const nl=Math.floor(w/12);
   for(let k=0;k<nl;k++){let x=rint(r,4,w-5),y=rint(r,4,h-5);const dx=r()<.5?1:0,dy=1-dx,len=rint(r,4,9);
     for(let j=0;j<len;j++){if(r()<.88)addOb('fence',x,y);x+=dx;y+=dy;}}
-  const nk=Math.floor(w/6);
-  for(let k=0;k<nk;k++)addOb('crate',rint(r,2,w-3),rint(r,2,h-3));
 }

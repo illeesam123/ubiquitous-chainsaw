@@ -46,5 +46,5 @@
   "src/44_panic-civilians.js",
   "src/45_visual-fx.js",
   "src/46_sprites-extra.js",
-  "src/47_unit-gear.js","src/48_layers.js","src/49_pixi.js","src/50_loading.js","src/51_ladders.js","src/52_defense.js"
+  "src/47_unit-gear.js","src/48_layers.js","src/49_pixi.js","src/50_loading.js","src/51_ladders.js","src/52_defense.js","src/53_ores.js"
 ]

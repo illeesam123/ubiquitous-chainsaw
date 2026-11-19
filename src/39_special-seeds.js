@@ -37,7 +37,7 @@ function genCity(r){
   {const rows=Math.floor((h-9)/P),yr=3+P*Math.max(0,Math.floor(rows/3))+6;roadLine(1,yr,w-2,yr,3,true,r);}
   for(let by=3;by+6<h-2;by+=P)for(let bx=3;bx+6<w-2;bx+=P){
     if(r()<.1){ // 광장
-      addOb('crate',bx+rint(r,1,4),by+rint(r,1,4));addOb('crate',bx+rint(r,1,4),by+rint(r,1,4));continue;
+      continue;
     }
     for(let yy=by;yy<by+6;yy++)for(let xx=bx;xx<bx+6;xx++){
       if(G.obst[yy*w+xx]||G.tt[yy*w+xx]===2)continue;
@@ -92,7 +92,6 @@ function genMine(r){
         const ob=['shed','ruin','warehouse','shed','ruin'];
         for(let j=0;j<rint(r,2,4);j++){const t2=ob[rint(r,0,4)],sz=OB[t2].size||1,ax=x+rint(r,-5,5),ay=y+rint(r,-5,5);
           if(Math.hypot(ax-x,ay-y)>=2.2&&!G.mouth[ay*w+ax])addOb(t2,ax,ay);}
-        for(let j=0;j<3;j++)addOb('crate',x+rint(r,-3,3),y+rint(r,-3,3));
         break;
       }
     }

@@ -41,11 +41,11 @@ function roadLine(ax,ay,bx,by,k,bridge,r){
 function genBush(r){
   if(G.special==='superflat'||G.special==='urbanwar')return;
   const L=lat(r),o1=r()*500,o2=r()*500,w=G.w,h=G.h,b=G.biome;
-  const thr=G.special==='mineshaft'?.8:b==='swamp'?.56:b==='arid'?.7:b==='snow'?.66:.62;
+  const thr=G.special==='mineshaft'?.84:b==='swamp'?.63:b==='arid'?.76:b==='snow'?.72:.69;
   for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
     const i=y*w+x;
     if(G.obst[i]||G.tt[i]===2||G.trench[i]||G.mouth[i]||G.road[i]||G.up[i])continue;
-    if(vn(L,x*.12+o1,y*.12+o2)>thr&&r()<.78)G.brush[i]=1;
+    if(vn(L,x*.12+o1,y*.12+o2)>thr&&r()<.55)G.brush[i]=1;
   }
 }
 // ---- 그리기 ----

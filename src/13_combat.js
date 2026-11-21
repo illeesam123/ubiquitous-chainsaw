@@ -103,7 +103,7 @@ function simH(x,y){
   if(!G.hill)return GROUND_LV-pitAt(x,y)*PIT_SIM;
   let tx=Math.floor(x),ty=Math.floor(y);
   if(tx<0)tx=0;else if(tx>=G.w)tx=G.w-1;if(ty<0)ty=0;else if(ty>=G.h)ty=G.h-1;
-  return elevIn(ty*G.w+tx,x-tx,y-ty)-G.pit[ty*G.w+tx]*PIT_SIM;
+  return elevIn(ty*G.w+tx,x-tx,y-ty)-pitAt(x,y)*PIT_SIM;
 }
 const EYE_SHOOT=1.2,EYE_TARGET=.9,HIGH_BONUS=.07;   // 반층 단위
 // a 에서 b 로 시선이 지형(언덕·벽)에 막히지 않는가

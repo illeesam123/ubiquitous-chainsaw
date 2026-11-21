@@ -16,7 +16,7 @@ function pitSync(){
   let n=0,chg=!G.flood||G.flood.length!==G.N;const t=G.trench,p=G.pit;
   if(chg){G.flood=new Uint8Array(G.N);G._pt=new Uint8Array(G.N);}
   const q=G._pt;
-  for(let i=0;i<G.N;i++){const v=t[i]>0&&t[i]!==255?1:0;p[i]=v;n+=v;const o=t[i]>0?1:0;if(q[i]!==o){q[i]=o;chg=true;}}
+  for(let i=0;i<G.N;i++){const v=t[i]>0?(t[i]===255?2:1):0;p[i]=v;n+=v?1:0;const o=t[i]>0?1:0;if(q[i]!==o){q[i]=o;chg=true;}}
   G.npit=n;
   if(chg)floodPits();
 }
@@ -28,7 +28,8 @@ function floodPits(){
   while(st.length){const c=st.pop(),x=c%w,y=(c/w)|0;
     for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const a=x+dx,b=y+dy;if(a<0||b<0||a>=w||b>=h)continue;const j=b*w+a;if(q[j]&&!f[j]&&G.tt[j]!==2){f[j]=1;st.push(j);}}}
 }
-const pitAt=(x,y)=>{if(!G||!G.npit)return 0;const tx=Math.floor(x),ty=Math.floor(y);return tx>=0&&ty>=0&&tx<G.w&&ty<G.h?G.pit[ty*G.w+tx]:0;};
+// 구덩이 깊이 배율: 참호 1, 포탄 구덩이 .6 (반층 구덩이, 포탄 구덩이는 더 얕다)
+const pitAt=(x,y)=>{if(!G||!G.npit)return 0;const tx=Math.floor(x),ty=Math.floor(y);if(tx<0||ty<0||tx>=G.w||ty>=G.h)return 0;const v=G.pit[ty*G.w+tx];return v===2?.6:v?1:0;};
 function elevIn(i,fx,fy){
   const s=G.sl[i];let a=0;
   if(s===1)a=2*fx;else if(s===2)a=2*(1-fx);else if(s===3)a=2*fy;else if(s===4)a=2*(1-fy);

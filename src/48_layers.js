@@ -138,7 +138,7 @@ function hillWalls(x,y,i){
   for(const [dx,dy,nb,pa,pb,na,nb2] of all){const [a,c]=rotDir(dx,dy);if(a===1&&c===0)faces.push([nb,pa,pb,na,nb2,.7]);else if(a===0&&c===1)faces.push([nb,pa,pb,na,nb2,.9]);}
   for(const [nb,pa,pb,na,nb2,f] of faces){
     const hA=elevIn(i,pa[0],pa[1]),hB=elevIn(i,pb[0],pb[1]);
-    let nA=nb>=0?elevIn(nb,na[0],na[1]):hA-4,nB=nb>=0?elevIn(nb,nb2[0],nb2[1]):hB-4;
+    let nA=nb>=0?elevIn(nb,na[0],na[1]):0,nB=nb>=0?elevIn(nb,nb2[0],nb2[1]):0;   // 맵 가장자리: 바닥 끝까지 이어지는 단면
     nA=Math.min(nA,hA);nB=Math.min(nB,hB);if(hA-nA<.01&&hB-nB<.01)continue;
     const A=rawS(x+pa[0],y+pa[1],hA),B=rawS(x+pb[0],y+pb[1],hB),B2=rawS(x+pb[0],y+pb[1],nB),A2=rawS(x+pa[0],y+pa[1],nA);
     {const gr=cx.createLinearGradient(0,Math.min(A[1],B[1]),0,Math.max(A2[1],B2[1]));gr.addColorStop(0,dimCol(base,f*1.12));gr.addColorStop(1,dimCol(base,f*.78));cx.fillStyle=gr;}cx.beginPath();cx.moveTo(A[0],A[1]);cx.lineTo(B[0],B[1]);cx.lineTo(B2[0],B2[1]);cx.lineTo(A2[0],A2[1]);cx.closePath();cx.fill();
@@ -290,3 +290,11 @@ function hillRepaint(x0,y0,x1,y1){
     }
   });
 }
+
+// 가려진 칸 위에 마우스를 올렸을 때도 어디를 가리키는지 보이도록, 호버 칸 테두리를 맨 위에 한 번 더 그린다(앞쪽 절벽에 가려진 칸 포함)
+const _renderHv=render;
+render=function(){
+  _renderHv();
+  if(!G||!G.hill||viewLay===1||!hover||!inb(hover[0],hover[1])||G.edit)return;
+  try{cx.setTransform(DPR,0,0,DPR,0,0);tileDia(hover[0],hover[1],.04);cx.strokeStyle='rgba(255,244,190,.95)';cx.lineWidth=2;cx.setLineDash([5,3]);cx.stroke();cx.setLineDash([]);cx.fillStyle='rgba(255,244,190,.12)';cx.fill();}catch(e){}
+};

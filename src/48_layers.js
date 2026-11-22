@@ -250,7 +250,7 @@ function hillOcclude(e){
   const z=cam.z,[sx,sy]=toS(px,py);
   // 개체 크기에 맞춘 상자: 병사·민간인은 작게, 건물은 크기에 비례, 나무·바위 등은 중간
   const big=e.o&&size>1,Wd=(e.u||e.civ?16:big?size*34+16:e.v?30:34)*z,up=(e.lad?(G.lv[e.lad[1]]-G.lv[e.lad[0]])*HALF_PX+30:e.u||e.civ?36:big?size*38+30:e.v?30:66)*z,dn=(e.u||e.civ?6:big?size*14:e.v?10:12)*z;
-  let hit=false;const zb=CHB.find(q=>q>=z-.001),bx0=sx-Wd,by0=sy-up,bx1=sx+Wd,by1=sy+dn;
+  let hit=false,hits=null;const zb=CHB.find(q=>q>=z-.001),bx0=sx-Wd,by0=sy-up,bx1=sx+Wd,by1=sy+dn;
   cx.save();if(zb===undefined){cx.beginPath();cx.rect(bx0,by0,bx1-bx0,by1-by0);cx.clip();}
   for(const j of list){
     const x=j%w,y=(j/w)|0,[cxs,cys]=toS(x+.5,y+.5);
@@ -260,7 +260,7 @@ function hillOcclude(e){
     // 실제로 겹치는 면적이 너무 작으면(얇은 띠) 건너뛴다
     const ovH=Math.min(sy+dn,cys+16*z+30*z)-Math.max(sy-up,ytop),ovW=Math.min(sx+Wd,cxs+32*z)-Math.max(sx-Wd,cxs-32*z);
     if(ovH<5*z||ovW<8*z)continue;
-    hit=true;
+    hit=true;(hits||(hits=[])).push(j);
     if(zb!==undefined){
       const c=tileBmp(j,zb),k=z/zb,[VX,VY]=VT(x,y),o0=[(VX-VY)*32*z+cam.x,(VX+VY)*16*z+cam.y],dx=o0[0]-c.ox*z,dy=o0[1]-c.oy*z,iw=c.cv.width*k,ih=c.cv.height*k;
       const ix0=Math.max(dx,bx0),iy0=Math.max(dy,by0),ix1=Math.min(dx+iw,bx1),iy1=Math.min(dy+ih,by1);
@@ -269,29 +269,41 @@ function hillOcclude(e){
   }
   cx.restore();
   // 가려진 아군 병사는 윤곽만 흐리게 한 번 더 보여 준다 (선택·확인용)
-  if(hit)xraySil(e,px,py,size);
+  if(hit&&!e.bush&&!e.f&&!e.lad)xrayPass(e,px,py,hits,bx0,by0,bx1-bx0,by1-by0,zb);
 }
-// 벽에 가려진 병사·차량·시설은 단색 실루엣으로 투시해 보여 준다 (화면 위치 찾기용)
-function xraySil(e,px,py,size){
-  const z=cam.z,[sx,sy]=toS(px,py);let col,a=.82;
-  cx.save();cx.lineWidth=Math.max(1,1.4*z);cx.strokeStyle='rgba(255,255,255,.75)';
-  if(e.u){
-    col=TEAM_COL[e.u.team]||'#ccc';cx.fillStyle=col;
-    cx.beginPath();cx.ellipse(sx,sy-9*z,4.6*z,7.2*z,0,0,6.3);cx.fill();cx.stroke();
-    cx.beginPath();cx.arc(sx,sy-18.5*z,3.3*z,0,6.3);cx.fill();cx.stroke();
-  }else if(e.civ){
-    cx.fillStyle='#b9b3a4';cx.beginPath();cx.ellipse(sx,sy-9*z,4.2*z,6.8*z,0,0,6.3);cx.fill();cx.stroke();cx.beginPath();cx.arc(sx,sy-17.5*z,3*z,0,6.3);cx.fill();cx.stroke();
-  }else if(e.v){
-    col=TEAM_COL[e.v.team]||'#ccc';cx.fillStyle=col;const W=11*z,H=6.5*z;
-    cx.beginPath();cx.moveTo(sx-W*1.2,sy-4*z);cx.lineTo(sx,sy-4*z-H*1.4);cx.lineTo(sx+W*1.2,sy-4*z);cx.lineTo(sx,sy+H*.9-4*z);cx.closePath();cx.fill();cx.stroke();
-  }else if(e.o&&(OB[e.o.type].building||size>1)){
-    cx.fillStyle=e.o.team>=0?(TEAM_COL[e.o.team]||'#bbb'):'#d8c78a';
-    cx.globalAlpha=.55;const o=e.o,pts=[[0,0],[size,0],[size,size],[0,size]].map(([a2,c2])=>rawS(o.x+a2,o.y+c2,elevH(px,py)));
-    cx.beginPath();pts.forEach((p,k)=>k?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]));cx.closePath();cx.fill();cx.globalAlpha=.9;cx.stroke();
-  }else if(e.o){
-    cx.fillStyle=OB[e.o.type].block?'#9a9a94':'#7fae6a';cx.beginPath();cx.arc(sx,sy-7*z,5*z,0,6.3);cx.globalAlpha=.7;cx.fill();cx.globalAlpha=.9;cx.stroke();
-  }
-  cx.restore();
+// 벽 투시: 가려진 부분만 단색으로. (1) 개체를 따로 한 장에 그려 단색으로 칠하고 (2) 가린 타일들의 모양(마스크)과 겹치는 곳만 남겨 (3) 맨 위 벡터층에 얹는다.
+let XS=null,XM=null;
+function xrayPass(e,px,py,hits,bx0,by0,bw,bh,zb){
+  if(!XS){XS=document.createElement('canvas');XM=document.createElement('canvas');}
+  const pw=Math.max(1,Math.ceil(bw*DPR)),ph=Math.max(1,Math.ceil(bh*DPR));
+  XS.width=XM.width=pw;XM.height=XS.height=ph;
+  const S=XS.getContext('2d'),M=XM.getContext('2d'),keep=cx,z=cam.z,w=G.w;
+  const tr=(c)=>c.setTransform(DPR,0,0,DPR,-bx0*DPR,-by0*DPR);
+  try{
+    // 1) 개체만 그린다
+    cx=S;tr(S);
+    const ea=e.u||e.v||e.civ;ELK=null;if(ea)ELK=elevPx(ea.x,ea.y)-(e.u?pitAt(ea.x,ea.y)*PIT_PX:0)+(e.u&&e.u.cz?e.u.cz*HALF_PX:0);
+    if(e.o)drawOb(e.o);else if(e.u)drawUnit(e.u);else if(e.v)drawVehicle(e.v);else if(e.civ)drawCiv(e.civ);
+    ELK=null;
+    S.setTransform(1,0,0,1,0,0);S.globalCompositeOperation='source-in';
+    const XC=['#6fc3ff','#ff8a80','#ffd166','#d6a4ff'],tm=e.u?e.u.team:e.v?e.v.team:-1;
+    S.fillStyle=tm>=0?XC[tm]||'#d8ecff':'#d8ecff';S.fillRect(0,0,pw,ph);
+    S.globalCompositeOperation='source-over';
+    // 2) 가린 타일들의 모양
+    cx=M;tr(M);M.clearRect(-bx0,-by0,pw+bx0,ph+by0);
+    for(const j of hits){
+      const x=j%w,y=(j/w)|0;
+      if(zb!==undefined){
+        const c=tileBmp(j,zb),k=z/zb,[VX,VY]=VT(x,y),o0=[(VX-VY)*32*z+cam.x,(VX+VY)*16*z+cam.y];
+        M.drawImage(c.cv,o0[0]-c.ox*z,o0[1]-c.oy*z,c.cv.width*k,c.cv.height*k);
+      }else{M.save();M.lineWidth=1;paintBase(x,y,j,w);M.restore();}
+    }
+    cx=keep;
+    S.globalCompositeOperation='destination-in';S.setTransform(1,0,0,1,0,0);S.drawImage(XM,0,0);S.globalCompositeOperation='source-over';
+    // 3) 맨 위에 얹기
+    const T=GL.active?GL.v:cx;T.save();T.setTransform(DPR,0,0,DPR,0,0);T.globalAlpha=.95;T.drawImage(XS,bx0,by0,bw,bh);T.restore();
+  }catch(err){console.error('투시 오류',err);}
+  finally{cx=keep;ELK=null;}
 }
 
 // 땅 위 효과(물결·쌓인 눈)는 바닥을 다 그린 뒤에 얹기 때문에 앞쪽의 높은 타일(뒤를 가리는 타일, G.occ)을 덮어 버린다.

@@ -256,9 +256,10 @@ function hillOcclude(e){
     const x=j%w,y=(j/w)|0,[cxs,cys]=toS(x+.5,y+.5);
     if(Math.abs(cxs-sx)>Wd+34*z)continue;
     const ytop=cys-16*z-(Math.max(elevIn(j,0,0),elevIn(j,1,0),elevIn(j,0,1),elevIn(j,1,1))-elevH(x+.5,y+.5))*HALF_PX*z;   // 윗면의 가장 높은 꼭짓점 y
-    if(ytop>sy+dn*.4||cys+16*z<sy-up)continue;
+    const fdn=Math.max(0,elevH(x+.5,y+.5)-lvE)*HALF_PX*z+30*z;   // 절벽 면은 윗면 아래로 한참 이어진다
+    if(ytop>sy+dn*.4||cys+16*z+fdn<sy-up)continue;
     // 실제로 겹치는 면적이 너무 작으면(얇은 띠) 건너뛴다
-    const ovH=Math.min(sy+dn,cys+16*z+30*z)-Math.max(sy-up,ytop),ovW=Math.min(sx+Wd,cxs+32*z)-Math.max(sx-Wd,cxs-32*z);
+    const ovH=Math.min(sy+dn,cys+16*z+fdn)-Math.max(sy-up,ytop),ovW=Math.min(sx+Wd,cxs+32*z)-Math.max(sx-Wd,cxs-32*z);
     if(ovH<5*z||ovW<8*z)continue;
     hit=true;(hits||(hits=[])).push(j);
     if(zb!==undefined){

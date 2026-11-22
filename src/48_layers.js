@@ -269,7 +269,29 @@ function hillOcclude(e){
   }
   cx.restore();
   // 가려진 아군 병사는 윤곽만 흐리게 한 번 더 보여 준다 (선택·확인용)
-  if(hit&&mine){cx.globalAlpha=.42;drawUnit(e.u);cx.globalAlpha=1;}
+  if(hit)xraySil(e,px,py,size);
+}
+// 벽에 가려진 병사·차량·시설은 단색 실루엣으로 투시해 보여 준다 (화면 위치 찾기용)
+function xraySil(e,px,py,size){
+  const z=cam.z,[sx,sy]=toS(px,py);let col,a=.82;
+  cx.save();cx.lineWidth=Math.max(1,1.4*z);cx.strokeStyle='rgba(255,255,255,.75)';
+  if(e.u){
+    col=TEAM_COL[e.u.team]||'#ccc';cx.fillStyle=col;
+    cx.beginPath();cx.ellipse(sx,sy-9*z,4.6*z,7.2*z,0,0,6.3);cx.fill();cx.stroke();
+    cx.beginPath();cx.arc(sx,sy-18.5*z,3.3*z,0,6.3);cx.fill();cx.stroke();
+  }else if(e.civ){
+    cx.fillStyle='#b9b3a4';cx.beginPath();cx.ellipse(sx,sy-9*z,4.2*z,6.8*z,0,0,6.3);cx.fill();cx.stroke();cx.beginPath();cx.arc(sx,sy-17.5*z,3*z,0,6.3);cx.fill();cx.stroke();
+  }else if(e.v){
+    col=TEAM_COL[e.v.team]||'#ccc';cx.fillStyle=col;const W=11*z,H=6.5*z;
+    cx.beginPath();cx.moveTo(sx-W*1.2,sy-4*z);cx.lineTo(sx,sy-4*z-H*1.4);cx.lineTo(sx+W*1.2,sy-4*z);cx.lineTo(sx,sy+H*.9-4*z);cx.closePath();cx.fill();cx.stroke();
+  }else if(e.o&&(OB[e.o.type].building||size>1)){
+    cx.fillStyle=e.o.team>=0?(TEAM_COL[e.o.team]||'#bbb'):'#d8c78a';
+    cx.globalAlpha=.55;const o=e.o,pts=[[0,0],[size,0],[size,size],[0,size]].map(([a2,c2])=>rawS(o.x+a2,o.y+c2,elevH(px,py)));
+    cx.beginPath();pts.forEach((p,k)=>k?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]));cx.closePath();cx.fill();cx.globalAlpha=.9;cx.stroke();
+  }else if(e.o){
+    cx.fillStyle=OB[e.o.type].block?'#9a9a94':'#7fae6a';cx.beginPath();cx.arc(sx,sy-7*z,5*z,0,6.3);cx.globalAlpha=.7;cx.fill();cx.globalAlpha=.9;cx.stroke();
+  }
+  cx.restore();
 }
 
 // 땅 위 효과(물결·쌓인 눈)는 바닥을 다 그린 뒤에 얹기 때문에 앞쪽의 높은 타일(뒤를 가리는 타일, G.occ)을 덮어 버린다.

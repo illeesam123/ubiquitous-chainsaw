@@ -84,11 +84,11 @@ function stepH(a,b){
 function genHills(){
   const w=G.w,h=G.h,r=mulberry(hashStr(G.cfg.seed+'#hill')()),L1=lat(r),L2=lat(r),o1=r()*500,o2=r()*500;
   const bias={plain:0,arid:.03,snow:.015,swamp:-.07}[G.biome]||0;
-  const F=new Int8Array(G.N);
+  const F=new Int8Array(G.N),CAN=G.special==='canyon';
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){
     const n=vn(L1,x*.032+o1,y*.032+o2)*.72+vn(L2,x*.085+o2,y*.085+o1)*.28;
     const ed=Math.min(x,y,w-1-x,h-1-y),fade=Math.min(1,ed/7),v=(n-.60-bias)*fade;
-    F[y*w+x]=v<=0?0:v<.07?1:v<.15?2:3;
+    F[y*w+x]=CAN?canyonF(x,y):v<=0?0:v<.07?1:v<.15?2:3;
   }
   // 물 가까이는 평지, 작은 덩어리 제거
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){const k=G.tt[y*w+x];if(k===2||k===4)for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){const a=x+dx,b=y+dy;if(a>=0&&b>=0&&a<w&&b<h)F[b*w+a]=0;}}
@@ -106,14 +106,14 @@ function genHills(){
   for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
     const i=y*w+x;if(G.tt[i]===2||G.tt[i]===4)continue;
     const c=[];for(const [dx,dy,d] of D)if(F[i+dy*w+dx]===F[i]+1&&F[i]>=0)c.push(d);
-    if(!c.length||hsh(x*3.1,y*1.7)>.62)continue;
+    if(!c.length||hsh(x*3.1,y*1.7)>(CAN?.93:.62))continue;
     G.sl[i]=c[(hsh(x,y*5.3)*c.length)|0];
   }
   // 반층 타일: 한 층 높은 이웃과 맞닿은 낮은 칸 일부를 반층(+1) 올려 계단처럼 걸어 오를 수 있게 한다
   for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
     const i=y*w+x;if(G.sl[i]||G.tt[i]===2||G.tt[i]===4)continue;
     let up=false;for(const [dx,dy] of D)if(F[i+dy*w+dx]===F[i]+1&&!G.sl[i+dy*w+dx])up=true;
-    if(up&&hsh(x*2.9+7,y*4.1)<.4)G.lv[i]=GROUND_LV+2*F[i]+1;
+    if(up&&hsh(x*2.9+7,y*4.1)<(CAN?.1:.4))G.lv[i]=GROUND_LV+2*F[i]+1;
   }
   // 빗면 칸은 인접 빗면과 서로 마주보면 모양이 깨지므로 하나만 남긴다
   for(let i=0;i<G.N;i++){const s=G.sl[i];if(!s)continue;const o=s===1?i+1:s===2?i-1:s===3?i+w:i-w;if(G.sl[o]){G.sl[i]=0;}}

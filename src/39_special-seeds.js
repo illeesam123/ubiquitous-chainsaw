@@ -1,10 +1,23 @@
-// ================= 특수 시드 (superflat · urbanwar · coast · mineshaft) =================
+// ================= 특수 시드 (superflat · urbanwar · coast · mineshaft · canyon) =================
 const SPECIAL={
   superflat:{n:'Superflat',desc:'드넓게 펼쳐진 대평원. 장애물도 자원도 없고, 모두가 동등하게 빈곤합니다.'},
   urbanwar:{n:'Urban War',desc:'건물로 가득 찬 대도시와 그 사이를 가르는 강. 다리 몇 개가 유일한 통로입니다.'},
   coast:{n:'Coast',desc:'여러 갈래의 넓은 강이 사방을 가로막습니다. 차량은 다리 없이는 무용지물입니다.'},
-  mineshaft:{n:'Mineshaft',desc:'과거 거대한 채굴지. 엄청난 크기의 지하 동굴망이 이미 존재합니다.'}
+  mineshaft:{n:'Mineshaft',desc:'과거 거대한 채굴지. 엄청난 크기의 지하 동굴망이 이미 존재합니다.'},
+  canyon:{n:'Canyon',desc:'드넓은 협곡의 양 끝에 조그마한 오두막 마을이 있습니다. 협곡에 올라서 우위를 점하거나, 빠르게 침투하여 적군을 처치하세요.'}
 };
+// 협곡 중심선(가로 방향, 완만하게 굽이침)
+function canyonY(x){
+  const r=mulberry(hashStr(G.cfg.seed+'#cy')()),a=r()*6.28,b=r()*6.28,h=G.h;
+  return h/2+Math.sin(x*.045+a)*h*.09+Math.sin(x*.13+b)*h*.025;
+}
+// 협곡 높이 단계: 0 바닥 · 1~3 층층이 오르는 절벽
+function canyonF(x,y){
+  const w=G.w,h=G.h,Wc=Math.max(6,w*.1),st=Math.max(3,w*.04),d=Math.abs(y-canyonY(x))+(hsh(x*.7,y*.9)-.5)*2.2+(vn(G._cn||(G._cn=lat(mulberry(hashStr(G.cfg.seed+'#cn')()))),x*.09,y*.09)-.5)*7;
+  const ed=Math.min(x,w-1-x);let wc=Wc+(ed<18?(18-ed)*.9:0);   // 양 끝은 넓게 열려 마을 터가 된다
+  if(y<2||y>h-3)return 3;
+  return d<wc?0:d<wc+st?1:d<wc+2*st?2:3;
+}
 function specialOf(seed){const k=String(seed||'').trim().toLowerCase();return SPECIAL[k]?k:null;}
 function carveRiver(r,ori,pos,wid,amp){
   const w=G.w,h=G.h,L=ori==='h'?w:h,span=ori==='h'?h:w;
@@ -100,6 +113,24 @@ function genMine(r){
 function specialHint(){
   const e=$('spHint');if(!e)return;
   const k=specialOf($('fSeed').value);
-  e.textContent=k?`특수 시드 · ${SPECIAL[k].desc}`:'특수 시드: superflat · urbanwar · coast · mineshaft';
+  if(!e.dataset.init){   // 특수 시드 칩: 호버 시 글로우 + 설명, 클릭하면 시드 입력
+    e.dataset.init=1;
+    const st=document.createElement('style');
+    st.textContent=`#spChips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.spChip{cursor:pointer;padding:3px 10px;border:1px solid var(--line);border-radius:12px;font:600 11px var(--mono);color:var(--dim);background:transparent;transition:box-shadow .15s,color .15s,border-color .15s,background .15s}
+.spChip:hover,.spChip:focus-visible{color:#fff3c8;border-color:#ffd877;background:rgba(255,216,119,.12);box-shadow:0 0 10px 2px rgba(255,216,119,.55),inset 0 0 6px rgba(255,216,119,.25);outline:none}
+.spChip.sel{color:#1a1608;background:var(--accent);border-color:var(--accent)}`;
+    document.head.appendChild(st);
+    const box=document.createElement('div');box.id='spChips';
+    for(const key of Object.keys(SPECIAL)){const b=document.createElement('button');b.type='button';b.className='spChip';b.dataset.k=key;b.textContent=key;
+      b.onmouseenter=b.onfocus=()=>{e.dataset.hov=key;e.textContent=`${SPECIAL[key].n} · ${SPECIAL[key].desc}`;e.style.opacity=1;};
+      b.onmouseleave=b.onblur=()=>{delete e.dataset.hov;specialHint();};
+      b.onclick=ev=>{ev.preventDefault();$('fSeed').value=key;specialHint();};box.appendChild(b);}
+    e.parentNode.appendChild(box);
+  }
+  const hov=e.dataset.hov;
+  e.textContent=hov?`${SPECIAL[hov].n} · ${SPECIAL[hov].desc}`:k?`특수 시드 · ${SPECIAL[k].desc}`:'특수 시드: 아래 이름에 마우스를 올려 설명을 보고, 클릭해 입력하세요';
+  e.style.opacity=hov?1:.6;
   e.classList.toggle('on',!!k);
+  document.querySelectorAll('.spChip').forEach(c=>c.classList.toggle('sel',c.dataset.k===k));
 }

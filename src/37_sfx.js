@@ -4,7 +4,7 @@ function sfxInit(){
   if(SFX.ctx){if(SFX.ctx.state==='suspended')SFX.ctx.resume();return;}
   try{
     const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
-    const c=new C();SFX.ctx=c;SFX.master=c.createGain();SFX.master.gain.value=.55;SFX.master.connect(c.destination);
+    const c=new C();SFX.ctx=c;SFX.master=c.createGain();SFX.master.gain.value=SFX.vol!==undefined?SFX.vol:.55;SFX.master.connect(c.destination);
     const n=c.sampleRate,b=c.createBuffer(1,n,n),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=Math.random()*2-1;SFX.noise=b;
   }catch(e){SFX.ctx=null;}
 }

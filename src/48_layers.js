@@ -109,6 +109,12 @@ function genHills(){
     if(!c.length||hsh(x*3.1,y*1.7)>.62)continue;
     G.sl[i]=c[(hsh(x,y*5.3)*c.length)|0];
   }
+  // 반층 타일: 한 층 높은 이웃과 맞닿은 낮은 칸 일부를 반층(+1) 올려 계단처럼 걸어 오를 수 있게 한다
+  for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
+    const i=y*w+x;if(G.sl[i]||G.tt[i]===2||G.tt[i]===4)continue;
+    let up=false;for(const [dx,dy] of D)if(F[i+dy*w+dx]===F[i]+1&&!G.sl[i+dy*w+dx])up=true;
+    if(up&&hsh(x*2.9+7,y*4.1)<.4)G.lv[i]=GROUND_LV+2*F[i]+1;
+  }
   // 빗면 칸은 인접 빗면과 서로 마주보면 모양이 깨지므로 하나만 남긴다
   for(let i=0;i<G.N;i++){const s=G.sl[i];if(!s)continue;const o=s===1?i+1:s===2?i-1:s===3?i+w:i-w;if(G.sl[o]){G.sl[i]=0;}}
   layersFinalize();

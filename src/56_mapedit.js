@@ -95,7 +95,7 @@ function mePaint(x,y,first){
       case 'rough':meSetTerrain(i,a,b,1);break;
       case 'water':meSetTerrain(i,a,b,2);break;
       case 'ice':meSetTerrain(i,a,b,4);break;
-      case 'height':if(G.tt[i]===2)break;G.lv[i]=GROUND_LV+2*ME.height;G.sl[i]=0;ME.dirty=true;break;
+      case 'height':if(G.tt[i]===2)break;G.lv[i]=GROUND_LV+Math.round(2*ME.height);G.sl[i]=0;ME.dirty=true;break;
       case 'ramp':{
         const D=[[1,0,1],[-1,0,2],[0,1,3],[0,-1,4]];let best=0;
         for(const [dx,dy,d] of D){const n=i+dy*w+dx;if(a+dx<0||b+dy<0||a+dx>=w||b+dy>=G.h)continue;if(G.lv[n]===G.lv[i]+2&&!G.sl[n]){best=d;break;}}
@@ -174,7 +174,7 @@ body.medit #bar,body.medit #res,body.medit #teams,body.medit #sel,body.medit #bu
   const p=document.createElement('aside');p.id='medit';p.hidden=true;p.setAttribute('aria-label','맵 편집기');
   let pal='';for(const [g,ts] of ME_TOOLS)pal+=`<div class="sec"><b>${g}</b><div class="pal">${ts.map(([id,n])=>`<button class="btn" type="button" data-t="${id}">${n}</button>`).join('')}</div></div>`;
   p.innerHTML=`<h3><span>맵 편집기</span><button class="btn" id="meExit" type="button">나가기 ✕</button></h3>
-<div class="sec"><b>붓</b><div class="rw"><label>크기 <select id="meSize"><option>1</option><option>2</option><option>3</option><option>4</option></select></label><label>높이(층) <select id="meH"><option value="0">0 (지상)</option><option value="1" selected>1</option><option value="2">2</option><option value="3">3</option></select></label></div>
+<div class="sec"><b>붓</b><div class="rw"><label>크기 <select id="meSize"><option>1</option><option>2</option><option>3</option><option>4</option></select></label><label>높이(층) <select id="meH"><option value="0">0 (지상)</option><option value=".5">0.5 (반층)</option><option value="1" selected>1</option><option value="1.5">1.5</option><option value="2">2</option><option value="2.5">2.5</option><option value="3">3</option></select></label></div>
 <label>바이옴 <select id="meBio">${BIOME_KEYS.map(k=>`<option value="${k}">${BIOME[k].n}</option>`).join('')}</select></label></div>
 ${pal}
 <div class="sec"><b>저장</b><input type="text" id="meName" maxlength="24" placeholder="맵 이름"><div class="rw"><button class="btn" id="meSave" type="button">저장</button><button class="btn" id="mePlay" type="button">▶ 테스트</button></div><div class="rw"><button class="btn" id="meExp" type="button">JSON 내보내기</button><button class="btn" id="meImp" type="button">불러오기</button></div><input type="file" id="meFile" accept=".json,application/json" hidden></div>`;

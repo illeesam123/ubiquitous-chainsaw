@@ -30,7 +30,7 @@ function musTick(dt){
   for(const k of ['calm','battle','pit']){
     const a=MUS.tr[k],tgt=(MUS.on&&MUS.mode===k&&G.phase!=='setup'?1:0)*quiet*MUS.vol;
     let v=MUS.lv[k];const st=dt/((k==='battle'||k==='pit')&&MUS.mode===k?1.2:2.4);
-    if(tgt>0&&v>tgt)v=tgt;   // 음량 슬라이더를 내리면 즉시 반영
+    if((tgt>0||MUS.vol===0)&&v>tgt)v=tgt;   // 음량 슬라이더를 내리면 즉시 반영
     v=v<tgt?Math.min(tgt,v+st):Math.max(tgt,v-st);MUS.lv[k]=v;
     a.volume=clamp(v,0,1);
     if(v>.002&&a.paused)musPlay(k);

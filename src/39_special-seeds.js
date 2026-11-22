@@ -11,12 +11,12 @@ function canyonY(x){
   const r=mulberry(hashStr(G.cfg.seed+'#cy')()),a=r()*6.28,b=r()*6.28,h=G.h;
   return h/2+Math.sin(x*.045+a)*h*.09+Math.sin(x*.13+b)*h*.025;
 }
-// 협곡 높이 단계: 0 바닥 · 1~3 층층이 오르는 절벽
+// 협곡 높이 단계: 0 바닥 · 3 꼭대기(깎아지른 절벽)
 function canyonF(x,y){
-  const w=G.w,h=G.h,Wc=Math.max(6,w*.1),st=Math.max(3,w*.04),d=Math.abs(y-canyonY(x))+(hsh(x*.7,y*.9)-.5)*2.2+(vn(G._cn||(G._cn=lat(mulberry(hashStr(G.cfg.seed+'#cn')()))),x*.09,y*.09)-.5)*7;
+  const w=G.w,h=G.h,Wc=Math.max(5,w*.062),d=Math.abs(y-canyonY(x))+(hsh(x*.7,y*.9)-.5)*2.2+(vn(G._cn||(G._cn=lat(mulberry(hashStr(G.cfg.seed+'#cn')()))),x*.09,y*.09)-.5)*7;
   const ed=Math.min(x,w-1-x);let wc=Wc+(ed<18?(18-ed)*.9:0);   // 양 끝은 넓게 열려 마을 터가 된다
   if(y<2||y>h-3)return 3;
-  return d<wc?0:d<wc+st?1:d<wc+2*st?2:3;
+  return d<wc?0:3;   // 중간 단 없이 바닥 → 꼭대기로 곧장 깎아지른 절벽
 }
 function specialOf(seed){const k=String(seed||'').trim().toLowerCase();return SPECIAL[k]?k:null;}
 function carveRiver(r,ori,pos,wid,amp){

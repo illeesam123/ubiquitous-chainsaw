@@ -69,6 +69,7 @@ cv.addEventListener('pointerup',e=>{
     if(tool==='dig'&&sel.length&&ti0>=0&&(G.mouth[ti0]||(G.up[ti0]===4&&G.under[ti0]===1))){const e3=orderMoveL(sel,t[0],t[1],1);if(e3)toast(e3);return;}
     if(inb(t[0],t[1])&&padAt(t[0],t[1])===0){openShop();return;}
     const clickedOb=inb(t[0],t[1])?G.obst[t[1]*G.w+t[0]]:null;
+    if(clickedOb&&!(sel.some(u=>u.state!=='gar')&&clickedOb.occ&&clickedOb.occ.length<(OB[clickedOb.type].slots||0))&&objClick(clickedOb))return;
     if(tool==='dig'&&clickedOb&&clickedOb.occ&&clickedOb.occ.length&&clickedOb.occTeam===0){
       // 대기 병사를 이 시설에 배치하려는 경우(빈 자리 있음)만 명령으로 처리하고, 그 외에는 주둔 병사를 선택한다.
       const wantsGarrison=sel.some(u=>u.state!=='gar')&&clickedOb.occ.length<(OB[clickedOb.type].slots||0);

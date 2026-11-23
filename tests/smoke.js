@@ -10,7 +10,10 @@ const { pathToFileURL } = require('url');
     p.on('pageerror', e => errs.push(e.message));
     await p.goto(pathToFileURL(path.join(__dirname, '..', 'dist', 'index.html')).href);
     await p.waitForFunction(() => typeof startGame === 'function', null, { timeout: 15000 });
-    await p.evaluate(() => startGame({ seed: 'SMOKE', biome: 'plain', size: 96, enemies: 2, soldiers: 24, minDist: 30 }));
+    await p.evaluate(() => {
+      Math.random = mulberry(hashStr('SMOKE_TEST')());
+      startGame({ seed: 'SMOKE', biome: 'plain', size: 96, enemies: 2, soldiers: 24, minDist: 30 });
+    });
     await p.waitForFunction(() => typeof LOAD !== 'undefined' && !LOAD.on, { timeout: 30000 });
     const started = await p.evaluate(() => {
       let q = null;

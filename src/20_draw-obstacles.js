@@ -185,6 +185,7 @@ function drawObFull(o){
   }else if(t==='sandbag'){
     const A=alongFn(o),a=A(.04),b=A(.96);
     sandbagRow(o,[a,b],0,4,false);sandbagRow(o,[A(.16),A(.84)],5,3,false);
+    if(o.lv)drawBarrierLv(o,L);
     if(!o.natural){const p=pt(cxw,cyw,11);cx.fillStyle=TEAM_COL[o.team];cx.fillRect(p[0]-1*z,p[1]-6*z,2*z,6*z);cx.fillRect(p[0],p[1]-6*z,6*z,3.5*z);}
   }else if(t==='wire'){
     const A=alongFn(o);
@@ -222,27 +223,8 @@ function drawObFull(o){
     poly([ap,pt(cxw-tp-ov,cyw+tp+ov,rb),pt(cxw+tp+ov,cyw+tp+ov,rb)],L('#6a4630'),'#3a2418',1);
     poly([ap,pt(cxw+tp+ov,cyw+tp+ov,rb),pt(cxw+tp+ov,cyw-tp-ov,rb)],L('#563826'),'#3a2418',1);
     if(!o.natural){wline(ap,pt(cxw,cyw,rb+22),'#ccc',1.2);cx.fillStyle=TEAM_COL[o.team];const q=pt(cxw,cyw,rb+22);cx.fillRect(q[0],q[1],9*z,5*z);}
-  }else if(t==='mg'){
-    const d=.3;shadowAt(cxw+.1,cyw+.08,26,10);
-    // 뒤쪽 자루 벽 (북, 서)
-    sandbagRow(o,[[cxw-d-.08,cyw-d],[cxw+d+.08,cyw-d]],0,3,false);
-    sandbagRow(o,[[cxw-d,cyw-d+.06],[cxw-d,cyw+d]],0,2,false);
-    sandbagRow(o,[[cxw-d-.04,cyw-d],[cxw+d+.04,cyw-d]],5,3,false);
-    // 삼각대 + 기관총
-    const gu=occ[0],fa=gu?gu.face:.8,ix=(Math.cos(fa)-Math.sin(fa))*.9,iy=(Math.cos(fa)+Math.sin(fa))*.5;
-    const gp=pt(cxw,cyw,9);
-    wline(pt(cxw,cyw,0),gp,'#222',1.8);wline(pt(cxw-.12,cyw+.1,0),gp,'#222',1.6);wline(pt(cxw+.12,cyw+.08,0),gp,'#222',1.6);
-    if(gu)peek(pt(cxw-.1,cyw-.12,11),gu,1,true);
-    const l2=occ[1];if(l2)peek(pt(cxw-.22,cyw+.04,10),l2,.85,true);
-    cx.fillStyle='#34362f';cx.fillRect(gp[0]-5*z,gp[1]-4*z,10*z,6*z);
-    cx.strokeStyle='#17170f';cx.lineWidth=2.6*z;cx.beginPath();cx.moveTo(gp[0],gp[1]-1*z);cx.lineTo(gp[0]+ix*17*z,gp[1]-1*z+iy*17*z);cx.stroke();
-    cx.strokeStyle='#17170f';cx.lineWidth=1*z;cx.beginPath();cx.moveTo(gp[0]+ix*11*z,gp[1]-1*z+iy*11*z);cx.lineTo(gp[0]+ix*11*z-3*z,gp[1]+4*z+iy*11*z);cx.stroke();
-    if(gu)muzzleAt([gp[0]+ix*17*z,gp[1]-1*z+iy*17*z],gu,ix*3,iy*3);
-    poly([[gp[0]+ix*5*z-4*z,gp[1]-6*z],[gp[0]+ix*5*z+4*z,gp[1]-6*z],[gp[0]+ix*5*z+4*z,gp[1]+3*z],[gp[0]+ix*5*z-4*z,gp[1]+3*z]],'#555a50');
-    // 앞쪽 낮은 자루 (남, 동)
-    sandbagRow(o,[[cxw-d-.05,cyw+d],[cxw+d+.05,cyw+d]],0,3,false);
-    sandbagRow(o,[[cxw+d,cyw-d+.06],[cxw+d,cyw+d-.06]],0,2,false);
-    if(!o.natural){const p=pt(cxw-d-.05,cyw-d,14);cx.fillStyle=TEAM_COL[o.team];cx.fillRect(p[0],p[1]-3*z,7*z,4*z);}
+    if(o.lv)drawTowerLv(o,occ,L);
+  }else if(t==='mg'){drawHescoOb(o,occ,L);
   }else if(t==='mortar'){drawMortarOb(o,occ,L);
   }else if(t==='armory'){drawArmoryOb(o,L);
   }else if(t==='medbay'){drawMedbayOb(o,occ,L);

@@ -40,6 +40,7 @@ function sprBounds(x,y,w,h){return `<rect id="bounds" x="${x}" y="${y}" width="$
 function f(v){return Math.round(v*100)/100;}
 const SPR={files:0,map:new Map(),buckets:[.36,.5,.7,1,1.25,1.5,2,3],bakes:0,hits:0,miss:0,on:true};
 const SPR_TYPES=new Set(['tree','rock','house','apartment','warehouse','shed','ruin','rubble','rubble2','rubble3','fence','wire','sandbag','crate','bunker','tower','mg','medbay','armory','mortar']);
+const SPR_LV=new Set(['tower','mg','mortar','medbay','sandbag']);   // 강화 단계(lv)별로 모양이 다른 구조물 (키의 마지막 칸)
 const SPR_LINEAR=new Set(['fence','wire','sandbag']);
 const SPR_BIOME=new Set(['tree']);                       // 바이옴별 디자인이 의도된 종류 (그 외는 전부 'plain' 기본 디자인 하나만 사용)
 const SPR_DMG=new Set(['house','apartment','warehouse','shed','ruin']); // 파손 단계가 그림에 반영되는 종류
@@ -56,7 +57,7 @@ function sprKey(o,biome){
   if(SPR_LINEAR.has(t)||t==='rubble'||t==='rubble2'||t==='rubble3'){
     for(const [vdx,vdy] of [[1,0],[-1,0],[0,1],[0,-1]]){const [dx,dy]=unrotDir(vdx,vdy),x=o.x+dx,y=o.y+dy,q=inb(x,y)?G.obst[y*G.w+x]:null;nb+=q&&q.type===o.type?1:0;}
   }
-  const stock=t==='armory'?Math.min(8,Math.ceil(armTotal(o)/3)):0;
+  const stock=t==='armory'?Math.min(8,Math.ceil(armTotal(o)/3)):(!o.natural&&SPR_LV.has(t)?(o.lv|0):0);
   const uni=SPR_UNIFORM.has(t),vq=uni?0:(o.v*4)|0,id4=uni?0:o.id%4,bio=SPR_BIOME.has(t)?(biome||G.biome):'plain',own=o.natural?'n':o.team;
   SPR.kr=[t,bio,o.size,vq,id4,hp,nb,own,o.from||'',stock].join('|');          // 반전 없이 그대로의 키
   // 좌우반전 재사용: 무늬 id 짝(0,1 ↔ 2,3)과 이웃 연결 모양(E↔S, W↔N)은 반전으로 만든다

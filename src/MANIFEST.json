@@ -56,5 +56,6 @@
   "src/54_bridges.js",
   "src/55_settings.js",
   "src/56_mapedit.js",
-  "src/57_weapons.js"
+  "src/57_weapons.js",
+  "src/58_ai-plus.js"
 ]

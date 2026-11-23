@@ -20,4 +20,4 @@ http.createServer((req, res) => {
   let p = path.normalize(path.join(root, u)); if (!p.startsWith(root)) { res.writeHead(403); return res.end(); }
   if (fs.existsSync(p) && fs.statSync(p).isDirectory()) p = path.join(p, 'index.html');
   fs.readFile(p, (e, d) => { if (e) { res.writeHead(404); return res.end('not found'); } res.writeHead(200, { 'Content-Type': MIME[path.extname(p)] || 'application/octet-stream', 'Cache-Control': 'no-cache' }); res.end(d); });
-}).listen(port, () => console.log(`에셋 매니저  http://localhost:${port}/editor/\n게임        http://localhost:${port}/dist/index.html`));
+}).listen(port, '127.0.0.1', () => console.log(`에셋 매니저  http://127.0.0.1:${port}/editor/\n게임        http://127.0.0.1:${port}/dist/index.html`));

@@ -15,7 +15,11 @@ function findPath(sx,sy,gx,gy,adj,size,vehicle){
   const push=(f,i)=>{let k=hf.length;hf.push(f);hi.push(i);while(k>0){const p=(k-1)>>1;if(hf[p]<=hf[k])break;[hf[p],hf[k]]=[hf[k],hf[p]];[hi[p],hi[k]]=[hi[k],hi[p]];k=p;}};
   const pop=()=>{const r=hi[0],lf=hf.pop(),li=hi.pop();if(hf.length){hf[0]=lf;hi[0]=li;let k=0;for(;;){let l=k*2+1,rr=l+1,m=k;if(l<hf.length&&hf[l]<hf[m])m=l;if(rr<hf.length&&hf[rr]<hf[m])m=rr;if(m===k)break;[hf[m],hf[k]]=[hf[k],hf[m]];[hi[m],hi[k]]=[hi[k],hi[m]];k=m;}}return r;};
   const hh=(x,y)=>{const dx=Math.abs(x-gx),dy=Math.abs(y-gy);return Math.max(0,(dx+dy)-.586*Math.min(dx,dy)-(adj?gs:0));};
-  const pass=(i)=>{if(pfLay===1)return G.under[i]!==0&&G.open[pfTeam][i]===1;const o=G.obst[i],x=i%w,y=(i/w)|0;if(vehicle){if(G.trench[i]>0&&G.up[i]!==1)return false;if(G.tt[i]===2&&G.up[i]!==1)return false;if(o&&o.type!=='crate')return false;for(const v of G.vehicles)if(v!==vehicle&&!v.dead&&Math.hypot(v.x-(x+.5),v.y-(y+.5))<.85)return false;return true;}for(const v of G.vehicles)if(!v.dead&&Math.hypot(v.x-(x+.5),v.y-(y+.5))<.9)return false;return !o||!(OB[o.type].block||o.blk);};
+  // Build a per-search spatial index so each expanded A* node checks nearby vehicles only.
+  const vehicleGrid=new Map();
+  for(const v of G.vehicles){if(v.dead)continue;const x=Math.floor(v.x),y=Math.floor(v.y),i=y*w+x;let a=vehicleGrid.get(i);if(!a)vehicleGrid.set(i,a=[]);a.push(v);}
+  const nearVehicle=(i,except,r)=>{const x=i%w,y=(i/w)|0,r2=r*r;for(let yy=Math.max(0,y-1);yy<=Math.min(G.h-1,y+1);yy++)for(let xx=Math.max(0,x-1);xx<=Math.min(w-1,x+1);xx++){const a=vehicleGrid.get(yy*w+xx);if(a)for(const v of a)if(v!==except&&(v.x-(x+.5))**2+(v.y-(y+.5))**2<r2)return true;}return false;};
+  const pass=(i)=>{if(pfLay===1)return G.under[i]!==0&&G.open[pfTeam][i]===1;const o=G.obst[i];if(vehicle){if(G.trench[i]>0&&G.up[i]!==1)return false;if(G.tt[i]===2&&G.up[i]!==1)return false;if(o&&o.type!=='crate')return false;return !nearVehicle(i,vehicle,.85);}return !nearVehicle(i,null,.9)&&(!o||!(OB[o.type].block||o.blk));};
   pfG[st]=0;pfS[st]=pfStamp;pfP[st]=-1;push(hh(sx,sy),st);
   const D8=[[1,0,1],[-1,0,1],[0,1,1],[0,-1,1],[1,1,1.414],[1,-1,1.414],[-1,1,1.414],[-1,-1,1.414]];
   let goal=-1,guard=0;

@@ -185,9 +185,6 @@ const _ssW=stepShells;stepShells=function(dt){_ssW(dt);stepWeapons(dt);};
   };
   $('amFrom').addEventListener('change',e=>{e.target.dataset.touched=1;amRender(true);});$('amTo').addEventListener('change',()=>amRender(true));
   // 상단 버튼
-  const b=document.createElement('button');b.className='btn';b.id='bArm';b.type='button';b.title='무기고 메뉴';b.textContent='🔫';
-  const pause=$('bPause');if(pause)pause.parentNode.insertBefore(b,pause);
-  b.onclick=()=>armMenu(m.hidden);
   setInterval(()=>{try{amRender(false);updateWpnUI();}catch(e){}},400);
   window.updateWpnUI=function(){
     const s=$('shWpn');if(!s||!G)return;const ok=armories(0).length>0;

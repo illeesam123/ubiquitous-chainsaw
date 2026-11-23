@@ -140,13 +140,21 @@ stepVehicles=function(dt){
   }
 };
 // ---- 그리기 ----
+function heliSprite(v,alt){
+  if(!(v.team>=0&&v.team<=3))return false;
+  const q=((Math.round(vFace(v.face)/(Math.PI/8))%16)+16)%16,qm=(4-q)&15,qc=Math.min(q,qm),fl=qc!==q;
+  const e=sprGetX('veh|'+((v.spin||0)>.25?'heliR':'heli')+'|'+v.team+'|'+qc);if(!sprOk(e))return false;
+  const [sx,sy]=toS(v.x,v.y),lift=(alt-3)*cam.z;
+  if(fl)sprBlitFlip(e,sx,sy-lift,cam.z,false);else sprBlit(e,sx,sy-lift,cam.z,false);
+  return true;
+}
 const _drawVehT=drawVehicle;
 drawVehicle=function(v){
   if(v.type!=='heli')return _drawVehT(v);
   const z=cam.z,[sx,sy]=toS(v.x,v.y),alt=3+v.alt*52,ps={x:v.x,y:v.y,alt,ang:v.face,spin:Math.max(.06,v.spin||0),flare:1},flash=v.flash>0;
   drawHeliShadowPose(ps);
   if(flash)cx.globalAlpha=.7;
-  drawHeliPose(ps,TEAM_COL[v.team]);
+  if(!heliSprite(v,alt))drawHeliPose(ps,TEAM_COL[v.team]);   // SVG 에셋(정지/회전), 없으면 절차적 그리기
   cx.globalAlpha=1;
   if(v.sel){cx.strokeStyle='#7dff7d';cx.lineWidth=1.6;cx.beginPath();cx.ellipse(sx,sy+2*z,36*z,18*z,0,0,6.3);cx.stroke();}
   const top=-(alt+22);

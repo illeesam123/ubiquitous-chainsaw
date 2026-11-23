@@ -47,9 +47,9 @@ function unitSprite(u,sx,by,z,body,inG){
   return true;
 }
 // ---- 생성기 ----
-function sprBakeUnitBody(pose){
+function sprBakeUnitBody(pose,civ){
   const mv=pose.startsWith('move'),fr=mv?+pose.slice(4):0;
-  const u={team:0,x:-1,y:-1,face:0,flash:0,muz:0,task:null,state:pose==='fuse'?'fuse':mv?'move':'idle',anim:mv?(fr+.5)/4*6.2832/12:0};
+  const u={civ:!!civ,team:0,x:-1,y:-1,face:0,flash:0,muz:0,task:null,state:pose==='fuse'?'fuse':mv?'move':'idle',anim:mv?(fr+.5)/4*6.2832/12:0};
   return sprRecordSplit(()=>unitBodyParts(u,0,0,1,'#fffffe',pose==='gar'),0,0,'#fffffe');
 }
 

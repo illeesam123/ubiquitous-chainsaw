@@ -84,7 +84,8 @@ function unitBodyParts(u,sx,by,z,body,inG){
   }
   cx.fillStyle=body;cx.fillRect(sx-4*z,by-15*z+bob,8*z,10*z);
   cx.fillStyle='#d8b890';cx.beginPath();cx.arc(sx,by-18*z+bob,3.6*z,0,6.3);cx.fill();
-  cx.fillStyle=u.flash>0?'#fff':'#3d4630';cx.beginPath();cx.arc(sx,by-19.5*z+bob,4*z,Math.PI,0);cx.fill();
+  if(u.civ){cx.fillStyle=u.flash>0?'#fff':'#3b2d22';cx.beginPath();cx.arc(sx,by-19.2*z+bob,3.7*z,Math.PI*1.02,Math.PI*1.98);cx.fill();}   // 민간인: 모자 없이 머리카락
+  else{cx.fillStyle=u.flash>0?'#fff':'#3d4630';cx.beginPath();cx.arc(sx,by-19.5*z+bob,4*z,Math.PI,0);cx.fill();}
   if(u.state==='fuse'){
     cx.strokeStyle=body;cx.lineWidth=2*z;cx.beginPath();cx.moveTo(sx-4*z,by-13*z);cx.lineTo(sx-5*z,by-21*z);cx.lineTo(sx-1*z,by-22*z);cx.moveTo(sx+4*z,by-13*z);cx.lineTo(sx+5*z,by-21*z);cx.lineTo(sx+1*z,by-22*z);cx.stroke();
   }

@@ -48,8 +48,8 @@ const root = path.join(__dirname, '..'), out = path.join(root, 'assets', 'sprite
   const ex = await p.evaluate(() => {
     startGame({ seed: 'S1', biome: 'plain', size: 96, enemies: 1, soldiers: 12, minDist: 30, flat: true }); G.paused = true;
     const o = {}, hex = (c) => { const k = document.createElement('canvas').getContext('2d'); k.fillStyle = c; return k.fillStyle; };
-    for (const pose of ['stand', 'gar', 'move0', 'move1', 'move2', 'move3', 'fuse']) { const r = sprBakeUnitBody(pose); if (r.neutral) o['ubody|' + pose] = r.neutral; if (r.tint) o['ubodyt|' + pose] = r.tint; }
-    for (const ty of ['tank', 'truck']) for (let t = 0; t < 4; t++) for (let q = 0; q < 16; q++) { if (Math.min(q, (4 - q) & 15) !== q) continue; const s = sprBakeVeh(ty, t, q); if (s) o[`veh|${ty}|${t}|${q}`] = s; }   // 반대편 방향은 좌우반전
+    for (const pose of ['stand', 'gar', 'move0', 'move1', 'move2', 'move3', 'fuse']) { const r = sprBakeUnitBody(pose); if (r.neutral) o['ubody|' + pose] = r.neutral; if (r.tint) o['ubodyt|' + pose] = r.tint; const rc = sprBakeUnitBody(pose, true); if (rc.neutral) o['ubodyc|' + pose] = rc.neutral; }
+    for (const ty of ['tank', 'truck', 'heli', 'heliR']) for (let t = 0; t < 4; t++) for (let q = 0; q < 16; q++) { if (Math.min(q, (4 - q) & 15) !== q) continue; const s = sprBakeVeh(ty, t, q); if (s) o[`veh|${ty}|${t}|${q}`] = s; }   // 반대편 방향은 좌우반전
     for (const k of [1, 2, 3]) for (let m = 0; m < 16; m++) { const mm = ((m & 1) << 2) | ((m & 4) >> 2) | ((m & 2) << 2) | ((m & 8) >> 2); if (mm < m) continue; for (let v = 0; v < (k === 3 ? 1 : 2); v++) { const s = sprBakeRoad(k, m, v); if (s) o[`road|${k}|${m}|${v}`] = s; } }
     for (const t of ['house', 'apartment', 'warehouse', 'shed', 'ruin']) for (const r of sprBakeOcc(t)) { if (r.neutral) o[`occ|${t}|${r.size}|${r.j}`] = r.neutral; if (r.tint) o[`occt|${t}|${r.size}|${r.j}`] = r.tint; }
     o['crater|0'] = sprBakeCrater();
@@ -118,7 +118,7 @@ const root = path.join(__dirname, '..'), out = path.join(root, 'assets', 'sprite
   for (const k of keysO) { const n = fileOf(k); fs.writeFileSync(path.join(out, n), all[k]); const vb = /viewBox="(-?[\d.]+) (-?[\d.]+) ([\d.]+) ([\d.]+)"/.exec(all[k]); if (!vb) throw new Error('viewBox 없음: ' + k); man[k] = [n, +vb[1], +vb[2], +vb[3], +vb[4]]; names.push(n); }
   fs.writeFileSync(path.join(out, 'manifest.js'), '// 자동 생성: npm run sprites\nvar SPRITE_MANIFEST=' + JSON.stringify(man) + ';\n');
   // ---- 에디터용 카탈로그: 에셋(이름) → 모양(셀) 목록. 각 셀은 축(바이옴·상태·변형·팀·방향·크기)을 가진다 ----
-  const NAME = { tree: '나무', rock: '바위', house: '집', apartment: '아파트', warehouse: '창고', shed: '헛간', ruin: '폐허', rubble: '잔해', rubble2: '잔해2', rubble3: '잔해3', fence: '울타리', wire: '철조망', sandbag: '모래주머니', crate: '상자', bunker: '벙커', tower: '감시탑', mg: '기관총 진지', medbay: '의무막사', armory: '무기고', mortar: '박격포 진지', unit: '병사', tank: '전차', truck: '수송 트럭', tile: '타일(땅)', ubody: '병사 몸(중립)', ubodyt: '병사 상의(팀색)', gun: '총기(소총)', tool: '도구(삽)', occ: '병사 점령 모습(창문)', occt: '병사 점령 팀색(치환)', bridge: '다리', flag: '깃발 기둥', flagc: '깃발 천(팀색)', road: '도로', crater: '구덩이(포탄 자국)' };
+  const NAME = { heli: '헬리콥터 (정지)', heliR: '헬리콥터 (회전)', ubodyc: '민간인 몸(중립·모자 없음)', tree: '나무', rock: '바위', house: '집', apartment: '아파트', warehouse: '창고', shed: '헛간', ruin: '폐허', rubble: '잔해', rubble2: '잔해2', rubble3: '잔해3', fence: '울타리', wire: '철조망', sandbag: '모래주머니', crate: '상자', bunker: '벙커', tower: '감시탑', mg: '기관총 진지', medbay: '의무막사', armory: '무기고', mortar: '박격포 진지', unit: '병사', tank: '전차', truck: '수송 트럭', tile: '타일(땅)', ubody: '병사 몸(중립)', ubodyt: '병사 상의(팀색)', gun: '총기(소총)', tool: '도구(삽)', occ: '병사 점령 모습(창문)', occt: '병사 점령 팀색(치환)', bridge: '다리', flag: '깃발 기둥', flagc: '깃발 천(팀색)', road: '도로', crater: '구덩이(포탄 자국)' };
   const EN = { tree: 'tree', rock: 'rock', house: 'house', apartment: 'apartment', warehouse: 'warehouse', shed: 'shed', ruin: 'ruin', rubble: 'rubble', fence: 'fence', wire: 'barbed wire', sandbag: 'sandbag', crate: 'crate', bunker: 'bunker', tower: 'tower watchtower', mg: 'machine gun', medbay: 'medical', armory: 'armory', mortar: 'mortar', unit: 'soldier infantry', tank: 'tank vehicle', truck: 'truck vehicle', tile: 'tile ground terrain', ubody: 'soldier body unit', ubodyt: 'soldier tint team color unit', gun: 'gun rifle weapon', tool: 'tool shovel', occ: 'occupied garrison window soldier', occt: 'occupied tint team color', bridge: 'bridge', flag: 'flag pole', flagc: 'flag cloth tint team color', road: 'road rail path', crater: 'crater' };
   const BODY = { stand: '서 있음/작업', gar: '진지·대기', move: '이동', fuse: '도화선' }, SHAPE = { side: '옆모습 (왼쪽은 좌우반전)', up: '위(멀어지는 방향·몸 뒤 레이어)', down: '아래(마주 보는 방향)' }, POSE = { idle: '서 있음', fire: '사격', gidle: '진지·대기', gfire: '진지·사격', move: '이동', work: '작업(삽)', fuse: '도화선' }, KIND = { 0: '일반 땅', 1: '진흙/언 땅', 2: '얕은 물', 4: '얼음' }, ROAD = { 1: '포장도로', 2: '비포장길', 3: '철로' };
   const BIO = { plain: '평원', swamp: '습지', snow: '설원', arid: '황무지' };
@@ -129,7 +129,7 @@ const root = path.join(__dirname, '..'), out = path.join(root, 'assets', 'sprite
   const add = (id, key, axes) => { (assets[id] = assets[id] || { id, name: NAME[id] || id, search: `${NAME[id] || id} ${EN[id] || id}`, cells: [] }).cells.push({ key, file: man[key][0], axes, vb: man[key].slice(1) }); };
   for (const key of Object.keys(man)) {
     const k = key.split('|');
-    if (k[0] === 'ubody' || k[0] === 'ubodyt') { const m = /^([a-z]+)(\d?)$/.exec(k[1]); add(k[0], key, { state: BODY[m[1]] + (m[2] ? ` ${+m[2] + 1}` : '') }); }
+    if (k[0] === 'ubody' || k[0] === 'ubodyt' || k[0] === 'ubodyc') { const m = /^([a-z]+)(\d?)$/.exec(k[1]); add(k[0], key, { state: BODY[m[1]] + (m[2] ? ` ${+m[2] + 1}` : '') }); }
     else if (k[0] === 'gun' || k[0] === 'tool') add(k[0], key, { gun: k[1] === 'rifle' ? '소총' : '삽', state: SHAPE[k[2]] });
     else if (k[0] === 'occ' || k[0] === 'occt') add(k[0], key, { state: NAME[k[1]], variant: `자리 ${+k[3] + 1}` });
     else if (k[0] === 'flag') add('flag', key, {});
@@ -147,7 +147,7 @@ const root = path.join(__dirname, '..'), out = path.join(root, 'assets', 'sprite
   const cat = Object.values(assets).map(a => {
     const vary = {}; for (const c of a.cells) for (const [ax, v] of Object.entries(c.axes)) (vary[ax] = vary[ax] || new Set()).add(v);
     a.axes = Object.keys(vary).filter(ax => vary[ax].size > 1);
-    a.group = TINT.has(a.id) ? 'tint' : ['ubody', 'gun', 'tool'].includes(a.id) ? 'unit' : ['tank', 'truck'].includes(a.id) ? 'veh' : ['tile', 'road', 'crater', 'bridge'].includes(a.id) ? 'terrain' : ['occ', 'flag'].includes(a.id) ? 'unit' : 'struct';
+    a.group = TINT.has(a.id) ? 'tint' : ['ubody', 'ubodyc', 'gun', 'tool'].includes(a.id) ? 'unit' : ['tank', 'truck', 'heli', 'heliR'].includes(a.id) ? 'veh' : ['tile', 'road', 'crater', 'bridge'].includes(a.id) ? 'terrain' : ['occ', 'flag'].includes(a.id) ? 'unit' : 'struct';
     if (TINT.has(a.id)) a.tint = true;
     if (NOTE[a.id]) a.note = NOTE[a.id];
     return a;

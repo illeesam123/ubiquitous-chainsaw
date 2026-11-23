@@ -4,7 +4,7 @@ const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..'), dist = path.join(root, 'dist');
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'src/MANIFEST.json'), 'utf8'));
 const spriteBake = process.argv.includes('--sprite-bake');
-const gameModules = spriteBake ? manifest : manifest.filter(f => f !== 'src/25_draw-tank.js');
+const gameModules = spriteBake ? manifest : manifest.filter(f => f !== 'src/25_draw-tank.js' && f !== 'src/62_heli-draw.js');
 fs.rmSync(dist, { recursive: true, force: true });
 fs.mkdirSync(path.join(dist, 'assets'), { recursive: true });
 let out = '';

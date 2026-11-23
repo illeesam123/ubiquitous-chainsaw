@@ -164,7 +164,7 @@ function sprRecord(fn,wx,wy){
 }
 function sprBakeVeh(type,team,q){
   const a=q*Math.PI/8,v={type,team,x:10,y:10,face:a,turA:a,aim:a,aimT:0,muz:0,hp:1,max:1,anim:0,flash:0,_tuDone:true};
-  return sprRecord(()=>{if(type==='tank')drawTank(v,false,team);else drawTruck(v,false,team);},10,10);
+  return sprRecord(()=>{if(type==='tank')drawTank(v,false,team);else if(type==='heli'||type==='heliR')drawHeliSpr(v,type==='heliR',team);else drawTruck(v,false,team);},10,10);
 }
 function sprBakeRoad(k,mask,v){
   let x=0,y=0;for(let a=8;a<40&&!x;a++)for(let b=8;b<40;b++)if((hsh(a,b)>.5?1:0)===v){x=a;y=b;break;}

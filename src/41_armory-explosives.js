@@ -6,6 +6,8 @@ const EXP={
   frag:{n:'세열수류탄',col:'#5f7a3a',cost:{money:26,metal:2},desc:'반경 1.9칸 폭발 피해'}
 };
 const EXPK=['smoke','flash','molotov','frag'];
+// 추후 방호구 기능을 위한 무기고 UI 자리표시자
+const ARMOR_SLOT={id:'armor',name:'방호구',enabled:false,description:'추후 추가 예정'};
 const ARM={range:7,cap:24,rest:.5};
 OB.armory={n:'무기고',hp:520,absorb:.6,block:true,size:2,demo:14,build:30,cost:{money:60,wood:20,metal:20}};
 BUILDS.splice(BUILDS.indexOf('medbay')+1,0,'armory');

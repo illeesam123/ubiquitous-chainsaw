@@ -15,6 +15,15 @@ const { pathToFileURL } = require('url');
       startGame({ seed: 'SMOKE', biome: 'plain', size: 96, enemies: 2, soldiers: 24, minDist: 30 });
     });
     await p.waitForFunction(() => typeof LOAD !== 'undefined' && !LOAD.on, { timeout: 30000 });
+    const audit = await p.evaluate(() => ({
+      required: G.assetAudit?.required || 0,
+      ready: G.assetAudit?.ready || 0,
+      failed: G.assetAudit?.failed || [],
+      directionAssets: Object.keys(SPRITE_MANIFEST).filter(k => k.startsWith('veh|')).length
+    }));
+    if (audit.required !== 118 || audit.ready !== audit.required || audit.failed.length || audit.directionAssets !== 72) {
+      errs.push('필수 SVG 에셋이 준비되지 않았습니다: ' + JSON.stringify(audit));
+    }
     const started = await p.evaluate(() => {
       let q = null;
       for (let k = 0; k < 3000 && !q; k++) {
@@ -29,6 +38,10 @@ const { pathToFileURL } = require('url');
       return G.units.length;
     });
     if (started <= 0) errs.push('게임 시작 시 유닛이 생성되지 않았습니다');
+    await p.evaluate(() => {
+      for (let r = 1; r < 4; r++) { setRot(r); render(); }
+      setRot(0); render();
+    });
     await p.waitForTimeout(2500);
     const state = await p.evaluate(() => ({
       time: G.time,

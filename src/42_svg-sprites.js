@@ -140,12 +140,13 @@ drawOb=function(o){
       o._se=e||null;o._sfl=flip;if(!e)o._ss=-1; // 아직 없으면 다음 프레임에 다시 시도
     }
   }
-  if(!e||!e.ready||e.fail){SPR.miss++;return;}   // 에셋이 없거나 아직 불러오는 중이면 그리지 않는다(예비 그리기 없음)
+  if(!e||!e.ready||e.fail){SPR.miss++;_drawObBase(o);return;}   // 에셋이 준비되기 전에는 기존 구조물·주둔 병사 그리기로 폴백
   // 병사 오버레이(중립 + 팀색) 준비 확인 — 하나라도 없으면 통째로 기존 그리기
   let ovs=null;
   if(occN&&SPR_OCC.has(o.type)){
     ovs=[];for(let j=0;j<occN;j++){const a=sprGetX('occ|'+o.type+'|'+o.size+'|'+j),b=sprGetX('occt|'+o.type+'|'+o.size+'|'+j);if(!a||!b){ovs=null;break;}if(!sprOk(a)||!sprOk(b)){ovs=null;break;}ovs.push(a,b);}
   }
+  if(occN&&SPR_OCC.has(o.type)&&!ovs){SPR.miss++;_drawObBase(o);return;} // 점령 오버레이가 준비될 때까지 병사를 숨기지 않는다
   const z=cam.z,[sx,sy]=toS(o.x+o.size/2,o.y+o.size/2);
   if(o._sfl)sprBlitFlip(e,sx,sy,z,false);else{const b=sprBkt(z),bm=sprRaster(e,b),k=z/b;cx.drawImage(bm,sx+e.x*z,sy+e.y*z,bm.width*k,bm.height*k);}
   if(ovs){const col=TEAM_COL[o.occTeam];for(let i=0;i<ovs.length;i+=2){sprBlit(ovs[i],sx,sy,z,false);sprBlitTint(ovs[i+1],sx,sy,z,col,false);}}

@@ -55,7 +55,7 @@ function genMap(r){
   if(bio==='swamp')for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x;if(G.tt[i]===2)continue;
     if((G.tt[i-1]===2||G.tt[i+1]===2||G.tt[i-w]===2||G.tt[i+w]===2)&&r()<.55)G.dec[i]=3;}
   const SP=G.special;
-  if((!SP||SP==='canyon')&&!G.cfg.flat)genHills();   // cfg.flat: 에셋 추출용 평지 맵
+  if((!SP||SP==='canyon')&&!G.cfg.flat&&!G.cfg.noHills)genHills();   // cfg.flat: 에셋 추출용, cfg.noHills: 성능 모드
   if(SP==='superflat')return;
   if(SP==='urbanwar'){
     carveRiver(r,'h',.5,Math.max(6,Math.round(w/14)),.1);

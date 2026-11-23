@@ -35,6 +35,10 @@ updateExpUI=function(){
 };
 (function(){
   const m=document.getElementById('armMenu');if(!m)return;
+  const armor=document.createElement('div');armor.id='amArmorSlot';
+  armor.style.cssText='border:1px dashed var(--line);border-radius:4px;padding:8px 10px;color:var(--dim);font-size:12px';
+  armor.innerHTML='<b style="color:var(--fg)">🛡 '+ARMOR_SLOT.name+'</b> <span>— '+ARMOR_SLOT.description+'</span>';
+  m.insertBefore(armor,document.getElementById('amJobs'));
   const d=document.createElement('div');d.id='amExp';
   m.insertBefore(d,document.getElementById('amJobs'));
   const _ar=window.amRender;

@@ -10,10 +10,30 @@ startGame=function(cfg){
   ldRun(el).catch(e=>console.error('로딩 오류:',e)).finally(()=>{LOAD.on=false;if(el)el.hidden=true;});
 };
 const ldRaf=()=>new Promise(r=>requestAnimationFrame(()=>r()));
+async function preloadCriticalSprites(set){
+  const keys=[];
+  for(const pose of ['stand','gar','move0','move1','move2','move3','fuse'])keys.push('ubody|'+pose,'ubodyt|'+pose);
+  const dirs=[0,1,2,5,6,7,8,9,10];
+  for(const type of ['tank','truck'])for(let team=0;team<4;team++)for(const dir of dirs)keys.push('veh|'+type+'|'+team+'|'+dir);
+  for(const key of Object.keys(SPRITE_MANIFEST))if(/^(?:occ|occt)\|/.test(key))keys.push(key);
+  const unique=[...new Set(keys)],entries=[],failed=[];
+  for(const key of unique){const e=sprGetX(key);if(e)entries.push(e);else{sprMissing(key);failed.push(key);}}
+  const t0=performance.now();
+  while(entries.some(e=>!e.ready&&!e.fail)&&performance.now()-t0<15000){
+    const ready=entries.filter(e=>e.ready).length;
+    set(.02,`핵심 에셋 확인 중 (${ready}/${unique.length})`);
+    await ldRaf();
+  }
+  for(const e of entries)if(!e.ready)failed.push(e.key);
+  G.assetAudit={required:unique.length,ready:unique.length-failed.length,failed};
+  if(failed.length)console.error('[에셋 준비 실패]',failed);
+  return failed;
+}
 async function ldRun(el){
   const bar=document.getElementById('loadBar'),msg=document.getElementById('loadMsg');
   const set=(p,t)=>{if(bar)bar.style.width=Math.round(p*100)+'%';if(msg)msg.textContent=t;};
   set(0,'전장 준비 중…');await ldRaf();
+  await preloadCriticalSprites(set);
   const t0=performance.now();
   while(!GL.ready&&!GL.fail&&performance.now()-t0<4000)await ldRaf();
   const sv={x:cam.x,y:cam.y,z:cam.z};

@@ -94,7 +94,7 @@ function flipOf(bm){            // 좌우반전본을 한 번만 만들어 재�
 }
 function sprBlitFlip(e,sx,sy,z,snap,tint){
   const b=sprBkt(z),bm=flipOf(tint?sprTinted(e,b,tint):sprRaster(e,b)),k=z/b;
-  let dx=sx+e.x*z,dy=sy+e.y*z;if(snap){dx=Math.round(dx);dy=Math.round(dy);}
+  let dx=sx-(e.x+e.w)*z,dy=sy+e.y*z;if(snap){dx=Math.round(dx);dy=Math.round(dy);}
   cx.drawImage(bm,dx,dy,bm.width*k,bm.height*k);
 }
 
@@ -109,7 +109,7 @@ function vehSprite(v,flash){
   }
   // 좌우반전 재사용: 방향 q ↔ (4-q) 는 서로 거울상
   const qm=(4-q)&15,qc=Math.min(q,qm),fl=qc!==q;
-  const e=ok?sprGetX('veh|'+v.type+'|'+v.team+'|'+qc):null;if(!sprOk(e)){if(!e)sprMissing('veh|'+v.type+'|'+v.team+'|'+qc);return true;}
+  const e=ok?sprGetX('veh|'+v.type+'|'+v.team+'|'+qc):null;if(!sprOk(e)){if(!e)sprMissing('veh|'+v.type+'|'+v.team+'|'+qc);return false;}
   const [sx,sy]=toS(v.x,v.y);if(fl)sprBlitFlip(e,sx,sy,cam.z,false);else sprBlit(e,sx,sy,cam.z,false);
   if(v.hp<v.max*.4){
     if(v.type==='tank')drawDamageSmoke(v.x,v.y,v.hp<v.max*.2,v.anim);

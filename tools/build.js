@@ -3,10 +3,12 @@
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..'), dist = path.join(root, 'dist');
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'src/MANIFEST.json'), 'utf8'));
+const spriteBake = process.argv.includes('--sprite-bake');
+const gameModules = spriteBake ? manifest : manifest.filter(f => f !== 'src/25_draw-tank.js');
 fs.rmSync(dist, { recursive: true, force: true });
 fs.mkdirSync(path.join(dist, 'assets'), { recursive: true });
 let out = '';
-for (const f of manifest) {
+for (const f of gameModules) {
   const code = fs.readFileSync(path.join(root, f), 'utf8');
   out += `\n/* ---- ${f} ---- */\n${code}`;
 }
@@ -17,4 +19,4 @@ fs.writeFileSync(path.join(dist, 'index.html'), html);
 fs.copyFileSync(path.join(root, 'style.css'), path.join(dist, 'style.css'));
 fs.copyFileSync(path.join(root, 'vendor/pixi.min.js'), path.join(dist, 'pixi.min.js'));
 fs.cpSync(path.join(root, 'assets'), path.join(dist, 'assets'), { recursive: true });
-console.log(`build ok: ${manifest.length} modules → dist/game.js (${(out.length / 1024).toFixed(0)} KB)`);
+console.log(`build ok: ${gameModules.length} modules${spriteBake?' (sprite bake)':''} → dist/game.js (${(out.length / 1024).toFixed(0)} KB)`);

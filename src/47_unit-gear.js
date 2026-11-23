@@ -18,7 +18,7 @@ function unitSprite(u,sx,by,z,body,inG){
   let pose='stand';
   if(st==='fuse')pose='fuse';else if(inG)pose='gar';else if(mv)pose='move'+((((u.anim*(st==='flee'?17:12))/6.2832)%1)*4|0);
   const eb=sprGetX('ubody|'+pose),et=sprGetX('ubodyt|'+pose);
-  if(!sprOk(eb)||!sprOk(et)){if(!eb)sprMissing('ubody|'+pose);return true;}
+  if(!sprOk(eb)||!sprOk(et)){if(!eb)sprMissing('ubody|'+pose);return false;}
   const c=Math.cos(vFace(u.face)),s=Math.sin(vFace(u.face)),ix=(c-s)*.9,iy=(c+s)*.5,bob=mv?Math.sin(u.anim*(st==='flee'?17:12))*1.2*z:0;
   let held=null,tip=null;
   if(st==='fuse'){}

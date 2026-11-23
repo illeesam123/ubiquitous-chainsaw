@@ -47,7 +47,7 @@ function stepUnit(u,dt){
   }
   // 일반 사격 (작업·주둔 중이 아닐 때)
   if(u.cd<=0){
-    if(fire(u,RIFLE,u))u.cd=RIFLE.int*(.9+Math.random()*.25);else u.cd=.25;
+    {const gn=gunOf(u);if(fire(u,gn,u))u.cd=gn.int*(.9+Math.random()*.25);else u.cd=.25;}
   }
 }
 function arrive(u){

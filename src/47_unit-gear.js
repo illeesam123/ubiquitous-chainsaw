@@ -33,7 +33,7 @@ function unitSprite(u,sx,by,z,body,inG){
     if(u.gA===undefined)u.gA=th;u.gA=_angN(u.gA+_angN(th-u.gA)*.3);
     const [shape,rot,flip]=gearPose(u.gA),look=(GUNS[u.gun]||GUNS.rifle).look,e=sprGetX('gun|'+look+'|'+shape),L=Math.min(1.03,Math.max(.5,Math.hypot(ix,iy)));
     held=sprOk(e)?{e,x:sx,y:by-10*z+bob,rot,flip,sc:shape==='side'?L:1,sc2:1,behind:shape==='up'}:'proc';
-    if(held!=='proc'&&u.muz>0)tip=[sx+Math.cos(u.gA)*13*L*z,by-10*z+bob+Math.sin(u.gA)*13*L*z];
+    if(held!=='proc'&&u.muz>0){const tl=(GUNS[u.gun]||GUNS.rifle).tip||13;tip=[sx+Math.cos(u.gA)*tl*L*z,by-10*z+bob+Math.sin(u.gA)*tl*L*z];}
   }
   const dBody=()=>{sprBlit(eb,sx,by,z,false);sprBlitTint(et,sx,by,z,TEAM_COL[u.team],false);};
   const dHeld=()=>{

@@ -119,9 +119,14 @@ function aiTick(T,dt){
   for(const f of foes){const s=Math.hypot(f.x-my.x,f.y-my.y)+teamCount(f.team)*1.4;if(s<bs){bs=s;tf=f;}}
   const enemyStr=Math.max(1,teamCount(tf.team));
   // 지하 작업이 끝나 노는 병사는 지상으로 복귀
-  if(A.shaft!==undefined&&G.up[A.shaft]===4){
-    const ug=mine.filter(u=>u.lay&&!u.task&&!u.queue.length&&u.state==='idle'&&!u.after);
-    if(ug.length)orderMoveL(ug,A.shaft%W2,(A.shaft/W2)|0,0);
+  {
+    const ug=mine.filter(u=>u.lay&&!u.dead&&!u.task&&!u.queue.length&&u.state==='idle'&&!u.after&&!u.medTarget);
+    for(const u of ug){
+      u.ugIdle=(u.ugIdle||0)+1;
+      if(u.ugIdle<2)continue;u.ugIdle=0;
+      const sh=A.shaft!==undefined&&G.up[A.shaft]===4?A.shaft:null;
+      orderMoveL([u],sh!==null?sh%W2:Math.floor(u.x),sh!==null?(sh/W2)|0:Math.floor(u.y),0);
+    }
   }
   const fighters=mine.filter(u=>!u.gar&&!u.lay&&!['med','medwait','medmove','medqueue'].includes(u.state));
   A.squad=(A.squad||[]).filter(id=>{const u=G.uid.get(id);return u&&!u.dead&&u.team===T.id;});

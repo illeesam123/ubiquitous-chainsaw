@@ -396,3 +396,19 @@ function renderUnder(x0,y0,x1,y1){
   cx.fillStyle='#e6c36a';cx.font='600 13px system-ui, sans-serif';cx.fillText('지하 층 · [U] 지상으로',14,H-14);
   uiTop();drawMini();
 }
+
+// 지하의 부상병은 벽을 뚫지 않고 먼저 지상 출구로 나간 뒤 의무 막사로 후송된다.
+const _reqMedU=requestMedical;
+requestMedical=function(u){
+  if(u&&!u.dead&&(u.lay|0)===1){
+    if(u.after&&u.after.med)return false;
+    if(![...G.obSet].some(o=>o.type==='medbay'&&o.team===u.team))return false;
+    const tr=pathToTransit(u,0);
+    if(!tr){u.medCooldown=3;return false;}
+    releaseUnit(u);u.queue=[];u.sel=false;
+    u.path=tr.path;u.after={lay:0,tx:Math.floor(u.x),ty:Math.floor(u.y),at:tr.tile,med:true};
+    if(tr.path.length)u.state='move';else arrive(u);
+    return false;
+  }
+  return _reqMedU(u);
+};

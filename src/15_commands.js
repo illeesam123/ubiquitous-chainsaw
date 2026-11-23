@@ -1,5 +1,5 @@
 // ================= 명령 보조 =================
-function passable(x,y){if(!inb(x,y))return false;for(const v of G.vehicles)if(!v.dead&&Math.hypot(v.x-(x+.5),v.y-(y+.5))<.9)return false;const o=G.obst[y*G.w+x];return !o||!OB[o.type].block;}
+function passable(x,y){if(!inb(x,y))return false;for(const v of G.vehicles)if(!v.dead&&Math.hypot(v.x-(x+.5),v.y-(y+.5))<.9)return false;const o=G.obst[y*G.w+x];return !o||!(OB[o.type].block||o.blk);}
 function orderMove(units,tx,ty){
   const ug=units.filter(u=>u.lay);if(ug.length){orderMoveL(ug,tx,ty,0);units=units.filter(u=>!u.lay);}
   const ring=[[0,0]];for(let r=1;r<=4;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(Math.max(Math.abs(dx),Math.abs(dy))===r)ring.push([dx,dy]);

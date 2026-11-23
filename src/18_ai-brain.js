@@ -365,7 +365,7 @@ aiShop=function(T){
 function aiReach(T){
   const w=G.w,N=G.N,seen=new Uint8Array(N),q=[];
   const s=T.flag.y*w+T.flag.x;seen[s]=1;q.push(s);
-  const walk=(i)=>{const o=G.obst[i];if(o&&OB[o.type].block)return false;if(G.tt[i]===2&&G.up[i]!==1)return false;return true;};
+  const walk=(i)=>{const o=G.obst[i];if(o&&(OB[o.type].block||o.blk))return false;if(G.tt[i]===2&&G.up[i]!==1)return false;return true;};
   for(let h=0;h<q.length;h++){
     const a=q[h],x=a%w,y=(a/w)|0;
     for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
@@ -495,4 +495,5 @@ function aiPlus(T){
   aiMine(T,free);
   aiIncome(T,free);
   aiRaze(T,free,tf);
+  if(typeof stAiUpgrade==='function')stAiUpgrade(T);
 }

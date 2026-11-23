@@ -18,7 +18,7 @@ function stepUnit(u,dt){
   if(u.state==='gar'){
     const o=u.gar;
     if(!o||!G.obSet.has(o)){u.gar=null;u.state='idle';return;}
-    const gun=OB[o.type].gun;
+    const gun0=OB[o.type].gun,gun=gun0&&typeof garGun==='function'?(garGun(u,o)||gun0):gun0;
     if(gun&&u.cd<=0){if(fire(u,gun,{x:o.x+o.size/2,y:o.y+o.size/2}))u.cd=gun.int*(.9+Math.random()*.2);else u.cd=.2;}
     return;
   }

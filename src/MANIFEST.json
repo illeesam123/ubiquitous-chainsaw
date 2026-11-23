@@ -57,5 +57,6 @@
   "src/55_settings.js",
   "src/56_mapedit.js",
   "src/57_weapons.js",
-  "src/58_menus.js"
+  "src/58_menus.js",
+  "src/59_structs.js"
 ]

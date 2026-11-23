@@ -20,7 +20,7 @@ function updateHUD(){
     const d=OB[b.dataset.id];b.classList.toggle('no',!!(d&&d.cost&&!canAfford(T,d.cost)));
   }
   const sel=selUnits(),vsel=selVehicles();
-  if(vsel.length){const v=vsel[0],d=VEH[v.type];$('sel').innerHTML=`<b>${v.type==='tank'?'전차':'수송트럭'} ${vsel.length}대</b><br>이동 ${vsel.filter(q=>q.state==='move').length} · 체력 ${Math.round(v.hp)}/${v.max}<br>승무원 ${v.crew?.length||0}/${d.crew}명<br>${v.type==='truck'?`적재 탄약 ${Math.ceil(v.cargo)}`:`주포 사거리 ${d.range} · 피해 감소 ${Math.round(d.armor*100)}%`} `;}else if(sel.length){
+  if(vsel.length){const v=vsel[0],d=VEH[v.type];$('sel').innerHTML=`<b>${OB[v.type].n} ${vsel.length}대</b><br>이동 ${vsel.filter(q=>q.state==='move').length} · 체력 ${Math.round(v.hp)}/${v.max}<br>승무원 ${v.crew?.length||0}/${d.crew}명<br>${v.type==='truck'?`적재 탄약 ${Math.ceil(v.cargo)} · 탑승 ${(v.pax||[]).length}/${d.seats}`:v.type==='heli'?`탑승 ${(v.pax||[]).length}/${d.seats} · ${v.alt>.02||v.state!=='idle'?(v.state==='takeoff'?'이륙 중':v.state==='landing'?'착륙 중':'비행 중'):'착륙'} · 탑승 사격 사거리 +${d.rangeBonus}`:`주포 사거리 ${d.range} · 피해 감소 ${Math.round(d.armor*100)}%`} `;}else if(sel.length){
     const w=sel.filter(u=>u.state==='work').length,m=sel.filter(u=>u.state==='move').length,g=sel.filter(u=>u.state==='gar').length,med=sel.filter(u=>u.state==='med'||u.state==='medmove'||u.state==='medwait'||u.state==='medqueue').length;
     $('sel').innerHTML=`<b>선택 ${sel.length}명</b><br>작업 ${w} · 이동 ${m} · 주둔 ${g} · 의무 ${med}<br>체력 평균 ${Math.round(sel.reduce((a,u)=>a+u.hp,0)/sel.length)} / 150${g?'<br>R 또는 주둔 해제 버튼으로 해제':''}`;
   }else $('sel').innerHTML=G.phase==='play'?'병사를 클릭하거나<br>Shift+끌기로 선택':'';

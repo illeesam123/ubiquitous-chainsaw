@@ -19,16 +19,16 @@ function drawPad(T){
   const a=pt(bx,by,25),sw=Math.sin(tt*2.2+T.id)*3*z;
   for(let k=0;k<4;k++){cx.fillStyle=k%2?'#f4f1e6':'#e0742e';cx.beginPath();cx.moveTo(a[0]+k*5*z,a[1]-3*z+k*sw*.4+k*.6*z);cx.lineTo(a[0]+(k+1)*5*z,a[1]-2.2*z+(k+1)*sw*.4+(k+1)*.7*z);cx.lineTo(a[0]+(k+1)*5*z,a[1]+1.8*z+(k+1)*sw*.4+(k+1)*.7*z);cx.lineTo(a[0]+k*5*z,a[1]+3*z+k*sw*.4+k*.6*z);cx.closePath();cx.fill();}
 }
-function drawHeliShadow(T){
-  const ps=heliPose(T);if(!ps)return;
+function drawHeliShadow(T){const ps=heliPose(T);if(!ps)return;drawHeliShadowPose(ps);}
+function drawHeliShadowPose(ps){
   const [sx,sy]=toS(ps.x,ps.y),z=cam.z,k=1-Math.min(1,ps.alt/80)*.55;
   cx.fillStyle=`rgba(0,0,0,${.3*k})`;cx.beginPath();cx.ellipse(sx+ps.alt*.25*z,sy+2*z,(30+ps.alt*.15)*z,(13+ps.alt*.06)*z,0,0,6.3);cx.fill();
 }
-function drawHeli(T){
-  const ps=heliPose(T);if(!ps)return;
+function drawHeli(T){const ps=heliPose(T);if(!ps)return;drawHeliPose(ps,TEAM_COL[T.id]);}
+function drawHeliPose(ps,col){
   const z=cam.z,[gx,gy]=toS(ps.x,ps.y),sx=gx,sy=gy-ps.alt*z,tt=WFX.t||0;
   const c=Math.cos(ps.ang),s=Math.sin(ps.ang),fx=(c-s),fy=(c+s)*.5,fl=Math.hypot(fx,fy)||1,ux=fx/fl,uy=fy/fl; // 화면상 진행 방향
-  const rot=tt*30*ps.spin,col=TEAM_COL[T.id];
+  const rot=tt*30*ps.spin;
   cx.save();cx.translate(sx,sy);
   // 이착륙 중 시점에 따른 약간의 기울임
   const bank=ps.alt>6?(ux*.05):0;cx.rotate(bank);

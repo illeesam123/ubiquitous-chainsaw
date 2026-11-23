@@ -45,7 +45,7 @@ cv.addEventListener('pointerup',e=>{
   if(d.mode==='box'){
     const dx=Math.abs(d.x-d.sx),dy=Math.abs(d.y-d.sy);
     if(dx+dy<8){
-      const v=hitVehicle(sx,sy);if(v){setSel([],false);v.sel=true;return;}
+      const v=hitVehicle(sx,sy);if(v){{const sl0=selUnits();if(sl0.length&&typeof tryBoard==='function'&&tryBoard(sl0,v))return;}setSel([],false);v.sel=true;return;}
       const u=hitUnit(sx,sy);
       if(u)setSel([u],d.shift);
       else if(!d.shift&&!selUnits().length){/* 선택 없음 */}
@@ -61,7 +61,7 @@ cv.addEventListener('pointerup',e=>{
   const sel=selUnits(),vsel=selVehicles();
   if(d.rect&&d.moved)d.tiles=rectTiles(d.t0,t);
   if(d.tiles.length<2){
-    const v=hitVehicle(sx,sy);if(v){setSel([],false);v.sel=true;return;}
+    const v=hitVehicle(sx,sy);if(v){if(sel.length&&typeof tryBoard==='function'&&tryBoard(sel,v))return;setSel([],false);v.sel=true;return;}
     const u=hitUnit(sx,sy);
     if(u){setSel([u],false);return;}
     if(viewLay===1){const e2=underClick(t,sel);if(e2)toast(e2);return;}

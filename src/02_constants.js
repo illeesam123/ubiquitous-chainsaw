@@ -27,12 +27,14 @@ const OB={
   medbay:{n:'의무 막사',hp:380,absorb:.5,block:false,demo:10,build:26,cost:{money:48,wood:18,metal:8},slots:2,staff:1,beds:2,heal:5,healRange:5.2,retreatAt:.45},
   // 차량은 작업 시스템의 비용·제작 시간만 공유하며, 장애물 대신 독립 엔티티로 생성된다.
   tank:{n:'전차',size:1,build:48,cost:{money:130,metal:45,bullets:60}},
-  truck:{n:'수송트럭',size:1,build:28,cost:{money:75,metal:18,wood:6,bullets:10}}
+  truck:{n:'수송트럭',size:1,build:28,cost:{money:75,metal:18,wood:6,bullets:10}},
+  heli:{n:'헬리콥터',size:1,build:50,cost:{money:140,metal:50,bullets:60}}
 };
-const BUILDS=['sandbag','wire','tower','mg','bunker','mortar','medbay','tank','truck'];
+const BUILDS=['sandbag','wire','tower','mg','bunker','mortar','medbay','tank','truck','heli'];
 const VEH={
   tank:{hp:850,speed:1.25,range:12,interval:3.5,damage:38,ammo:4,blast:1.35,trenchDmg:72,armor:.35,crew:3},
-  truck:{hp:430,speed:1.8,range:0,interval:0,damage:0,ammo:0,blast:0,trenchDmg:0,armor:.15,cargo:180,supply:2.2,supplyRange:5.5,crew:1}
+  truck:{hp:430,speed:1.8,range:0,interval:0,damage:0,ammo:0,blast:0,trenchDmg:0,armor:.15,cargo:180,supply:2.2,supplyRange:5.5,crew:1,seats:8},
+  heli:{hp:340,speed:3.3,range:0,interval:0,damage:0,ammo:0,blast:0,trenchDmg:0,armor:.1,crew:1,seats:4,air:true,rangeBonus:4,takeoff:2.4,landing:2.2}
 };
 let G=null;
 const WEATHER={clear:{name:'맑음',icon:'☀',sight:1,acc:1,speed:1,work:1},rain:{name:'비',icon:'🌧',sight:.82,acc:.88,speed:.86,work:.82},snow:{name:'눈',icon:'❄',sight:.72,acc:.78,speed:.72,work:.68},fog:{name:'안개',icon:'〰',sight:.52,acc:.76,speed:1,work:1}};

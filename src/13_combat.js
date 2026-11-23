@@ -50,7 +50,7 @@ function resolveHit(s,u,gun){
 function mortarImpact(team,x,y,def){
   const r=def.vehicle?(def.blast||1.35):1.65;
   for(const u of G.units){if(u.dead||u.state==='crew'||u.team===team||u.lay||inRoof(u))continue;const d=Math.hypot(u.x-x,u.y-y);if(d<=r){let dmg=def.shell*(1-(def.vehicle?.48:.38)*d/r);if(sameTeamTrench(u))dmg*=def.vehicle?.72:.82;hurt(u,dmg,null);if(u.gar&&G.obSet.has(u.gar))damageOb(u.gar,dmg*.45);}}
-  for(const v of G.vehicles){if(v.dead||v.team===team)continue;const d=Math.hypot(v.x-x,v.y-y);if(d<=r)damageVehicle(v,def.vehicle?def.shell*(1-.35*d/r):def.shell*.72*(1-.3*d/r));}
+  for(const v of G.vehicles){if(v.dead||v.team===team||v.alt>.02)continue;const d=Math.hypot(v.x-x,v.y-y);if(d<=r)damageVehicle(v,def.vehicle?def.shell*(1-.35*d/r):def.shell*.72*(1-.3*d/r));}
   const rr=def.vehicle?(def.blast||1.3):1.25;for(let ty=Math.floor(y-rr);ty<=Math.ceil(y+rr);ty++)for(let tx=Math.floor(x-rr);tx<=Math.ceil(x+rr);tx++){if(!inb(tx,ty))continue;const i=ty*G.w+tx;if(G.trench[i]>0&&G.trench[i]!==255&&G.trench[i]!==team+1&&!roofedI(i)&&Math.hypot(tx+.5-x,ty+.5-y)<=rr){G.trenchHP[i]-=def.trenchDmg;if(G.trenchHP[i]<=0){G.trench[i]=255;G.trenchHP[i]=0;G.up[i]=0;}}}
   for(const o of [...G.obSet])if((o.natural||o.team!==team)&&Math.hypot(o.x+o.size/2-x,o.y+o.size/2-y)<=r*.8)damageOb(o,def.shell*.35);
   fxPush({k:'boom',x,y,t:0,d:.65});sfx('boom',x,y);clearBush(x,y,1.9);

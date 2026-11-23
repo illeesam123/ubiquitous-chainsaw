@@ -59,5 +59,6 @@
   "src/57_weapons.js",
   "src/58_menus.js",
   "src/59_structs.js",
-  "src/60_struct-looks.js"
+  "src/60_struct-looks.js",
+  "src/61_transport.js"
 ]

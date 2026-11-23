@@ -46,7 +46,7 @@ function taskCheck(team,kind,x,y,type){
       if(chebToTrench(team,ax,ay))near=true;
     }
     if(G.hill&&cells.length>1&&!flatArea(x,y,d.size||1))return '평평하지 않은 곳에는 지을 수 없습니다';
-    if(isVehicle&&G.vehicles.some(v=>!v.dead&&Math.hypot(v.x-(x+.5),v.y-(y+.5))<.85))return '차량이 지나갈 공간이 없습니다';
+    if(isVehicle&&G.vehicles.some(v=>!v.dead&&!(v.alt>.02)&&Math.hypot(v.x-(x+.5),v.y-(y+.5))<.85))return '차량이 지나갈 공간이 없습니다';
     if(!near)return '참호 및 1칸 주변에만 제작할 수 있습니다';
     for(const t of G.tasks.values()){
       if(t.kind!=='build')continue;

@@ -28,7 +28,7 @@ function stepUnit(u,dt){
   if(movingState&&u.stuck>0){u.stuck-=dt;}
   else if(movingState&&u.path.length){
     const ni=u.path[0],nx=(ni%G.w)+.5,ny=((ni/G.w)|0)+.5;
-    const vehicleBlock=!u.lay&&G.vehicles.some(v=>!v.dead&&Math.hypot(v.x-nx,v.y-ny)<.82);
+    const vehicleBlock=!u.lay&&G.vehicles.some(v=>!v.dead&&!(v.alt>.02)&&Math.hypot(v.x-nx,v.y-ny)<.82);
     if(!u.lay&&climbStep(u,ni,dt)){if(!u.path.length)arrive(u);}
     else if(vehicleBlock){u.path=[];if(u.state==='flee')u.state='fuse';else if(u.state==='medmove'||u.state==='medqueue'){u.state='idle';u.medCooldown=2;clearMedical(u);}else{u.state='idle';u.wait=.2;}}
     else{

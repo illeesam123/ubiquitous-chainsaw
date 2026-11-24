@@ -167,6 +167,10 @@ table.st td,table.st th{text-align:left;padding:4px 6px;border-bottom:1px solid 
         <h1>참호전</h1>
         <p>시드로 장애물과 건물이 달라지는 쿼터뷰 참호 RTS. 깃발을 꽂고, 참호를 파고, 버텨서 이기세요.</p>
         <div class="grid">
+          <label class="wide">모드
+            <select id="fMode"><option value="normal" selected>일반 — 적 기지와 대결</option><option value="defense">디펜스 — 사방에서 몰려오는 웨이브 막기</option></select>
+            <small id="fModeHint" style="opacity:.6;font-weight:400;line-height:1.4"></small>
+          </label>
           <label class="wide">시드
             <span class="row"><input id="fSeed" type="text" maxlength="32" autocomplete="off"><button class="btn" id="bDice" type="button">무작위</button></span>
             <small id="spHint" style="opacity:.6;font-weight:400;line-height:1.4"></small>

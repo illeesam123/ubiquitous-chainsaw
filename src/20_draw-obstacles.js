@@ -279,8 +279,27 @@ function drawCrater(x,y){
   if(G.flood&&G.flood[Math.floor(y)*G.w+Math.floor(x)]){cx.fillStyle='rgba(52,108,138,.66)';cx.beginPath();cx.ellipse(sx,sy+2*z,20*z,9.5*z,0,0,6.3);cx.fill();cx.strokeStyle='rgba(205,236,246,.3)';cx.lineWidth=Math.max(.7,z);cx.beginPath();cx.ellipse(sx-4*z,sy+1*z,7*z,2.6*z,0,0,6.3);cx.stroke();}
 }
 function drawTrenchTile(x,y,v){
-  const w=G.w,z=cam.z,d=PIT_PX,[X,Y]=VT(x,y),P=toSV;
-  const nb=(va,vb)=>{const [dx,dy]=unrotDir(va,vb),a=x+dx,b=y+dy;const q=inb(a,b)?G.trench[b*w+a]:0;return q>0&&q!==255;};
+  const w=G.w,z=cam.z,d=PIT_PX,i=y*w+x,[X,Y]=VT(x,y);
+  // 이 참호 칸의 표면 높이를 기준으로 꼭짓점을 계산한다. toSV/elevH는 격자 경계에서
+  // 옆 칸의 높이로 바뀌므로, 절벽 아래쪽 높이가 참호 벽·바닥에 섞여 번지는 문제가 있었다.
+  const P=(vx,vy,h)=>{
+    const [wx,wy]=unrotXY(vx,vy),lv=G.hill&&!REC&&viewLay!==1?elevIn(i,wx-x,wy-y):GROUND_LV;
+    return [(vx-vy)*32*z+cam.x,(vx+vy)*16*z+cam.y-((lv-GROUND_LV)*HALF_PX+(h||0))*z];
+  };
+  const sameEdge=(ni,dx,dy)=>{
+    let ax0,ay0,ax1,ay1,bx0,by0,bx1,by1;
+    if(dx===1){ax0=1;ay0=0;ax1=1;ay1=1;bx0=0;by0=0;bx1=0;by1=1;}
+    else if(dx===-1){ax0=0;ay0=0;ax1=0;ay1=1;bx0=1;by0=0;bx1=1;by1=1;}
+    else if(dy===1){ax0=0;ay0=1;ax1=1;ay1=1;bx0=0;by0=0;bx1=1;by1=0;}
+    else{ax0=0;ay0=0;ax1=1;ay1=0;bx0=0;by0=1;bx1=1;by1=1;}
+    return Math.abs(elevIn(i,ax0,ay0)-elevIn(ni,bx0,by0))<=1.001&&Math.abs(elevIn(i,ax1,ay1)-elevIn(ni,bx1,by1))<=1.001;
+  };
+  const nb=(va,vb)=>{
+    const [dx,dy]=unrotDir(va,vb),nx=x+dx,ny=y+dy;
+    if(!inb(nx,ny))return false;
+    const ni=ny*w+nx,q=G.trench[ni];
+    return q>0&&q!==255&&sameEdge(ni,dx,dy);
+  };
   const W=nb(-1,0),Nn=nb(0,-1),E=nb(1,0),S=nb(0,1);
   cx.save();
   cx.beginPath();diaPath(x,y);

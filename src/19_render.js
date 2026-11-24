@@ -159,7 +159,7 @@ function paintBase(x,y,i,w){
 // ---- 바닥 청크 캐시: 16×16 타일을 한 장의 오프스크린 캔버스에 미리 그려 두고, 화면을 움직일 때는 그 몇 장만 찍는다 ----
 const CHK=16,CHB=[.5,.7,1,1.25],CHBYTES=150*1048576;   // 청크 캔버스 총량 상한(바이트) — 넘으면 오래 안 쓴 것부터 버린다
 let chunkMap=new Map(),chunkG=null,chunkPix=0;
-function chunkEvict(keep){let t=0;for(const c of chunkMap.values())t+=c.cv.width*c.cv.height*4;if(t<=CHBYTES)return;for(const [k,c] of chunkMap){if(t<=CHBYTES)break;if(c===keep)continue;t-=c.cv.width*c.cv.height*4;c.cv.width=c.cv.height=0;chunkMap.delete(k);}}
+function chunkEvict(keep){let t=0;for(const c of chunkMap.values())t+=c.cv.width*c.cv.height*4;if(t<=CHBYTES)return;for(const [k,c] of chunkMap){if(t<=CHBYTES)break;if(c===keep)continue;t-=c.cv.width*c.cv.height*4;chunkMap.delete(k);}}
 function chunkSig(a,b){
   const w=G.w,x1=Math.min(G.w,a*CHK+CHK),y1=Math.min(G.h,b*CHK+CHK);let h=(SPR.on?7:3)+SPRV*131+(G.biome.length*17)+(G.shV|0)*7919+VROT*104729;const hv=G.hill;
   for(let y=b*CHK;y<y1;y++)for(let x=a*CHK,i=y*w+x;x<x1;x++,i++)h=(h*31+G.tt[i]*5+G.gq[i]*3+G.road[i]*11+G.dec[i]*13+(G.up[i]===1?7:0)+(G.mm[i]?1:0)+(hv?G.lv[i]*17+G.sl[i]*19:0))|0;
@@ -189,7 +189,7 @@ function chunkGet(a,b,zb){
 function drawGround(x0,y0,x1,y1){
   const w=G.w;
   cx.lineWidth=1;
-  if(chunkG!==G){for(const c of chunkMap.values())c.cv.width=c.cv.height=0;chunkMap=new Map();TBM.clear();chunkG=G;}
+  if(chunkG!==G){chunkMap=new Map();TBM.clear();chunkG=G;}
   const zb=CHB.find(q=>q>=cam.z-.001);
   if(zb!==undefined&&cam.z>=.4){
     {const ba=Math.floor(y0/CHK),bb=Math.floor(y1/CHK),aa=Math.floor(x0/CHK),ab=Math.floor(x1/CHK);

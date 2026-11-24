@@ -18,12 +18,15 @@ function drawHeliSpr(v,spin,team){
   const tx=ox-ux*44,ty=oy-uy*44-8;
   if(spin){cx.fillStyle='rgba(30,32,25,.28)';cx.beginPath();cx.ellipse(tx,ty,6.5,6.5,0,0,6.3);cx.fill();}
   else{cx.strokeStyle='rgba(30,32,25,.8)';cx.lineWidth=1.6;cx.beginPath();cx.moveTo(tx,ty-6);cx.lineTo(tx,ty+6);cx.stroke();}
-  // 동체
-  cx.fillStyle='#7c8352';cx.beginPath();cx.ellipse(ox,oy-2,19,9.5,a,0,6.3);cx.fill();
-  let p=B(0,3.5);cx.fillStyle='#5f6640';cx.beginPath();cx.ellipse(p[0],p[1],18,6,a,0,Math.PI);cx.fill();
-  p=B(-2,-3.5);cx.fillStyle='#8f9760';cx.beginPath();cx.ellipse(p[0],p[1],14,4,a,Math.PI,6.2832);cx.fill();
-  p=B(11,-1);cx.fillStyle='#a9d4e6';cx.beginPath();cx.ellipse(p[0],p[1],7,6,a,0,6.3);cx.fill();
-  p=B(12,-3);cx.fillStyle='rgba(255,255,255,.55)';cx.beginPath();cx.ellipse(p[0],p[1],3,1.8,a+.4,0,6.3);cx.fill();
+  // 동체: 명암이 다른 하부와 분리된 조종석·측면문으로 방향감과 기체 구조를 살린다.
+  cx.fillStyle='rgba(0,0,0,.22)';cx.beginPath();cx.ellipse(ox,oy+3,18,5.5,a,0,6.3);cx.fill();
+  cx.fillStyle='#626944';cx.beginPath();cx.ellipse(ox-1,oy-.5,20,9,a,0,6.3);cx.fill();
+  cx.fillStyle='#858d59';cx.beginPath();cx.ellipse(ox-2,oy-3.5,17,7.8,a,Math.PI,6.3);cx.fill();
+  p=B(-6,1);cx.fillStyle='#485238';cx.beginPath();cx.ellipse(p[0],p[1],8,7,a,0,6.3);cx.fill();
+  p=B(11,-1);cx.fillStyle='#a9d4e6';cx.beginPath();cx.ellipse(p[0],p[1],7,5.6,a,0,6.3);cx.fill();
+  cx.strokeStyle='rgba(35,45,48,.65)';cx.lineWidth=.8;{const q0=B(10,-6),q1=B(10,4);cx.beginPath();cx.moveTo(...q0);cx.lineTo(...q1);cx.stroke();}
+  p=B(12,-3);cx.fillStyle='rgba(255,255,255,.52)';cx.beginPath();cx.ellipse(p[0],p[1],2.7,1.4,a+.4,0,6.3);cx.fill();
+  {const q0=B(-7,-3),q1=B(0,-3),q2=B(0,4),q3=B(-7,4);cx.strokeStyle='rgba(33,38,27,.65)';cx.lineWidth=.8;cx.beginPath();cx.moveTo(...q0);cx.lineTo(...q1);cx.lineTo(...q2);cx.lineTo(...q3);cx.closePath();cx.stroke();}
   const q0=B(-12,-1.5),q1=B(1,-1.5),q2=B(1,1.5),q3=B(-12,1.5);
   cx.fillStyle=col;cx.beginPath();cx.moveTo(q0[0],q0[1]);cx.lineTo(q1[0],q1[1]);cx.lineTo(q2[0],q2[1]);cx.lineTo(q3[0],q3[1]);cx.closePath();cx.fill();
   // 마스트 + 메인 로터

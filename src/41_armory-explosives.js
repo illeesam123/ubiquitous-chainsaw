@@ -66,7 +66,7 @@ function stepArmory(dt){
       }
       c.sort((a,b)=>a[0]-b[0]);
       for(const [d,u] of c){
-        let k=null,best=0;for(const q of EXPK)if(s[q]>best){best=s[q];k=q;}
+        let k=null,best=0;for(const q of (typeof isReclaim==='function'&&isReclaim()?['frag','molotov','flash','smoke']:EXPK))if(s[q]>best){best=s[q];k=q;}
         if(!k)break;
         s[k]--;u.fetch={o,k,t:0};
         if(d<=2.3)continue;

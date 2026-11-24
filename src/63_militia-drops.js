@@ -1,7 +1,9 @@
 // ================= 민간인 스프라이트 · 자경단(검은 민간인) · 무기/투척물 드롭 =================
 // 민간인은 병사 몸 에셋(ubodyc: 모자 없는 중립 몸 + ubodyt 마스크)을 회색으로 칠해 재사용한다. 자경단은 같은 에셋을 검정으로 칠한다.
 const MIL={guns:['rifle','pistol','assault','sniper','lmg'],gw:[3,3,2,1,1],sight:6.5,molo:.5,leash:2.5,cityP:.22,maxN:30,hp:40,rng:.7,dmg:.8,acc:.7};   // 너프: 체력 40, 사거리 70%, 피해 80%, 명중 70%
-const milRange=(c)=>WEAP[c.gun].range*MIL.rng;
+const MIL_IN={tower:3,apartment:2,bunker:1.5,mg:1.5,house:1.5,shed:1,warehouse:1.5,ruin:1};   // 구조물 안에서 쏠 때 사거리 보정
+const MIL_CAP={tower:2,apartment:6,bunker:4,mg:2,house:3,shed:1,warehouse:4,ruin:2};
+const milRange=(c)=>WEAP[c.gun].range*MIL.rng+(c.in?(MIL_IN[c.in.type]||1):0);
 function milPick(rnd){let t=0;for(const w of MIL.gw)t+=w;let r=rnd()*t;for(let i=0;i<MIL.guns.length;i++){r-=MIL.gw[i];if(r<=0)return MIL.guns[i];}return 'rifle';}
 // ---- 생성: 도시마다 4~15명이 한 무리로 ----
 function genMilitia(vs,rnd,urban){
@@ -33,18 +35,34 @@ function milTarget(c){
   return best;
 }
 function milStep(c,dt){
-  const g=c.grp,w=WEAP[c.gun],rg=milRange(c);
+  const g=c.grp,w=WEAP[c.gun];
+  const post=g.post&&G.obSet.has(g.post)?g.post:null;
+  if(c.in&&c.in!==post)milExit(c,true);   // 구조물이 무너지면 튀어나온다
+  const rg=milRange(c);
   if(c.rl>0)c.rl-=dt;
   if(g.stamp!==G.time){g.stamp=G.time;g.tt-=dt;g.alert=Math.max(0,g.alert-dt);
     if(g.tt<=0&&!g.fixed){g.tt=5+Math.random()*5;for(let i=0;i<8;i++){const a=Math.random()*6.283,r=Math.random()*g.R*.8,x=g.cx+Math.cos(a)*r,y=g.cy+Math.sin(a)*r;if(civOK(Math.floor(x),Math.floor(y))){g.tx=x;g.ty=y;break;}}}}
   c.sc=(c.sc||0)-dt;
   if(c.sc<=0||!c.tg||c.tg.dead||c.tg.state==='crew'||c.tg.surr>0){c.sc=.35;c.tg=milTarget(c);if(!c.tg)c.hostile={};}
   const t=c.tg,dc=Math.hypot(c.x-g.cx,c.y-g.cy);
+  // 거점 구조물 자율 배치/해제: 경계가 올라가면 안으로 들어가 쏘고, 한동안 조용하면 스스로 나온다
+  if(post){
+    c.idleT=t?0:(c.idleT||0)+dt;
+    c.entT=(c.entT===undefined?2+Math.random()*18:c.entT)-dt;
+    if(!c.in){
+      if((c.entT<=0||g.alert>0)&&milFree(post)>0){
+        const sz=post.size||1,tx=post.x+sz/2,ty=post.y+sz/2;
+        civStep(c,tx,ty,CIV.speed*1.4,dt);
+        if(Math.hypot(tx-c.x,ty-c.y)<=sz/2+.9)milEnter(c,post);
+        return !!t;
+      }
+    }else if(c.idleT>14&&g.alert<=0&&Math.random()<dt*.15){milExit(c,false);return false;}
+  }
   if(t){
     g.alert=6;g.ax=t.x;g.ay=t.y;c.hostile[t.team]=true;
     const bd=Math.hypot(t.x-c.x,t.y-c.y);c.face=Math.atan2(t.y-c.y,t.x-c.x);
     if(c.item==='molotov'&&bd>=2.4&&bd<=7&&c.cd<=0){throwNade(c,'molotov',t.x,t.y);c.item=null;c.cd=1.2;return true;}
-    if(bd>rg*.85&&Math.hypot(t.x-g.cx,t.y-g.cy)<=g.R+MIL.leash+3)civStep(c,t.x,t.y,CIV.speed*1.1,dt);   // 도시 밖으로는 쫓지 않는다
+    if(!c.in&&bd>rg*.85&&Math.hypot(t.x-g.cx,t.y-g.cy)<=g.R+MIL.leash+3)civStep(c,t.x,t.y,CIV.speed*1.1,dt);   // 도시 밖으로는 쫓지 않는다
     if(bd<=rg&&c.cd<=0&&!(c.rl>0)){
       c.cd=w.int*(.9+Math.random()*.2);c.muz=.08;c.reveal=2;
       fxPush({k:'trace',x1:c.x,y1:c.y,x2:t.x,y2:t.y,t:0,d:.08});sfx('rifle',c.x,c.y);
@@ -57,6 +75,7 @@ function milStep(c,dt){
   if(g.purge)c.hostile=Object.assign({},g.purge);   // 소탕 작전 중인 팀은 보이지 않아도 사격 대상으로 삼는다
   // 무리가 교전 중이면 그쪽으로 모인다(도시 안에서만)
   if(g.alert>0&&Math.hypot(g.ax-g.cx,g.ay-g.cy)<=g.R+MIL.leash+3&&Math.hypot(g.ax-c.x,g.ay-c.y)>rg*.8){civStep(c,g.ax,g.ay,CIV.speed*.9,dt);return false;}
+  if(c.in)return false;
   const tx=dc>g.R+MIL.leash?g.cx:g.tx+c.off[0],ty=dc>g.R+MIL.leash?g.cy:g.ty+c.off[1];   // 무리 목적지로 함께 이동, 멀어지면 도시로 복귀
   if(Math.hypot(tx-c.x,ty-c.y)>.7)civStep(c,tx,ty,CIV.speed*.8,dt);
   return !!g.purge;
@@ -71,7 +90,7 @@ function addDrops(x,y,gun,item){
   if(gun&&gun!=='rifle'&&WEAP[gun])addDrop(x,y,'gun',gun);
   if(item&&EXP[item])addDrop(x,y,'item',item);
 }
-function civDrop(c){if(c.mil)addDrops(c.x,c.y,c.gun,c.item);}
+function civDrop(c){if(c.in)milExit(c,true);if(c.mil)addDrops(c.x,c.y,c.gun,c.item);}
 const _kuD=killUnit;
 killUnit=function(u){const was=u.dead;_kuD(u);if(!was&&!u.civ&&u.team>=0&&u.team<=3)addDrops(u.x,u.y,u.gun,u.item);};
 function dropDeposit(team,d){
@@ -113,6 +132,17 @@ function drawDrop(d){
 const _dcP=drawCiv;
 drawCiv=function(c){
   if(c.drop)return drawDrop(c);
+  if(c.in){   // 구조물 안: 감시탑 위는 모습이 보이고, 그 외 건물은 창가 총구 섬광만 보인다
+    const z=cam.z,[sx,sy]=toS(c.x,c.y);
+    if(c.in.type==='tower'){
+      const lift=(c.in.lv>=2?40:c.in.lv>=1?36:32)*z,st0=c.state;c.state='idle';
+      if(unitSprite(c,sx,sy-lift,z,'#262626',false)){c.state=st0;}else c.state=st0;
+      if(c.muz>0){cx.fillStyle='#ffd34a';cx.beginPath();cx.arc(sx+5*z,sy-lift-12*z,2.4*z,0,6.3);cx.fill();}
+    }else if(c.muz>0){
+      const k=c.id%5;cx.fillStyle='#ffd34a';cx.beginPath();cx.arc(sx+(k-2)*7*z,sy-(10+(k%3)*9)*z,2.4*z,0,6.3);cx.fill();
+    }
+    return;
+  }
   const z=cam.z,[sx,sy]=toS(c.x,c.y),st0=c.state;
   c.state=c.mode==='surr'?'fuse':c.mode==='flee'?'flee':c.mvT>0?'move':'idle';
   shadowEll(sx,sy,7*z,3.5*z,.3);
@@ -147,12 +177,12 @@ function genMafiaMilitia(rnd,home){
   // 1) 아파트·감시탑 거점
   for(const o of G.obSet){
     if(!o.natural)continue;const sz=OB[o.type].size||1,cx=o.x+sz/2,cy=o.y+sz/2,center=Math.hypot(cx-hx,cy-hy)<16;
-    if(o.type==='apartment'){const g=milGroup(cx,cy,2.4,{fixed:true});milFill(rnd,g,['sniper','sniper','lmg','assault','assault','pistol','rifle'],sz/2+1.6,.5);}
-    else if(o.type==='tower'){const g=milGroup(cx,cy,1.8,{fixed:true});milFill(rnd,g,['sniper','sniper','lmg'],sz/2+1.4,0);}
-    else if(center&&o.type==='bunker'){const g=milGroup(cx,cy,2.2,{fixed:true});milFill(rnd,g,['lmg','lmg','assault','assault'],sz/2+1.6,.3);}
-    else if(center&&o.type==='mg'){const g=milGroup(cx,cy,1.8,{fixed:true});milFill(rnd,g,['lmg','lmg'],sz/2+1.2,0);}
+    if(o.type==='apartment'){const g=milGroup(cx,cy,2.4,{fixed:true,post:o});milFill(rnd,g,['sniper','sniper','lmg','assault','assault','pistol','rifle'],sz/2+1.6,.5);}
+    else if(o.type==='tower'){const g=milGroup(cx,cy,1.8,{fixed:true,post:o});milFill(rnd,g,['sniper','sniper','lmg'],sz/2+1.4,0);}
+    else if(center&&o.type==='bunker'){const g=milGroup(cx,cy,2.2,{fixed:true,post:o});milFill(rnd,g,['lmg','lmg','assault','assault'],sz/2+1.6,.3);}
+    else if(center&&o.type==='mg'){const g=milGroup(cx,cy,1.8,{fixed:true,post:o});milFill(rnd,g,['lmg','lmg'],sz/2+1.2,0);}
     else if(!center&&['house','shed','warehouse','ruin','bunker','mg','tower'].includes(o.type)&&G.civs.length<260&&rnd()<.22){
-      const g=milGroup(cx,cy,2.2,{fixed:true}),heavy=o.type==='bunker'||o.type==='mg'?.6:.15;
+      const g=milGroup(cx,cy,2.2,{fixed:true,post:o}),heavy=o.type==='bunker'||o.type==='mg'?.6:.15;
       milFill(rnd,g,milGuns(rnd,2+Math.floor(rnd()*3),heavy),sz/2+1.8,.4);
     }
   }
@@ -176,3 +206,19 @@ function genMafiaMilitia(rnd,home){
   }
   G.militia=G.militia.filter(g=>g.n>0);
 }
+
+// ---- 구조물 안 배치 ----
+function milFree(o){o.milOcc=(o.milOcc||[]).filter(c=>!c.dead&&c.in===o);return (MIL_CAP[o.type]||2)-o.milOcc.length;}
+function milEnter(c,o){
+  const sz=o.size||1;c.in=o;(o.milOcc=o.milOcc||[]).push(c);
+  c.x=o.x+sz/2+(Math.random()-.5)*Math.min(1.2,sz*.4);c.y=o.y+sz/2+(Math.random()-.5)*Math.min(1.2,sz*.4);c.mvT=0;c.idleT=0;c.path=[];
+}
+function milExit(c,forced){
+  const o=c.in;c.in=null;if(!o)return;
+  if(o.milOcc)o.milOcc=o.milOcc.filter(q=>q!==c);
+  const sz=o.size||1,p=milSpot(Math.random,o.x+sz/2,o.y+sz/2,sz/2+1.8);
+  if(p){c.x=p[0]+.5;c.y=p[1]+.5;}
+  c.entT=(forced?6:20)+Math.random()*40;c.idleT=0;
+}
+const _hurtM=hurt;
+hurt=function(u,d,s){if(u&&u.mil&&u.in)d=Math.max(1,d*.55);return _hurtM(u,d,s);};   // 구조물 안은 엄폐

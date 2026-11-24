@@ -5,6 +5,7 @@
 // G.hl[i]  : 이 타일은 입체로 그려야 함(높이≠지상, 빗면, 또는 앞쪽 이웃보다 높음).
 // G.occ[i] : 이 타일은 뒤쪽(작은 x+y)보다 높아서 뒤에 있는 것들을 가린다 → 개체 정렬 때 한 번 더 그린다.
 const FLOOR_PX=28,HALF_PX=14,GROUND_LV=6,UNDER_LV=2,MAX_LV=12;
+let HILL_SHADOWS=true;
 let OCQ=null,ELK=null,hillOccCache=new Map(),hillOccRot=-1;   // ELK: 개체를 그리는 동안 고도를 한 값으로 고정(차량 등이 경사에서 부위별로 다른 높이로 찌그러지는 것 방지)
    // 타일별: 앞쪽에 이 타일의 서 있는 것을 가릴 만큼 높은 타일이 있는가
 function initLayers(){G.lv=new Uint8Array(G.N).fill(GROUND_LV);G.sl=new Uint8Array(G.N);G.hl=new Uint8Array(G.N);G.occ=new Uint8Array(G.N);G.hill=false;G.pit=new Uint8Array(G.N);G.npit=0;G.cl=new Map();}
@@ -181,7 +182,7 @@ function paintHill(x,y,i){
 function computeShade(){
   const w=G.w,h=G.h,W1=w+1,H1=h+1,HT=HALF_PX/32*.9;        // 반층 높이를 타일 길이 단위로 (대략)
   G.shV=(G.shV|0)+1;G.shT=new Uint8Array(G.N);G.shC=null;
-  if(!G.hill)return;
+  if(!G.hill||!HILL_SHADOWS)return;
   const V=new Float32Array(W1*H1);
   for(let vy=0;vy<H1;vy++)for(let vx=0;vx<W1;vx++){
     let sum=0,n=0;
@@ -217,7 +218,9 @@ function computeShade(){
   g.putImageData(im,0,0);G.shC=cv;
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){const a=y*W1+x;if(dark[a]>.02||dark[a+1]>.02||dark[a+W1]>.02||dark[a+W1+1]>.02)G.shT[y*w+x]=1;}
 }
+function setHillShadowBake(on){const next=!!on;if(HILL_SHADOWS===next)return;HILL_SHADOWS=next;if(G)computeShade();}
 function paintShade(x,y,i){
+  if(!HILL_SHADOWS||!G.shC)return;
   const P0=rawS(x,y,elevIn(i,0,0)),P1=rawS(x+1,y,elevIn(i,1,0)),P2=rawS(x,y+1,elevIn(i,0,1));
   cx.save();cx.transform(P1[0]-P0[0],P1[1]-P0[1],P2[0]-P0[0],P2[1]-P0[1],P0[0],P0[1]);
   cx.drawImage(G.shC,x+.5,y+.5,1,1,0,0,1,1);cx.restore();

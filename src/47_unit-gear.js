@@ -13,12 +13,12 @@ function gearPose(A){ // 화면 각도 → [모양, 회전, 좌우반전]
   return A<0?['up',A+Math.PI/2,false]:['down',A-Math.PI/2,false];
 }
 function unitSprite(u,sx,by,z,body,inG){
-  if(REC||!(u.team>=0&&u.team<=3))return false;
+  if(REC||!(u.civ||(u.team>=0&&u.team<=3)))return false;
   const st=u.state,mv=st==='move'||st==='flee';
   let pose='stand';
   if(st==='fuse')pose='fuse';else if(inG)pose='gar';else if(mv)pose='move'+((((u.anim*(st==='flee'?17:12))/6.2832)%1)*4|0);
-  const eb=sprGetX('ubody|'+pose),et=sprGetX('ubodyt|'+pose);
-  if(!sprOk(eb)||!sprOk(et)){if(!eb)sprMissing('ubody|'+pose);return false;}
+  const kb=(u.civ?'ubodyc|':'ubody|')+pose,eb=sprGetX(kb),et=sprGetX('ubodyt|'+pose);
+  if(!sprOk(eb)||!sprOk(et)){if(!eb)sprMissing(kb);return false;}
   const c=Math.cos(vFace(u.face)),s=Math.sin(vFace(u.face)),ix=(c-s)*.9,iy=(c+s)*.5,bob=mv?Math.sin(u.anim*(st==='flee'?17:12))*1.2*z:0;
   let held=null,tip=null;
   if(st==='fuse'){}
@@ -28,6 +28,7 @@ function unitSprite(u,sx,by,z,body,inG){
     if(u.tA===undefined)u.tA=th;u.tA=_angN(u.tA+_angN(th-u.tA)*.45);
     const [shape,rot,flip]=gearPose(u.tA),e=sprGetX('tool|shovel|'+shape);
     held=sprOk(e)?{e,x:sx+ix*4*z,y:by-9*z,rot,flip,sc:len,behind:shape==='up'}:'proc';
+  }else if(u.civ&&!u.gun){      // 맨손 민간인
   }else{
     let th=Math.atan2(iy,ix);if(mv&&!(u.muz>0))th+=(ix>=0?.5:-.5);   // 이동 중엔 총구를 내려 든다
     if(u.gA===undefined)u.gA=th;u.gA=_angN(u.gA+_angN(th-u.gA)*.3);
@@ -35,7 +36,8 @@ function unitSprite(u,sx,by,z,body,inG){
     held=sprOk(e)?{e,x:sx,y:by-10*z+bob,rot,flip,sc:shape==='side'?L:1,sc2:1,behind:shape==='up'}:'proc';
     if(held!=='proc'&&u.muz>0){const tl=(GUNS[u.gun]||GUNS.rifle).tip||13;tip=[sx+Math.cos(u.gA)*tl*L*z,by-10*z+bob+Math.sin(u.gA)*tl*L*z];}
   }
-  const dBody=()=>{sprBlit(eb,sx,by,z,false);sprBlitTint(et,sx,by,z,TEAM_COL[u.team],false);};
+  const dBody=()=>{sprBlit(eb,sx,by,z,false);if(u.mil)sprBlitTint(et,sx,by,z,'#222',false);   // 자경단: 검은 옷
+    else sprBlitTint(et,sx,by,z,u.civ?'#8e8e89':TEAM_COL[u.team],false);};
   const dHeld=()=>{
     if(held==='proc'){unitHeld(u,sx,by,z,body);return;}
     if(!held)return;

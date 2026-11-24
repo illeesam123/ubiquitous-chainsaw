@@ -257,6 +257,7 @@ function render(){
   for(const u of G.units){if(u.state==='gar'||u.state==='crew'||u.state==='med'||u.lay)continue;if(inRoof(u)){const rv=u.team!==0&&(u.reveal||0)>0;if(u.team!==0&&!rv)continue;if(u.x>=x0-1&&u.x<=x1+2&&u.y>=y0-1&&u.y<=y1+2)list.push({d:VD(u.x,u.y)+1.6,u,ghost:!rv});continue;}{let hd=hiddenUnit(u);if(hd&&u.team!==0){if(P0.some(p=>Math.hypot(p.x-u.x,p.y-u.y)<=1.6))hd=false;else continue;}if(u.x>=x0-1&&u.x<=x1+2&&u.y>=y0-1&&u.y<=y1+2)list.push({d:VD(u.x,u.y)+(u.state==='gar'?.6:.2),u,ghost:hd});}}
   for(const v of G.vehicles)if(v.x>=x0-2&&v.x<=x1+2&&v.y>=y0-2&&v.y<=y1+2)list.push({d:VD(v.x,v.y)+.35,v});
   if(G.civs)for(const c of G.civs)if(!c.dead&&c.x>=x0-1&&c.x<=x1+2&&c.y>=y0-1&&c.y<=y1+2)list.push({d:VD(c.x,c.y)+.3,civ:c});
+  if(G.drops)for(const c of G.drops)if(c.x>=x0-1&&c.x<=x1+2&&c.y>=y0-1&&c.y<=y1+2)list.push({d:VD(c.x,c.y)+.2,civ:c});
   for(const f of G.flags)list.push({d:VD(f.x+.5,f.y+.5)+.2,f});
   list.sort((a,b)=>a.d-b.d);
   const glOn=glBegin();

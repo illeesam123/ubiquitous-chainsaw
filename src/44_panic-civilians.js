@@ -87,16 +87,17 @@ function genCivs(){
         const x=Math.floor(v.x+(rnd()-.5)*12),y=Math.floor(v.y+(rnd()-.5)*12);
         if(!civOK(x,y))continue;
         G.civs.push({id:G.nextId++,team:9,civ:true,x:x+.5,y:y+.5,hp:60,max:60,state:'idle',path:[],queue:[],task:null,gar:null,cd:rnd(),face:rnd()*6.28,anim:rnd()*6,wait:0,flash:0,sel:false,
-          armed:rnd()<.3,home:[x+.5,y+.5],mode:'wander',tm:rnd()*3,tgt:null,seen:{},hostile:{},reveal:0,variant:Math.floor(rnd()*4)});
+          armed:rnd()<.3,gun:rnd()<.5?'pistol':'rifle',home:[x+.5,y+.5],mode:'wander',tm:rnd()*3,tgt:null,seen:{},hostile:{},reveal:0,variant:Math.floor(rnd()*4)});
         break;
       }
     }
   }
+  genMilitia(vs,rnd,urban);
 }
 function civStep(c,tx,ty,sp,dt){
   const dx=tx-c.x,dy=ty-c.y,d=Math.hypot(dx,dy);if(d<.05)return true;
   const st=Math.min(d,sp*dt*(G.brush[Math.floor(c.y)*G.w+Math.floor(c.x)]?.7:1)),nx=c.x+dx/d*st,ny=c.y+dy/d*st;
-  if(civOK(Math.floor(nx),Math.floor(ny))||G.trench[Math.floor(ny)*G.w+Math.floor(nx)]){c.x=nx;c.y=ny;c.face=Math.atan2(dy,dx);return d<=st+.01;}
+  if(civOK(Math.floor(nx),Math.floor(ny))||G.trench[Math.floor(ny)*G.w+Math.floor(nx)]){c.x=nx;c.y=ny;c.mvT=.25;c.face=Math.atan2(dy,dx);return d<=st+.01;}
   return true; // 막힘: 도착 처리
 }
 function civReact(c,u){
@@ -117,6 +118,7 @@ function civSurrender(c,team){c.mode='surr';c.tm=PANIC.civSurr;c.captor=team;}
 function civFlee(c,from){c.mode='flee';c.tm=5+Math.random()*3;c.fx=from.x;c.fy=from.y;}
 function killCiv(c,shooter){
   c.dead=true;c.hp=0;sfx('death',c.x,c.y);fxPush({k:'dead',x:c.x,y:c.y,t:0,d:6,c:9});
+  civDrop(c);
   if(shooter&&shooter.team===0&&!c.hostile[0])toast('민간인이 사망했습니다','warn');
 }
 const _hurt=hurt;
@@ -124,6 +126,7 @@ hurt=function(u,dmg,shooter){
   if(u.civ){
     if(u.dead)return;
     u.hp-=dmg;u.flash=.12;u.reveal=2;
+    if(u.mil){if(shooter&&shooter.team!==undefined)u.hostile[shooter.team]=true;if(u.hp<=0)killCiv(u,shooter);return;}   // 자경단은 도망·투항하지 않는다
     if(shooter&&shooter.team!==undefined){u.seen[shooter.team]=true;}
     if(u.hp<=0)killCiv(u,shooter);
     else if(u.mode==='wander'||u.mode==='flee'){
@@ -151,7 +154,8 @@ function stepCivs(dt){
   let hostile=false;
   for(const c of G.civs){
     if(c.dead)continue;
-    c.anim+=dt;c.flash=Math.max(0,c.flash-dt);c.cd-=dt;c.tm-=dt;
+    c.anim+=dt;c.flash=Math.max(0,c.flash-dt);c.cd-=dt;c.tm-=dt;c.mvT=Math.max(0,(c.mvT||0)-dt);
+    if(c.mil){if(milStep(c,dt))hostile=true;c.muz=Math.max(0,(c.muz||0)-dt);continue;}
     // 발각 판정 (병사 시야) — 0.4초마다
     c.det=(c.det||0)-dt;
     if(c.det<=0){c.det=.4;

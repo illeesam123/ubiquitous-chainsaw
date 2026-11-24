@@ -1,18 +1,18 @@
 // 헬리콥터(정지/회전)·민간인 몸(모자 없음) SVG 에셋만 새로 구워 assets/sprites/ 에 추가한다. (기존 파일은 지우지 않는다)
-// 사용: node tools/build.js --sprite-bake && node tools/export-extra.js && npm run build
+// 인자: heli | civ (생략하면 둘 다). 사용: node tools/build.js --sprite-bake && node tools/export-extra.js && npm run build
 const { chromium } = require('playwright'); const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..'), out = path.join(root, 'assets', 'sprites');
 (async () => {
   const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1280, height: 760 } });
   p.on('pageerror', e => console.log('pageerror', e.message));
   await p.goto('file://' + path.join(root, 'dist', 'index.html')); await p.waitForTimeout(400);
-  const o = await p.evaluate(() => {
+  const o = await p.evaluate((only) => {
     startGame({ seed: 'S1', biome: 'plain', size: 96, enemies: 1, soldiers: 12, minDist: 30, flat: true }); G.paused = true;
     const o = {};
-    for (const pose of ['stand', 'gar', 'move0', 'move1', 'move2', 'move3', 'fuse']) { const r = sprBakeUnitBody(pose, true); if (r.neutral) o['ubodyc|' + pose] = r.neutral; }
-    for (const ty of ['heli', 'heliR']) for (let t = 0; t < 4; t++) for (let q = 0; q < 16; q++) { if (Math.min(q, (4 - q) & 15) !== q) continue; const s = sprBakeVeh(ty, t, q); if (s) o[`veh|${ty}|${t}|${q}`] = s; }
+    if (!only || only === 'civ') for (const pose of ['stand', 'gar', 'move0', 'move1', 'move2', 'move3', 'fuse']) { const r = sprBakeUnitBody(pose, true); if (r.neutral) o['ubodyc|' + pose] = r.neutral; }
+    if (!only || only === 'heli') for (const ty of ['heli', 'heliR']) for (let t = 0; t < 4; t++) for (let q = 0; q < 16; q++) { if (Math.min(q, (4 - q) & 15) !== q) continue; const s = sprBakeVeh(ty, t, q); if (s) o[`veh|${ty}|${t}|${q}`] = s; }
     return o;
-  });
+  }, process.argv[2] || '');
   const manP = path.join(out, 'manifest.js'), man = JSON.parse(/var SPRITE_MANIFEST=(.*);\s*$/s.exec(fs.readFileSync(manP, 'utf8'))[1]);
   const cat = JSON.parse(fs.readFileSync(path.join(out, 'catalog.json'), 'utf8'));
   const POSE = { stand: '서 있음/작업', gar: '진지·대기', move0: '이동 1', move1: '이동 2', move2: '이동 3', move3: '이동 4', fuse: '도화선' };

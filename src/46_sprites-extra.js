@@ -78,6 +78,7 @@ function sprTinted(e,b,color){
   const g=c.getContext('2d');g.drawImage(bm,0,0);
   // 명암(밝기)은 마스크 그림 그대로 두고 색상·채도만 팀 색으로 바꾼다: 'color' 블렌드 → 원래 모양(알파)으로 다시 오려 낸다
   g.globalCompositeOperation='color';g.fillStyle=color;g.fillRect(0,0,c.width,c.height);
+  if(color==='#222'){g.globalCompositeOperation='multiply';g.fillStyle='#5a5a5a';g.fillRect(0,0,c.width,c.height);}   // 검정(자경단): 명암만 남기고 어둡게
   g.globalCompositeOperation='destination-in';g.drawImage(bm,0,0);
   return e.tint[k]=c;
 }

@@ -263,18 +263,24 @@ function underClick(t,sel){
 // ---- 동굴 생성 ----
 function genCaves(r){
   if(G.special==='superflat'||G.special==='urbanwar')return;
-  const w=G.w,h=G.h,n=Math.max(3,Math.round(w*h/1700));
+  const w=G.w,h=G.h,mafia=G.special==='mafia',n=Math.max(mafia?4:3,Math.round(w*h/(mafia?1450:1700))),starts=[];
   for(let k=0;k<n;k++){
-    const x0=rint(r,8,w-9),y0=rint(r,8,h-9),mi=y0*w+x0;
-    if(G.tt[mi]===2)continue;
+    let x0,y0,mi,ok=false;
+    for(let t=0;t<60&&!ok;t++){
+      x0=rint(r,8,w-9);y0=rint(r,8,h-9);mi=y0*w+x0;
+      const center=G.mafia&&Math.hypot(x0-G.mafia.x,y0-G.mafia.y)<17;
+      ok=G.tt[mi]!==2&&!center&&starts.every(p=>Math.hypot(p[0]-x0,p[1]-y0)>(mafia?13:0));
+    }
+    if(!ok)continue;starts.push([x0,y0]);
     const o=G.obst[mi];if(o)removeOb(o);
     G.trench[mi]=0;G.mouth[mi]=1;G.under[mi]=CAVE;G.trans.push(mi);
-    let x=x0,y=y0;const len=rint(r,28,64),rail=k%3!==2;
+    let x=x0,y=y0;const len=rint(r,mafia?42:28,mafia?88:64),rail=k%3!==2;
+    if(mafia){const R=rint(r,7,11);for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++)if(Math.hypot(dx,dy)<R*(.72+.28*r())&&inb(x0+dx,y0+dy)&&G.tt[(y0+dy)*w+x0+dx]!==2)G.under[(y0+dy)*w+x0+dx]=CAVE;}
     for(let s=0;s<len;s++){
       const d=[[1,0],[-1,0],[0,1],[0,-1]][Math.floor(r()*4)];
       const nx=clamp(x+d[0],3,w-4),ny=clamp(y+d[1],3,h-4);
       G.under[ny*w+nx]=CAVE;if(s<len*.7&&rail)G.urail[ny*w+nx]=1;x=nx;y=ny;
-      if(s%11===10&&r()<.55){const R=rint(r,2,3);for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){const ax=x+dx,ay=y+dy;if(Math.hypot(dx,dy)<=R+.3&&ax>=3&&ay>=3&&ax<w-3&&ay<h-3&&!G.mouth[ay*w+ax]&&G.tt[ay*w+ax]!==2)G.under[ay*w+ax]=CAVE;}}   // 넓은 공동
+      if(s%11===10&&r()<.55){const R=rint(r,mafia?4:2,mafia?7:3);for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){const ax=x+dx,ay=y+dy;if(Math.hypot(dx,dy)<=R+.3&&ax>=3&&ay>=3&&ax<w-3&&ay<h-3&&!G.mouth[ay*w+ax]&&G.tt[ay*w+ax]!==2)G.under[ay*w+ax]=CAVE;}}   // 넓은 공동
       if(r()<.08){x=x0;y=y0;}
     }
   }

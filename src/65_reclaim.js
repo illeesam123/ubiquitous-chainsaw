@@ -159,7 +159,7 @@ aiTick=function(T,dt){
   T.apT=(T.apT||0)-dt;
   if(T.apT<=0){
     T.apT=AIX.every*(.9+Math.random()*.2);
-    try{const free=aiFreeUnits(T);const facilities=rcFacilities(T,free);aiMine(T,free);rcHarvest(T,free);aiIncome(T,free);if(facilities)aiArms(T,free);if(typeof stAiUpgrade==='function')stAiUpgrade(T);}catch(e){console.error('[AI-reclaim]',e);}
+    try{let free=aiFreeUnits(T);const facilities=rcFacilities(T,free);if(facilities){free=aiFreeUnits(T);aiArms(T,free);free=aiFreeUnits(T);aiMine(T,free);free=aiFreeUnits(T);aiIncome(T,free);}else if(!rcFacilityPending(T,'armory')&&!rcFacilityPending(T,'medbay')){aiMine(T,free);free=aiFreeUnits(T);rcHarvest(T,free);free=aiFreeUnits(T);aiIncome(T,free);}if(typeof stAiUpgrade==='function')stAiUpgrade(T);}catch(e){console.error('[AI-reclaim]',e);}
   }
   aiPurgeStep(T,dt);
 };

@@ -116,7 +116,7 @@ drawCiv=function(c){
   const z=cam.z,[sx,sy]=toS(c.x,c.y),st0=c.state;
   c.state=c.mode==='surr'?'fuse':c.mode==='flee'?'flee':c.mvT>0?'move':'idle';
   shadowEll(sx,sy,7*z,3.5*z,.3);
-  const ok=unitSprite(c,sx,sy+(c.state==='fuse'?2.5*z:0),z,'#8e8e89',false);
+  const ok=unitSprite(c,sx,sy+(c.state==='fuse'?2.5*z:0),z,c.mil?'#242322':'#8e8e89',false);
   c.state=st0;
   if(!ok)return _dcP(c);
   if(c.mode==='surr'){cx.fillStyle='#f4f1e6';cx.fillRect(sx+4*z,sy-40*z,9*z,6*z);cx.strokeStyle='#cfcfc4';cx.lineWidth=1.4*z;cx.beginPath();cx.moveTo(sx+4*z,sy-40*z);cx.lineTo(sx+4*z,sy-28*z);cx.stroke();}

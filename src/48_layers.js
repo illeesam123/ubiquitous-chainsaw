@@ -218,7 +218,8 @@ function tileBmp(j,zb){
   const w=G.w,x=j%w,y=(j/w)|0,key=j*8+CHB.indexOf(zb);
   let sg=(SPRV*131+VROT*104729+(G.shV|0)*7919+G.lv[j]*17+G.sl[j]*19+G.road[j]*3+G.tt[j]+G.dec[j])|0;
   for(const o of [1,w,-1,-w,w+1])if(j+o>=0&&j+o<G.N)sg=(sg*31+G.lv[j+o]*5+G.sl[j+o]*7)|0;
-  let c=TBM.get(key);if(c&&c.sg===sg)return c;
+  let c=TBM.get(key);
+  if(c&&c.sg===sg){TBM.delete(key);TBM.set(key,c);return c;}
   const pad=6,top=Math.max(0,(maxH(j)-GROUND_LV)*HALF_PX)+24,bot=70,ox=pad+34,oy=top+pad;
   const cv=c?c.cv:document.createElement('canvas');cv.width=Math.ceil((68+pad*2)*zb);cv.height=Math.ceil((top+32+bot+pad*2)*zb);
   const sv={cx:cx,x:cam.x,y:cam.y,z:cam.z};
@@ -227,7 +228,12 @@ function tileBmp(j,zb){
   finally{cx=sv.cx;cam.x=sv.x;cam.y=sv.y;cam.z=sv.z;}
   cv._v=(cv._v||0)+1;   // 내용이 바뀌었음을 아틀라스에 알린다
   // 타일 기준점 = rawS(x,y,GROUND) = 캔버스 (ox,oy)*zb 에 해당. 원점은 현재 카메라에서의 같은 좌표로 맞춰 찍는다
-  c={cv,sg,ox:ox,oy:oy,zb};if(TBM.size>=TBMAX){const k0=TBM.keys().next().value;const o=TBM.get(k0);if(o&&o.cv){o.cv.width=o.cv.height=0;}TBM.delete(k0);}TBM.set(key,c);return c;
+  c={cv,sg,ox:ox,oy:oy,zb};
+  // 오래된 항목의 캔버스 크기를 0으로 바꾸지 않는다. stale key를 재사용한 캔버스를
+  // 같은 호출의 LRU 퇴출이 비워 버리면 drawImage가 0×0 캔버스를 받게 된다.
+  TBM.delete(key);
+  if(TBM.size>=TBMAX)TBM.delete(TBM.keys().next().value);
+  TBM.set(key,c);return c;
 }
 // 개체 가림: 개체를 그린 뒤, 그 앞(더 큰 x+y)에 있으면서 더 높은 타일(절벽·언덕)이 개체를 가리는 부분만 다시 덮는다.
 // 타일은 이미 올바른 순서로 한 번 그려졌으므로, 덮는 범위를 개체 주변 상자로 한정하면 다른 곳의 표시(오버레이)는 건드리지 않는다.

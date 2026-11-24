@@ -22,10 +22,14 @@ function drawMedbayOb(o,occ,L){
   for(let k=1;k<4;k++){const tt=k/4,h2=wh-1+(rh-wh+1)*tt,yy=yb+.09+(ym-yb-.09)*tt;wline(pt(xa-.07,yy,h2),pt(xb+.07,yy,h2),'rgba(90,92,70,.28)',1);}
   wline(pt(xa-.07,ym,rh),pt(xb+.07,ym,rh),'#6d6e56',2);
   wline(pt(xa-.07,yb+.09,wh-1),pt(xb+.07,yb+.09,wh-1),'#6d6e56',1.6);wline(pt(xb+.07,yb+.09,wh-1),pt(xb+.07,ym,rh),'#6d6e56',1.6);
-  // 적십자
+  // 지붕 가장자리를 덮는 밝은 처마와 녹색 봉합선을 넣어 천막의 형태를 또렷하게 한다.
+  poly([pt(xa-.1,yb+.11,wh),pt(xb+.1,yb+.11,wh),pt(xb+.1,yb+.11,wh+2),pt(xa-.1,yb+.11,wh+2)],L('#bfc2a8'),'#777a62',.8*z);
+  for(let k=1;k<5;k++){const xx=xa-.1+(xb-xa+.2)*k/5;wline(pt(xx,yb+.11,wh),pt(xx,yb+.11,wh+2),'rgba(73,83,57,.45)',.7);}
+  // 대비가 높은 흰 표찰 위에 적십자를 배치해 작은 크기에서도 용도를 알아보기 쉽다.
   const cp=pt(cxw,(ym+yb+.09)/2,(wh+rh)/2-1);
-  cx.fillStyle='#c0392f';cx.fillRect(cp[0]-2.8*z,cp[1]-8*z,5.6*z,16*z);cx.fillRect(cp[0]-8*z,cp[1]-2.8*z,16*z,5.6*z);
-  const gp=pt(xb+.07,(yb+ym)/2,(wh+rh)/2-2);cx.fillStyle='#c0392f';cx.fillRect(gp[0]-1.3*z,gp[1]-4*z,2.6*z,8*z);cx.fillRect(gp[0]-4*z,gp[1]-1.3*z,8*z,2.6*z);
+  cx.fillStyle='rgba(245,244,226,.9)';cx.fillRect(cp[0]-9*z,cp[1]-9*z,18*z,18*z);
+  cx.fillStyle='#b7322b';cx.fillRect(cp[0]-2.6*z,cp[1]-7*z,5.2*z,14*z);cx.fillRect(cp[0]-7*z,cp[1]-2.6*z,14*z,5.2*z);
+  const gp=pt(xb+.07,(yb+ym)/2,(wh+rh)/2-2);cx.fillStyle='rgba(245,244,226,.92)';cx.fillRect(gp[0]-5*z,gp[1]-5*z,10*z,10*z);cx.fillStyle='#b7322b';cx.fillRect(gp[0]-1.2*z,gp[1]-3.8*z,2.4*z,7.6*z);cx.fillRect(gp[0]-3.8*z,gp[1]-1.2*z,7.6*z,2.4*z);
   // 줄과 말뚝
   for(const [sx_,sy_,ex,ey] of [[xa-.07,yb+.09,xa-.3,yb+.34],[xb+.07,yb+.09,xb+.18,yb+.38],[xb+.07,ya-.06,xb+.24,ya-.2]]){wline(pt(sx_,sy_,wh-1),pt(ex,ey,0),'rgba(220,220,205,.7)',.9);wline(pt(ex,ey,0),pt(ex,ey,5),'#5a4a30',1.8);}
   // 깃대와 적십자 깃발

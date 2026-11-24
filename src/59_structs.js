@@ -2,7 +2,7 @@
 // 감시탑 · HESCO(구 기관총좌) · 벙커 · 철조망 · 감시포(구 박격포 진지) · 구급함(구 의무 막사) · 모래주머니.
 // 구조물 객체의 o.lv(0~2)가 강화 단계이고, 모래주머니는 1단계(방벽)에서 o.blk=true 로 통행 불가가 된다.
 OB.mg.n='HESCO';OB.mortar.n='감시포';OB.medbay.n='구급함';
-OB.mortar.slots=0;OB.medbay.beds=1;
+OB.mortar.slots=0;OB.medbay.beds=1;OB.medbay.slots=0;OB.medbay.staff=0;   // 구급함은 주둔할 수 없는 장애물
 const MEDLV=[{beds:1,dur:3,sr:0},{beds:3,dur:5,sr:.15},{beds:5,dur:6,sr:.3}];
 const UPT={
   tower:{names:['감시탑','엄폐 감시탑','저격진지'],

@@ -35,9 +35,13 @@ function surrenderUnit(u,captor){
   else if(captor===0)toast('적 병사가 투항합니다');
 }
 function finishSurrender(u){
-  u.dead=true;u.hp=0;G.uid.delete(u.id);
+  // 항복한 병사는 항복을 받은 팀의 병사가 된다 (무기는 그대로, 없으면 소총)
   const T=G.teams[u.captor];
-  if(T){T.res.money+=12;T.pow=(T.pow||0)+1;if(u.captor===0){G.lastGain='포로 +12달러';G.gainShow=3;}}
+  if(!T){u.dead=true;u.hp=0;G.uid.delete(u.id);return;}
+  G.teams[u.team].lost++;
+  u.team=u.captor;u.surr=0;u.captor=undefined;u.state='idle';u.path=[];u.queue=[];u.sel=false;u.flash=0;u.wait=.4;u.medCooldown=0;u.medIgnore=false;
+  if(!u.gun||!WEAP[u.gun])u.gun='rifle';
+  if(u.captor===undefined&&T.id===0){G.lastGain='포로가 아군이 되었습니다';G.gainShow=3;toast('항복한 적 병사가 아군이 되었습니다','ok');}
 }
 function suicideUnit(u,med,sev){
   if(u.team===0)toast(med?'병사가 악천후 속에서 절망해 스스로 목숨을 끊었습니다':'의무 막사가 없어 절망한 병사가 스스로 목숨을 끊었습니다','warn');
@@ -181,7 +185,11 @@ function stepCivs(dt){
     }else if(c.mode==='surr'){
       if(c.tm<=0){
         c.dead=true;const T=G.teams[c.captor];
-        if(T){T.res.money+=6;if(c.captor===0){G.lastGain='민간인 투항 +6달러';G.gainShow=3;toast('민간인이 투항했습니다');}}
+        if(T){   // 항복한 민간인은 항복을 받은 팀의 병사가 된다 (무장 민간인은 든 총 그대로, 맨손이면 소총)
+          const u=mkUnit(c.captor,c.x,c.y);u.hp=Math.max(30,Math.round(u.max*c.hp/c.max));u.face=c.face;
+          u.gun=c.armed&&WEAP[c.gun]?c.gun:'rifle';
+          if(c.captor===0){G.lastGain='민간인이 아군이 되었습니다';G.gainShow=3;toast('민간인이 항복하여 아군 병사가 되었습니다','ok');}
+        }
       }
     }else if(c.mode==='melee'||c.mode==='shoot'){
       let t=null,bd=1e9;

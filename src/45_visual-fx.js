@@ -16,20 +16,19 @@ function fxvFlare(t,clearK){
   if(t>=150)return;
   const p=t/150,vis=fxvSm(0,.05,p)*(1-fxvSm(.93,1,p))*clearK;if(vis<.02)return;
   const sx=W*(.12+.76*p)-cam.x*.015,sy=H*(.03+.2*(1-Math.sin(p*Math.PI)))-cam.y*.01;
-  const low=1-Math.sin(p*Math.PI),col=low>.45?'255,196,130':'255,244,214',I=vis;
+  const low=1-Math.sin(p*Math.PI),col=low>.45?'255,196,130':'255,244,214',I=vis*.62;
   cx.save();cx.globalCompositeOperation='lighter';
-  let g=cx.createRadialGradient(sx,sy,0,sx,sy,Math.max(W,H)*.42);
-  g.addColorStop(0,`rgba(${col},${.3*I})`);g.addColorStop(.35,`rgba(${col},${.08*I})`);g.addColorStop(1,`rgba(${col},0)`);
+  let g=cx.createRadialGradient(sx,sy,0,sx,sy,Math.max(W,H)*.3);
+  g.addColorStop(0,`rgba(${col},${.22*I})`);g.addColorStop(.35,`rgba(${col},${.05*I})`);g.addColorStop(1,`rgba(${col},0)`);
   cx.fillStyle=g;cx.fillRect(0,0,W,H);
-  g=cx.createRadialGradient(sx,sy,0,sx,sy,70);g.addColorStop(0,`rgba(255,255,245,${.5*I})`);g.addColorStop(1,'rgba(255,255,245,0)');
-  cx.fillStyle=g;cx.fillRect(sx-70,sy-70,140,140);
-  // 아나모픽 가로 줄무늬
+  g=cx.createRadialGradient(sx,sy,0,sx,sy,48);g.addColorStop(0,`rgba(255,255,245,${.36*I})`);g.addColorStop(1,'rgba(255,255,245,0)');
+  cx.fillStyle=g;cx.fillRect(sx-48,sy-48,96,96);
+  // 아나모픽 가로 줄무늬는 작고 희미하게 유지해 전술 화면을 가리지 않는다.
   cx.save();cx.translate(sx,sy);cx.scale(1,.05);
-  g=cx.createRadialGradient(0,0,0,0,0,W*.5);g.addColorStop(0,`rgba(180,215,255,${.3*I})`);g.addColorStop(1,'rgba(180,215,255,0)');
+  g=cx.createRadialGradient(0,0,0,0,0,W*.42);g.addColorStop(0,`rgba(180,215,255,${.16*I})`);g.addColorStop(1,'rgba(180,215,255,0)');
   cx.fillStyle=g;cx.fillRect(-W*.5,-W*.5,W,W);cx.restore();
-  // 고스트: 태양→화면 중심 축 위의 렌즈 반사
   const ox=W/2-sx,oy=H/2-sy,dist=Math.hypot(ox,oy),fall=clamp(1.15-dist/(Math.hypot(W,H)*.62),.15,1);
-  const gh=[[.35,34,'255,170,90',.18],[.7,20,'120,200,255',.16],[1.1,46,'255,120,160',.12],[1.45,26,'160,255,190',.14],[1.9,60,'255,200,120',.1]];
+  const gh=[[.35,27,'255,170,90',.09],[.7,16,'120,200,255',.08],[1.1,36,'255,120,160',.06],[1.45,21,'160,255,190',.07],[1.9,46,'255,200,120',.05]];
   for(const [k,r,c,a] of gh){
     const x=sx+ox*k,y=sy+oy*k;
     g=cx.createRadialGradient(x,y,r*.2,x,y,r);g.addColorStop(0,`rgba(${c},0)`);g.addColorStop(.78,`rgba(${c},${a*I*fall*.6})`);g.addColorStop(.9,`rgba(${c},${a*I*fall})`);g.addColorStop(1,`rgba(${c},0)`);
@@ -37,21 +36,46 @@ function fxvFlare(t,clearK){
   }
   cx.restore();
 }
+let fxvBloomCanvas=null,fxvBloomCtx=null,fxvBloomW=0,fxvBloomH=0;
 function fxvBloom(nightK){
-  // 낮/황혼에도 폭발·포구·화염이 주변을 환하게 번지게 한다 (밤에는 nightPass가 처리하므로 약하게)
-  const k=1-nightK*.7,z=cam.z;
-  cx.save();cx.globalCompositeOperation='lighter';
-  const glow=(x,y,r,a,c)=>{if(x<-r||x>W+r||y<-r||y>H+r||a<.02)return;const g=cx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,`rgba(${c},${a})`);g.addColorStop(1,`rgba(${c},0)`);cx.fillStyle=g;cx.fillRect(x-r,y-r,r*2,r*2);};
+  // 발광원만 1/4 해상도 버퍼에 모아 넓고 부드러운 빛으로 합성한다.
+  const scale=.25,z=cam.z,bw=Math.max(1,Math.ceil(W*scale)),bh=Math.max(1,Math.ceil(H*scale));
+  if(!fxvBloomCanvas||fxvBloomW!==bw||fxvBloomH!==bh){
+    fxvBloomCanvas=document.createElement('canvas');fxvBloomCanvas.width=bw;fxvBloomCanvas.height=bh;
+    fxvBloomCtx=fxvBloomCanvas.getContext('2d');fxvBloomW=bw;fxvBloomH=bh;
+  }
+  const b=fxvBloomCtx;
+  b.setTransform(1,0,0,1,0,0);b.globalAlpha=1;b.globalCompositeOperation='source-over';b.clearRect(0,0,bw,bh);
+  b.setTransform(scale,0,0,scale,0,0);b.globalCompositeOperation='lighter';
+  const night=1-nightK*.7;
+  const glow=(x,y,r,a,c)=>{
+    if(x<-r||x>W+r||y<-r||y>H+r||a<.015)return;
+    let g=b.createRadialGradient(x,y,0,x,y,r);
+    g.addColorStop(0,`rgba(${c},${a*.72})`);g.addColorStop(.22,`rgba(${c},${a*.34})`);
+    g.addColorStop(.62,`rgba(${c},${a*.08})`);g.addColorStop(1,`rgba(${c},0)`);
+    b.fillStyle=g;b.fillRect(x-r,y-r,r*2,r*2);
+  };
   let n=0;
   for(const f of G.fx){
-    if(f.k!=='boom'||n>24)continue;n++;
-    const [sx,sy]=toS(f.x,f.y),q=Math.max(0,1-f.t/f.d);glow(sx,sy-10*z,(60+90*(1-q))*z,.34*q*k,'255,176,90');
+    if(f.k!=='boom')continue;if(n++>=20)break;
+    const [sx,sy]=toS(f.x,f.y),q=Math.max(0,1-f.t/f.d),r=(34+62*(1-q))*z;
+    glow(sx,sy-10*z,r*1.5,.28*q*night,'255,164,82');
   }
+  let fires=0;
   if(G.zones)for(const zn of G.zones){
-    if(zn.kind!=='fire'||zn.t<=0)continue;
-    const [sx,sy]=toS(zn.x,zn.y),fl=.8+.2*Math.sin(G.time*14+zn.seed);glow(sx,sy-6*z,(zn.r+1.4)*28*z,.2*fl*k+.1*nightK,'255,140,60');
+    if(zn.kind!=='fire'||zn.t<=0)continue;if(fires++>=12)break;
+    const [sx,sy]=toS(zn.x,zn.y),fl=.85+.15*Math.sin(G.time*14+zn.seed);
+    glow(sx,sy-6*z,Math.max(18,(zn.r+1)*12*z),.13*fl*night,'255,132,62');
   }
-  for(const v of G.vehicles)if(v.muz>0){const [sx,sy]=toS(v.x,v.y);glow(sx,sy-14*z,90*z,.3*(v.muz/.14>1?1:v.muz/.14)*k,'255,205,110');}
+  let muzzles=0;
+  for(const v of G.vehicles){
+    if(v.muz<=0)continue;if(muzzles++>=8)break;
+    const [sx,sy]=toS(v.x,v.y);glow(sx,sy-14*z,42*z,.24*Math.min(1,v.muz/.14)*night,'255,205,120');
+  }
+  cx.save();cx.globalCompositeOperation='lighter';cx.imageSmoothingEnabled=true;
+  // 넓은 번짐과 선명한 후광을 2회 합성해 다중 크기 느낌을 낸다.
+  cx.globalAlpha=.24;cx.filter='blur(8px)';cx.drawImage(fxvBloomCanvas,0,0,W,H);
+  cx.globalAlpha=.72;cx.filter='none';cx.drawImage(fxvBloomCanvas,0,0,W,H);
   cx.restore();
 }
 function drawVisualFx(){

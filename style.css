@@ -115,3 +115,5 @@ table.st{width:100%;border-collapse:collapse;margin:10px 0 16px;font:13px var(--
 table.st td,table.st th{text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)}
 @media (max-width:560px){.grid{grid-template-columns:1fr}#sel{display:none}.brand{font-size:18px}}
 @media (prefers-reduced-motion:reduce){#toast{transition:none}}
+#tip{position:fixed;z-index:200;max-width:280px;pointer-events:none;background:rgba(18,20,14,.96);border:1px solid var(--accent,#c9b86a);border-radius:5px;padding:7px 10px;font-size:12px;line-height:1.45;color:#e8e6d6;box-shadow:0 6px 20px rgba(0,0,0,.5)}
+#tip[hidden]{display:none}#tip b{font-size:13px}#tip .ts{color:#aeb09a;font-size:11px;margin-top:2px}#tip .td{margin-top:4px}

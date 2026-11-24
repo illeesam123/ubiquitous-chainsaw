@@ -1,11 +1,12 @@
 // ================= 무기고 · 폭발물 =================
 const EXP={
-  smoke:{n:'연막탄',col:'#b9bcc0',cost:{money:14,metal:1},desc:'아군 부상병이 떨어뜨려 시야를 가림 · 14초'},
-  flash:{n:'섬광탄',col:'#fff6c8',cost:{money:20,metal:1},desc:'적 병사 약 4초 기절(사격 불가·둔화)'},
-  molotov:{n:'화염병',col:'#ff8a2a',cost:{money:16,wood:2},desc:'7초간 타오르는 불길 · 덤불 소각'},
-  frag:{n:'세열수류탄',col:'#5f7a3a',cost:{money:26,metal:2},desc:'반경 1.9칸 폭발 피해'}
+  smoke:{n:'연막탄',col:'#b9bcc0',cost:{money:14,metal:1},desc:'아군 부상병이 떨어뜨려 시야를 가림',st:[['지속','14초']]},
+  flash:{n:'섬광탄',col:'#fff6c8',cost:{money:20,metal:1},desc:'적 병사를 기절시킵니다(사격 불가·둔화).',st:[['기절','약 4초'],['반경','3.4칸']]},
+  molotov:{n:'화염병',col:'#ff8a2a',cost:{money:16,wood:2},desc:'불길을 일으켜 지나가는 병사를 태우고 덤불을 소각합니다.',st:[['지속','7초'],['반경','1.5칸']]},
+  frag:{n:'세열수류탄',col:'#5f7a3a',cost:{money:26,metal:2},desc:'폭발로 범위 안의 병사·차량·구조물에 피해를 줍니다. 참호 속 병사는 피해가 줄어듭니다.',st:[['피해','최대 85'],['반경','1.9칸']]}
 };
 const EXPK=['smoke','flash','molotov','frag'];
+tipReg('exp',k=>({t:EXP[k].n,col:EXP[k].col,stats:EXP[k].st,d:EXP[k].desc,ex:'비용 '+costText(EXP[k].cost)}));
 // 추후 방호구 기능을 위한 무기고 UI 자리표시자
 const ARMOR_SLOT={id:'armor',name:'방호구',enabled:false,description:'추후 추가 예정'};
 const ARM={range:7,cap:24,rest:.5};
@@ -222,7 +223,7 @@ drawWeatherOverlay=function(){drawExp();return _dwo.apply(this,arguments);};
   const body=document.querySelector('#shopDrawer .shopBody');if(!body)return;
   const secs=body.querySelectorAll('section'),last=secs[secs.length-1];
   const sec=document.createElement('section');sec.id='shExp';
-  sec.innerHTML='<h3>폭발물</h3><div id="shExpMsg" style="font-size:12px;color:var(--dim);line-height:1.45;margin-bottom:6px"></div>'+EXPK.map(k=>`<div class="shExpRow" data-k="${k}" style="display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;margin:4px 0"><div><b style="color:${EXP[k].col}">${EXP[k].n}</b><br><small style="color:var(--dim)">${EXP[k].desc}<br>${costText(EXP[k].cost)} / 개</small></div><button class="btn" data-n="1">+1</button><button class="btn" data-n="5">+5</button></div>`).join('');
+  sec.innerHTML='<h3>폭발물</h3><div id="shExpMsg" style="font-size:12px;color:var(--dim);line-height:1.45;margin-bottom:6px"></div>'+EXPK.map(k=>`<div class="shExpRow" data-k="${k}" style="display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;margin:4px 0"><div ${tipAttr('exp:'+k)}><b style="color:${EXP[k].col}">${EXP[k].n}</b><br><small style="color:var(--dim)">${tipStats('exp:'+k)}<br>${costText(EXP[k].cost)} / 개</small></div><button class="btn" data-n="1">+1</button><button class="btn" data-n="5">+5</button></div>`).join('');
   body.insertBefore(sec,last);
   sec.addEventListener('click',e=>{const b=e.target.closest('button[data-n]');if(!b||!G)return;const k=b.closest('.shExpRow').dataset.k;const er=shopAddExp(0,k,+b.dataset.n);if(er)toast(er);renderShop(true);});
 })();

@@ -16,7 +16,7 @@ function buildBuildDrawer(){
   const list=$('buildList');if(!list)return;list.innerHTML='';
   BUILDS.forEach(type=>{const d=OB[type],b=document.createElement('button');b.className='buildCard';b.dataset.id=type;
     const cost=Object.entries(d.cost).map(([k,v])=>`${RN[k]} ${v}`).join(' · ');
-    b.innerHTML=`${facilityIcon(type)}<b>${d.n}</b><small>${cost}<br>작업 ${d.build}초${VEH[type]?` · 승무원 ${VEH[type].crew}명`:''}</small>`;
+    b.dataset.tip='ob:'+type;b.innerHTML=`${facilityIcon(type)}<b>${d.n}</b><small>${tipStats('ob:'+type)}<br>${cost}</small>`;
     b.onclick=()=>{setTool(type);closeBuildDrawer();toast(`${d.n} 선택 · 전장에 클릭 또는 드래그해 배치`);};list.appendChild(b);
   });
   const hd=document.createElement('div');hd.style.cssText='grid-column:1/-1;color:var(--accent);font:13px var(--mono);padding:6px 2px 0';hd.textContent='참호 개량';list.appendChild(hd);

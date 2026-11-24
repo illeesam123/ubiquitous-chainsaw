@@ -12,6 +12,7 @@ const WEAP={
   at:{n:'대전차포',col:'#d86f6f',price:140,dmg:70,int:5.5,range:9,cost:4,acc:.85,vdm:5,blast:1.45,desc:'장전이 매우 느리지만 중거리에서 범위 공격. 전차에게 주는 피해는 5배입니다.'}
 };
 const WEAPK=['rifle','sling','pistol','assault','sniper','lmg','at'],WEAPBUY=WEAPK.slice(1);
+tipReg('weap',k=>{const w=WEAP[k],s=[['피해',w.dmg],['간격',w.int+'초'],['사거리',w.range],['명중',Math.round(w.acc*100)+'%']];if(w.mag)s.push(['탄창',w.mag+'발/재장전 '+w.reload+'초']);if(w.vdm)s.push(['차량',w.vdm+'배']);if(w.blast)s.push(['범위',w.blast+'칸']);return {t:w.n,col:w.col,stats:s,d:w.desc,ex:w.price?'가격 달러 '+w.price+' / 정':''};});
 Object.assign(GUNS,{
   rifle:{n:'소총',look:'rifle',tip:13},sling:{n:'새총',look:'sling',tip:7},pistol:{n:'권총',look:'pistol',tip:9.5},
   assault:{n:'돌격소총',look:'assault',tip:15},sniper:{n:'저격총',look:'sniper',tip:20},lmg:{n:'경기관총',look:'lmg',tip:15},at:{n:'대전차포',look:'at',tip:16}
@@ -136,7 +137,7 @@ const _ssW=stepShells;stepShells=function(dt){_ssW(dt);stepWeapons(dt);};
   const body=document.querySelector('#shopDrawer .shopBody');if(!body)return;
   const secs=body.querySelectorAll('section'),last=secs[secs.length-1];
   const sec=document.createElement('section');sec.id='shWpn';
-  sec.innerHTML='<h3>총기</h3><div id="shWpnMsg" style="font-size:12px;color:var(--dim);line-height:1.45;margin-bottom:6px"></div>'+WEAPBUY.map(k=>`<div class="shWpnRow" data-k="${k}" style="display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;margin:4px 0"><div><b style="color:${WEAP[k].col}">${WEAP[k].n}</b><br><small style="color:var(--dim)">${WEAP[k].desc}<br>달러 ${WEAP[k].price} / 정</small></div><button class="btn" data-n="1">+1</button><button class="btn" data-n="5">+5</button></div>`).join('')+'<button class="btn" id="shWpnMenu" type="button" style="width:100%;margin-top:6px">🔫 무기고 메뉴 열기</button>';
+  sec.innerHTML='<h3>총기</h3><div id="shWpnMsg" style="font-size:12px;color:var(--dim);line-height:1.45;margin-bottom:6px"></div>'+WEAPBUY.map(k=>`<div class="shWpnRow" data-k="${k}" style="display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;margin:4px 0"><div ${tipAttr('weap:'+k)}><b style="color:${WEAP[k].col}">${WEAP[k].n}</b><br><small style="color:var(--dim)">${tipStats('weap:'+k)}<br>달러 ${WEAP[k].price} / 정</small></div><button class="btn" data-n="1">+1</button><button class="btn" data-n="5">+5</button></div>`).join('')+'<button class="btn" id="shWpnMenu" type="button" style="width:100%;margin-top:6px">🔫 무기고 메뉴 열기</button>';
   body.insertBefore(sec,last);
   sec.addEventListener('click',e=>{
     if(e.target.id==='shWpnMenu'){armMenu(true);return;}
@@ -176,7 +177,7 @@ const _ssW=stepShells;stepShells=function(dt){_ssW(dt);stepWeapons(dt);};
     const sig=JSON.stringify([A,cnt,WEAPK.map(k=>wst(T)[k]|0),jobs.map(s=>[s.id,s.left,s.fly]),$('amFrom').value,$('amTo').value]);
     if(!force&&sig===amSig)return;amSig=sig;
     $('amInfo').textContent=A?`무기고 ${A}동`:'🔒 무기고를 건설해야 합니다 (건설 시설 → 무기고).';
-    $('amTab').innerHTML=WEAPK.map(k=>`<tr><td><b style="color:${WEAP[k].col}">${WEAP[k].n}</b></td><td>${cnt[k]}명</td><td>${k==='rifle'?'∞':stk[k]}</td></tr>`).join('');
+    $('amTab').innerHTML=WEAPK.map(k=>`<tr ${tipAttr('weap:'+k)}><td><b style="color:${WEAP[k].col}">${WEAP[k].n}</b></td><td>${cnt[k]}명</td><td>${k==='rifle'?'∞':stk[k]}</td></tr>`).join('');
     sel0('amFrom',WEAPK.map(k=>`<option value="${k}">${WEAP[k].n} (${cnt[k]}명)</option>`).join(''));
     sel0('amTo',WEAPK.map(k=>`<option value="${k}">${WEAP[k].n} (${cnt[k]}명)${k==='rifle'?'':' · 재고 '+stk[k]}</option>`).join(''));
     if($('amTo').value===$('amFrom').value&&!$('amFrom').dataset.touched){const o=[...$('amTo').options].find(x=>x.value!==$('amFrom').value&&x.value!=='rifle');if(o)$('amTo').value=o.value;}

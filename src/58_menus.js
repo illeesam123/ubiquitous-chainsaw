@@ -46,7 +46,7 @@ updateExpUI=function(){
     _ar(force);
     if(m.hidden||!G)return;
     const A=armories(0),t={};for(const k of EXPK)t[k]=0;for(const o of A){const s=armStock(o);for(const k of EXPK)t[k]+=s[k];}
-    d.innerHTML=`<b>투척물</b><table style="margin-top:4px"><thead><tr><th>종류</th><th>재고</th><th>효과</th></tr></thead><tbody>${EXPK.map(k=>`<tr><td><b style="color:${EXP[k].col}">${EXP[k].n}</b></td><td>${t[k]}</td><td style="color:var(--dim);font-size:11px">${EXP[k].desc}</td></tr>`).join('')}</tbody></table><small style="color:var(--dim)">입고 대기 ${pendingExp(G.teams[0])} · 여유 ${armFree(0)}칸 · 무기고 ${ARM.range}칸 안의 대기 병사가 가까운 순으로 1개씩 수령합니다. 구매는 헬기 상점 → 무장.</small>`;
+    d.innerHTML=`<b>투척물</b><table style="margin-top:4px"><thead><tr><th>종류</th><th>재고</th><th>효과</th></tr></thead><tbody>${EXPK.map(k=>`<tr ${tipAttr('exp:'+k)}><td><b style="color:${EXP[k].col}">${EXP[k].n}</b></td><td>${t[k]}</td><td style="color:var(--dim);font-size:11px">${tipStats('exp:'+k)}</td></tr>`).join('')}</tbody></table><small style="color:var(--dim)">입고 대기 ${pendingExp(G.teams[0])} · 여유 ${armFree(0)}칸 · 무기고 ${ARM.range}칸 안의 대기 병사가 가까운 순으로 1개씩 수령합니다. 구매는 헬기 상점 → 무장.</small>`;
   };
 })();
 // 3) 클릭 처리: 해체 도구가 아닐 때 시설을 누르면 메뉴가 뜬다 (22_input.js 에서 호출)

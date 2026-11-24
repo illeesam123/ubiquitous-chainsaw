@@ -23,6 +23,7 @@ const UPT={
   bunker:{names:['벙커'],info:['주둔 병사들의 무기 성능 평균(올림)이 전원에게 적용 · 받는 피해와 피격 확률 감소'],cost:[null]},
   wire:{names:['철조망'],info:['넘어가는 모든 적에게 큰 체력 피해'],cost:[null]}
 };
+tipReg('upt',(id,i)=>{const t=UPT[id];i=+i;return {t:t.names[i],stats:t.cost[i]?[['강화 비용',Object.entries(t.cost[i]).filter(e=>e[1]).map(e=>RN[e[0]]+' '+e[1]).join(' · ')]]:[],d:t.info[i]};});
 function stLv(o){return o.lv|0;}
 function stName(o){const t=UPT[o.type];return t?t.names[Math.min(stLv(o),t.names.length-1)]:OB[o.type].n;}
 // ---- 주둔 병사의 화기: 구조물이 병사의 무기 성능을 키워 준다 ----
@@ -210,7 +211,7 @@ function stAiUpgrade(T){
     const next=t.names.length-1>lv?t.cost[lv+1]:null,er=next?stUpgradeErr(o,0):null;
     m.innerHTML=`<h3><span>${stName(o)} <small style="color:var(--dim);font-weight:400">${t.names.length>1?`${lv+1}/${t.names.length}단계`:''}</small></span><button class="btn" id="stX" type="button">닫기 ✕</button></h3>
 <div class="hpb"><i style="width:${Math.max(0,Math.min(100,o.hp/o.max*100))}%"></i></div>
-<div class="tree">${t.names.map((n,i)=>`${i?'<div class="ln"></div>':''}<div class="nd ${i===lv?'cur':i<lv?'done':''}"><b>${i<lv?'✔ ':i===lv?'▶ ':''}${n}</b><span>${t.info[i]}</span>${i>lv&&t.cost[i]?`<div class="cost">강화 비용: ${costTxt(t.cost[i])}</div>`:''}</div>`).join('')}</div>
+<div class="tree">${t.names.map((n,i)=>`${i?'<div class="ln"></div>':''}<div class="nd ${i===lv?'cur':i<lv?'done':''}" ${tipAttr('upt:'+o.type+':'+i)}><b>${i<lv?'✔ ':i===lv?'▶ ':''}${n}</b>${i>lv&&t.cost[i]?`<div class="cost">강화 비용: ${costTxt(t.cost[i])}</div>`:''}</div>`).join('')}</div>
 ${next?`<button class="btn" id="stUp" type="button" ${er?'disabled':''} style="${er?'':'border-color:var(--accent)'}">${t.names[lv+1]}(으)로 강화 · ${costTxt(next)}</button>${er?`<div style="color:#e08a7a">${er}</div>`:''}`:(t.names.length>1?'<div style="color:var(--dim)">최종 단계입니다.</div>':'')}`;
   }
   m.addEventListener('click',e=>{

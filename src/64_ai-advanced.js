@@ -30,7 +30,9 @@ function aiPurgeStart(T,A,fighters){
   const my=T.flag,gs=milGroups().map(g=>({g,d:Math.hypot(g.cx-my.x,g.cy-my.y)+(rc&&g.purge?Object.keys(g.purge).length*30:0),n:milAlive(g).length})).filter(o=>rc||o.d<=PURGE.maxDist).sort((a,b)=>a.d-b.d);
   for(const o of gs){
     if(fighters.length<(rc?Math.max(5,Math.ceil(o.n*1.2)+4):Math.max(PURGE.minN,Math.ceil(o.n*PURGE.ratio)+2)))continue;
-    const ids=fighters.map(u=>u.id);
+    const eligible=fighters.filter(u=>!u.task&&!u.queue.length&&!u.fetch&&!u.gar&&!u.lay&&!u.medTarget&&u.state!=='work');
+    if(eligible.length<(rc?Math.max(5,Math.ceil(o.n*1.2)+4):Math.max(PURGE.minN,Math.ceil(o.n*PURGE.ratio)+2)))continue;
+    const ids=eligible.map(u=>u.id);
     const gx=o.g.cx,gy=o.g.cy,dd=Math.hypot(my.x-gx,my.y-gy)||1,rr=Math.min(dd,o.g.R+17),rally=[clamp(Math.round(gx+(my.x-gx)/dd*rr),1,G.w-2),clamp(Math.round(gy+(my.y-gy)/dd*rr),1,G.h-2)];
     A.purge={g:o.g,ids,t:0,phase:'gather',rally};A.squad=[];   // 먼저 사정권 밖에 집결 → 한꺼번에 돌입
     o.g.purge=o.g.purge||{};o.g.purge[T.id]=true;
@@ -57,9 +59,27 @@ function aiPurgeStep(T,dt){
     const M=milAlive(p.g);
     if(!M.length||sq.length<Math.max(2,p.ids.length*.25)||p.t>PURGE.timeout*(typeof isReclaim==='function'&&isReclaim()?2.5:1)){aiPurgeEnd(T,A);return false;}
     if(p.phase==='gather'){
-      if(!p.sent){p.sent=true;orderMove(sq.filter(u=>!u.lay),p.rally[0],p.rally[1]);}
+      if(!p.sent){
+        p.sent=true;orderMove(sq.filter(u=>!u.lay),p.rally[0],p.rally[1]);
+        if(typeof isReclaim==='function'&&isReclaim()){
+          const pr={frag:0,molotov:1,flash:2};
+          const gren=sq.filter(u=>u.item&&pr[u.item]!==undefined&&!u.task&&!u.fetch).sort((a,b)=>pr[a.item]-pr[b.item])[0];
+          if(gren&&Math.random()<.78){p.phase='throwApproach';p.thrower=gren.id;p.throwItem=gren.item;p.t=0;const dx=p.g.cx-p.rally[0],dy=p.g.cy-p.rally[1],d=Math.hypot(dx,dy)||1;orderMove([gren],Math.round(p.g.cx-dx/d*5.8),Math.round(p.g.cy-dy/d*5.8));}
+          else if(sq.length>=12&&M.length>=7&&Math.random()<.28){const bait=sq.filter(u=>!u.item&&!u.task&&!u.fetch).sort((a,b)=>a.hp-b.hp)[0];if(bait){p.phase='bait';p.bait=bait.id;p.t=0;orderMove([bait],Math.floor(p.g.cx),Math.floor(p.g.cy));}}
+        }
+      }
+      if(p.phase==='throwApproach'){
+        const u=G.uid.get(p.thrower);if(!u||u.dead||!u.item||u.item!==p.throwItem||p.t>28){p.phase='throwReturn';p.t=0;if(u&&!u.dead)orderMove([u],p.rally[0],p.rally[1]);}
+        aiShop(T);return true;
+      }
+      if(p.phase==='throwReturn'){
+        const u=G.uid.get(p.thrower);if(!u||u.dead||Math.hypot(u.x-p.rally[0],u.y-p.rally[1])<6||p.t>24){p.phase='go';p.t=0;}else{aiShop(T);return true;}
+      }
+      if(p.phase==='bait'){
+        const u=G.uid.get(p.bait);if(!u||u.dead||p.t>16){p.phase='go';p.t=0;}else{aiShop(T);return true;}
+      }
       const near=sq.filter(u=>Math.hypot(u.x-p.rally[0],u.y-p.rally[1])<=7).length;
-      if(near>=sq.length*.75||p.t>45){p.phase='go';p.t=0;}else{aiShop(T);return true;}
+      if(p.phase==='gather'){if(near>=sq.length*.75||p.t>45){p.phase='go';p.t=0;}else{aiShop(T);return true;}}
     }
     // 가장 가까운 자경단원 쪽으로 밀고 들어간다. 사거리 안에서는 제자리 사격
     const work=sq.filter(u=>!u.lay&&u.state!=='med'&&u.state!=='medmove'&&u.state!=='medwait'&&u.state!=='medqueue');

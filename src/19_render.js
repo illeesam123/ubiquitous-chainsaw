@@ -77,15 +77,24 @@ function hpBar(sx,sy,w,f,col){
 // 병사 몸(다리·몸통·머리·헬멧, 도화선 때의 팔). 총·삽·폭탄은 unitHeld 로 분리 — SVG 모드에서는 별도 스프라이트를 회전해 얹는다.
 function unitBodyParts(u,sx,by,z,body,inG){
   const bob=(u.state==='move'||u.state==='flee')?Math.sin(u.anim*(u.state==='flee'?17:12))*1.2*z:0;
+  const moving=u.state==='move'||u.state==='flee',stride=moving?Math.sin(u.anim*(u.state==='flee'?17:12))*2.4*z:0;
   if(!inG){
-    cx.strokeStyle='#2a2a22';cx.lineWidth=2*z;
-    const lg=(u.state==='move'||u.state==='flee')?Math.sin(u.anim*(u.state==='flee'?17:12))*3*z:0;
-    cx.beginPath();cx.moveTo(sx-2*z,by-6*z);cx.lineTo(sx-2*z+lg,by);cx.moveTo(sx+2*z,by-6*z);cx.lineTo(sx+2*z-lg,by);cx.stroke();
+    // 별도 발과 관절이 보이는 부츠·다리로 작은 실루엣에서도 자세를 읽기 쉽게 한다.
+    cx.lineCap='round';cx.strokeStyle='#35362d';cx.lineWidth=2.3*z;
+    cx.beginPath();cx.moveTo(sx-2*z,by-6*z);cx.lineTo(sx-2*z+stride,by-.8*z);cx.lineTo(sx-3.5*z+stride,by);
+    cx.moveTo(sx+2*z,by-6*z);cx.lineTo(sx+2*z-stride,by-.8*z);cx.lineTo(sx+3.5*z-stride,by);cx.stroke();cx.lineCap='butt';
   }
-  cx.fillStyle=body;cx.fillRect(sx-4*z,by-15*z+bob,8*z,10*z);
+  // 조끼와 어깨를 분리해 팀색 몸통이 막대처럼 보이지 않게 한다.
+  cx.fillStyle=body;cx.beginPath();cx.moveTo(sx-3.4*z,by-15*z+bob);cx.lineTo(sx-5*z,by-12.5*z+bob);cx.lineTo(sx-4*z,by-6*z+bob);cx.lineTo(sx+4*z,by-6*z+bob);cx.lineTo(sx+5*z,by-12.5*z+bob);cx.lineTo(sx+3.4*z,by-15*z+bob);cx.closePath();cx.fill();
+  cx.fillStyle='rgba(25,30,23,.42)';cx.fillRect(sx-4*z,by-10*z+bob,8*z,1.5*z);
+  cx.fillStyle='#514a36';cx.fillRect(sx-4.8*z,by-9*z+bob,1.8*z,3*z);cx.fillRect(sx+3*z,by-9*z+bob,1.8*z,3*z);
   cx.fillStyle='#d8b890';cx.beginPath();cx.arc(sx,by-18*z+bob,3.6*z,0,6.3);cx.fill();
   if(u.civ){cx.fillStyle=u.flash>0?'#fff':'#3b2d22';cx.beginPath();cx.arc(sx,by-19.2*z+bob,3.7*z,Math.PI*1.02,Math.PI*1.98);cx.fill();}   // 민간인: 모자 없이 머리카락
-  else{cx.fillStyle=u.flash>0?'#fff':'#3d4630';cx.beginPath();cx.arc(sx,by-19.5*z+bob,4*z,Math.PI,0);cx.fill();}
+  else{
+    cx.fillStyle=u.flash>0?'#fff':'#3d4630';cx.beginPath();cx.arc(sx,by-19.5*z+bob,4*z,Math.PI,0);cx.fill();
+    cx.fillStyle='#292f24';cx.beginPath();cx.ellipse(sx,by-19.2*z+bob,4.6*z,1.35*z,0,Math.PI,6.3);cx.fill();
+    cx.fillStyle='rgba(230,220,180,.48)';cx.fillRect(sx-2.4*z,by-20*z+bob,.9*z,.7*z);
+  }
   if(u.state==='fuse'){
     cx.strokeStyle=body;cx.lineWidth=2*z;cx.beginPath();cx.moveTo(sx-4*z,by-13*z);cx.lineTo(sx-5*z,by-21*z);cx.lineTo(sx-1*z,by-22*z);cx.moveTo(sx+4*z,by-13*z);cx.lineTo(sx+5*z,by-21*z);cx.lineTo(sx+1*z,by-22*z);cx.stroke();
   }

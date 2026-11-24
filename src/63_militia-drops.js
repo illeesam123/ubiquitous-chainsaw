@@ -149,6 +149,8 @@ function genMafiaMilitia(rnd,home){
     if(!o.natural)continue;const sz=OB[o.type].size||1,cx=o.x+sz/2,cy=o.y+sz/2,center=Math.hypot(cx-hx,cy-hy)<16;
     if(o.type==='apartment'){const g=milGroup(cx,cy,2.4,{fixed:true});milFill(rnd,g,['sniper','sniper','lmg','assault','assault','pistol','rifle'],sz/2+1.6,.5);}
     else if(o.type==='tower'){const g=milGroup(cx,cy,1.8,{fixed:true});milFill(rnd,g,['sniper','sniper','lmg'],sz/2+1.4,0);}
+    else if(center&&o.type==='bunker'){const g=milGroup(cx,cy,2.2,{fixed:true});milFill(rnd,g,['lmg','lmg','assault','assault'],sz/2+1.6,.3);}
+    else if(center&&o.type==='mg'){const g=milGroup(cx,cy,1.8,{fixed:true});milFill(rnd,g,['lmg','lmg'],sz/2+1.2,0);}
     else if(!center&&['house','shed','warehouse','ruin','bunker','mg','tower'].includes(o.type)&&G.civs.length<260&&rnd()<.22){
       const g=milGroup(cx,cy,2.2,{fixed:true}),heavy=o.type==='bunker'||o.type==='mg'?.6:.15;
       milFill(rnd,g,milGuns(rnd,2+Math.floor(rnd()*3),heavy),sz/2+1.8,.4);
@@ -160,12 +162,14 @@ function genMafiaMilitia(rnd,home){
     const g=milGroup(x,y,1.6,{fixed:true});milFill(rnd,g,k%5<3?['sniper','assault']:['lmg','lmg','pistol'],1.5,.3);
   }
   // 3) 도시마다 순찰 무리
+  let ci=0;
   for(const v of villageCells()){
+    if(ci++%2)continue;                                            // 도시 순찰 무리는 절반만
     if(Math.hypot(v.x-hx,v.y-hy)<14||G.flags.some(f=>Math.hypot(f.x-v.x,f.y-v.y)<=14))continue;
     const g=milGroup(v.x,v.y,Math.min(9,5+v.n*.15)),n=5+Math.floor(rnd()*7);milFill(rnd,g,milGuns(rnd,n,.2),5,.5);
   }
   // 4) 중심 지구 밖 들판의 순찰 무리 (제자리 반경 안에서만 돌아다닌다. 본진으로 진군하지 않는다)
-  for(let k=0;k<Math.min(14,teams*4);k++){
+  for(let k=0;k<Math.min(7,teams*2);k++){
     const a=rnd()*6.283,r=14+rnd()*Math.min(26,G.w*.25),x=hx+Math.cos(a)*r,y=hy+Math.sin(a)*r;
     if(G.flags.some(f=>Math.hypot(f.x-x,f.y-y)<=20))continue;const p=milSpot(rnd,x,y,3);if(!p)continue;
     const g=milGroup(p[0]+.5,p[1]+.5,7);milFill(rnd,g,milGuns(rnd,7+Math.floor(rnd()*6),.25),5,.6);

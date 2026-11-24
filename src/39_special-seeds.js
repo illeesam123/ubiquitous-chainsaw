@@ -124,6 +124,22 @@ function genMafia(r){
   G.mafia={x:cx+.5,y:cy+.5};
   for(const [dx,dy] of [[-4,-4],[1,-4],[-4,1],[1,1]])addOb('apartment',cx+dx,cy+dy);
   const tower=addOb('tower',cx,cy,-1);if(tower){tower.lv=2;tower.natural=true;tower.team=-1;tower.occTeam=-1;}
+  // 마피아 거점 방어 시설: 강화 모래주머니 외벽(사방 출입구), 모서리 3단계 감시탑, 출입구 벙커·기관총좌, 안쪽 감시탑과 L자 방벽, 철조망
+  const nat=(t,x,y,lv)=>{const o=addOb(t,cx+x,cy+y,-1);if(!o)return null;o.natural=true;o.team=-1;o.occTeam=-1;if(lv){o.lv=lv;o.max=Math.round(o.max*(t==='sandbag'?2.4:1.35));o.hp=o.max;if(t==='sandbag')o.blk=true;}return o;};
+  const RW=9;
+  for(const [sx,sy] of [[-1,-1],[1,-1],[-1,1],[1,1]])nat('tower',sx*RW,sy*RW,2);                // 모서리 감시탑
+  for(let d=-RW;d<=RW;d++){
+    if(Math.abs(d)<=1)continue;                                   // 출입구 3칸
+    nat('sandbag',d,-RW,1);nat('sandbag',d,RW,1);nat('sandbag',-RW,d,1);nat('sandbag',RW,d,1);
+  }
+  for(const [x,y] of [[-6,0],[6,0],[0,-6],[0,6]])nat('tower',x,y,1);                           // 안쪽 감시탑
+  for(const sd of [-1,1]){                                                                       // 출입구 양옆 기관총좌·벙커
+    for(const [x,y] of [[sd*4,-RW+1],[sd*4,RW-1],[-RW+1,sd*4],[RW-1,sd*4]])nat('mg',x,y,2);
+    nat('bunker',sd*2-(sd>0?0:1)+(sd>0?1:0),-RW-3,0);nat('bunker',sd*2-(sd>0?0:1)+(sd>0?1:0),RW+2,0);
+  }
+  for(const [sx,sy] of [[-1,-1],[1,-1],[-1,1],[1,1]])for(const [x,y] of [[0,0],[-sx,0],[0,-sy]])nat('sandbag',sx*6+x,sy*6+y,1);   // 안쪽 L자 방벽
+  for(let d=-RW-2;d<=RW+2;d+=2){if(Math.abs(d)<=2)continue;nat('wire',d,-RW-2);nat('wire',d,RW+2);nat('wire',-RW-2,d);nat('wire',RW+2,d);}
+  for(const [x,y] of [[-2,-6],[2,6],[-6,2],[6,-2],[-2,6],[2,-6]])nat('crate',x,y);
   // 네 모서리마다 3칸 폭으로 세 단의 절벽을 만든다.
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){
     const edge=Math.max(Math.min(x,w-1-x),Math.min(y,h-1-y));if(edge>=9)continue;

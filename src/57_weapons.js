@@ -7,7 +7,7 @@ const WEAP={
   sling:{n:'새총',col:'#c79a5a',price:8,dmg:5,int:1.5,range:4.6,cost:0,acc:.5,desc:'매우 싸고 총알을 소모하지 않습니다. 공격력·명중률·사거리는 기대하기 어렵습니다.'},
   pistol:{n:'권총',col:'#a9b4c0',price:35,dmg:9,int:.45,range:5,cost:.3,acc:.97,mag:11,reload:1.9,desc:'보급형 총기. 11발을 속사하고 재장전합니다. 사거리는 짧지만 명중률이 높습니다.'},
   assault:{n:'돌격소총',col:'#8fb27a',price:80,dmg:9,int:.2,range:8.5,cost:.4,acc:.85,mag:30,reload:3.8,desc:'제식 총기. 30발을 속사하고 재장전합니다. 준수하지만 재장전이 길어 무방비해질 수 있습니다.'},
-  sniper:{n:'저격총',col:'#7fb0d8',price:120,dmg:165,int:2.8,range:16,cost:1.5,acc:.93,mag:5,reload:3.2,wx:0,desc:'방대한 거리를 장악하고 높은 확률로 즉사시킵니다. 날씨와 관계없이 일정한 명중률을 유지합니다.'},
+  sniper:{n:'저격총',col:'#7fb0d8',price:120,dmg:75,int:3.8,range:16,cost:1.5,acc:.93,mag:5,reload:3.2,wx:0,desc:'방대한 거리를 장악하고 높은 확률로 명중하며 한 방에 체력의 절반을 앗아갑니다. 날씨와 관계없이 일정한 명중률을 유지합니다.'},
   lmg:{n:'경기관총',col:'#d89a6f',price:150,dmg:8,int:.1,range:5,cost:.25,acc:.72,mag:250,reload:8,wx:0,desc:'막대한 포화로 근거리를 초토화합니다. 250발 속사 후 재장전. 사거리는 권총과 같고 날씨 영향이 없습니다.'},
   at:{n:'대전차포',col:'#d86f6f',price:140,dmg:70,int:5.5,range:9,cost:4,acc:.85,vdm:5,blast:1.45,desc:'장전이 매우 느리지만 중거리에서 범위 공격. 전차에게 주는 피해는 5배입니다.'}
 };

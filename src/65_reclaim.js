@@ -103,6 +103,21 @@ function rcBuildFacility(T,free,type){
   }
   return false;
 }
+function rcHarvest(T,free){
+  if(free.length<2)return;
+  const needWood=!rcFacilityCount(T,'armory')||!rcFacilityCount(T,'medbay');
+  const needMetal=needWood;
+  const resource=needWood&&T.res.wood<24?'wood':needMetal&&T.res.metal<24?'metal':null;
+  if(!resource||!G.obSet)return;
+  let best=null,bd=1e9;
+  for(const o of G.obSet){
+    const d=OB[o.type],gain=d&&d.gain&&d.gain[resource];
+    if(!o.natural||d.nodemo||!gain||G.tasks.has(tkey('demo',o.idx)))continue;
+    if(d.building&&!canAfford(T,{bullets:d.ammo||10}))continue;
+    const dist=Math.hypot(o.x-T.flag.x,o.y-T.flag.y);if(dist<bd&&dist<36){best=o;bd=dist;}
+  }
+  if(best)issueWork(T.id,'demo',[[best.x,best.y]],null,1,free);
+}
 function rcFacilities(T,free){
   if(!rcFacilityCount(T,'armory')){rcBuildFacility(T,free,'armory');return false;}
   if(!rcFacilityCount(T,'medbay')){rcBuildFacility(T,free,'medbay');return false;}
@@ -144,7 +159,7 @@ aiTick=function(T,dt){
   T.apT=(T.apT||0)-dt;
   if(T.apT<=0){
     T.apT=AIX.every*(.9+Math.random()*.2);
-    try{const free=aiFreeUnits(T);const facilities=rcFacilities(T,free);aiMine(T,free);aiIncome(T,free);if(facilities)aiArms(T,free);if(typeof stAiUpgrade==='function')stAiUpgrade(T);}catch(e){console.error('[AI-reclaim]',e);}
+    try{const free=aiFreeUnits(T);const facilities=rcFacilities(T,free);aiMine(T,free);rcHarvest(T,free);aiIncome(T,free);if(facilities)aiArms(T,free);if(typeof stAiUpgrade==='function')stAiUpgrade(T);}catch(e){console.error('[AI-reclaim]',e);}
   }
   aiPurgeStep(T,dt);
 };

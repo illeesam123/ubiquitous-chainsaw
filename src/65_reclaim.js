@@ -149,6 +149,17 @@ aiShop=function(T){
 };
 function armTot(T,item){let n=0;for(const o of armories(T.id))n+=armStock(o)[item]||0;return n;}
 // ---- AI: 경제 + 자경단 소탕 ----
+// 지하에서 할 일이 끝난 병사를 지상으로 되돌린다(탈환전은 기본 aiTick 을 건너뛰므로 여기서 처리)
+function rcSurface(T){
+  const A=T.ai,W2=G.w;
+  for(const u of G.units){
+    if(u.team!==T.id||u.dead||!u.lay||u.gar||u.task||(u.queue&&u.queue.length)||u.state!=='idle'||u.after||u.medTarget||u.fetch)continue;
+    u.ugIdle=(u.ugIdle||0)+1;if(u.ugIdle<2)continue;u.ugIdle=0;
+    const sh=A.shaft!==undefined&&G.up[A.shaft]===4?A.shaft:null;
+    const e=orderMoveL([u],sh!==null?sh%W2:Math.floor(u.x),sh!==null?(sh/W2)|0:Math.floor(u.y),0);
+    if(e&&u.state==='idle'){u.ugFail=(u.ugFail||0)+1;if(u.ugFail>=3&&transitOK(u.team,Math.floor(u.y)*G.w+Math.floor(u.x))){u.lay=0;u.ugFail=0;}}else u.ugFail=0;
+  }
+}
 const _aiTickRc=aiTick;
 aiTick=function(T,dt){
   if(!isReclaim())return _aiTickRc(T,dt);
@@ -161,6 +172,7 @@ aiTick=function(T,dt){
     T.apT=AIX.every*(.9+Math.random()*.2);
     try{let free=aiFreeUnits(T);const facilities=rcFacilities(T,free);if(facilities){free=aiFreeUnits(T);aiArms(T,free);free=aiFreeUnits(T);aiMine(T,free);free=aiFreeUnits(T);aiIncome(T,free);}else if(!rcFacilityPending(T,'armory')&&!rcFacilityPending(T,'medbay')){aiMine(T,free);free=aiFreeUnits(T);rcHarvest(T,free);free=aiFreeUnits(T);aiIncome(T,free);}if(typeof stAiUpgrade==='function')stAiUpgrade(T);}catch(e){console.error('[AI-reclaim]',e);}
   }
+  A.sfT=(A.sfT||0)-dt;if(A.sfT<=0){A.sfT=1.5;rcSurface(T);}
   aiPurgeStep(T,dt);
 };
 // ---- HUD: 남은 자경단 ----

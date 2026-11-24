@@ -241,13 +241,14 @@ function hillOcclude(e){
   const lvE=elevH(px,py),cell=ty*w+tx;
   if(hillOccRot!==VROT){hillOccCache.clear();hillOccRot=VROT;}
   let list=hillOccCache.get(cell);
-  if(!list){
+  if(list){hillOccCache.delete(cell);hillOccCache.set(cell,list);}else{
     list=[];
     for(let a=0;a<=6;a++)for(let c=0;c<=6;c++){          // 보기 좌표에서 앞쪽(+,+)에 있는 언덕 후보만 칸마다 한 번 찾는다
       const [dx,dy]=unrotDir(a,c),x=tx+dx,y=ty+dy;
       if(x<0||y<0||x>=w||y>=G.h)continue;
       const j=y*w+x;if(G.hl[j])list.push(j);
     }
+    if(hillOccCache.size>=8192)hillOccCache.delete(hillOccCache.keys().next().value);
     hillOccCache.set(cell,list);
   }
   const own=(x,y)=>e.o?(x>=e.o.x&&x<e.o.x+size&&y>=e.o.y&&y<e.o.y+size):(x===tx&&y===ty);
@@ -275,7 +276,7 @@ function hillOcclude(e){
   }
   cx.restore();
   // 가려진 아군 병사는 윤곽만 흐리게 한 번 더 보여 준다 (선택·확인용)
-  if(hit&&mine&&!e.bush&&!e.f&&!e.lad)xrayPass(e,px,py,hits,bx0,by0,bx1-bx0,by1-by0,zb);
+  if(hit&&!e.bush&&!e.f&&!e.lad)xrayPass(e,px,py,hits,bx0,by0,bx1-bx0,by1-by0,zb);
 }
 // 벽 투시: 가려진 부분만 단색으로. (1) 개체를 따로 한 장에 그려 단색으로 칠하고 (2) 가린 타일들의 모양(마스크)과 겹치는 곳만 남겨 (3) 맨 위 벡터층에 얹는다.
 let XS=null,XM=null;

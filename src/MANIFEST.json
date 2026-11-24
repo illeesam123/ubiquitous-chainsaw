@@ -61,5 +61,6 @@
   "src/60_struct-looks.js",
   "src/61_transport.js",
   "src/63_militia-drops.js",
-  "src/64_ai-advanced.js"
+  "src/64_ai-advanced.js",
+  "src/65_reclaim.js"
 ]

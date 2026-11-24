@@ -42,16 +42,16 @@ function atImpact(s,u,g){
   const sc=(1-g.acc*weatherAccuracy())*1.8*(u.state==='move'?1.6:1),a=Math.random()*6.283,r=Math.random()*sc;
   const x=u.x+Math.cos(a)*r,y=u.y+Math.sin(a)*r,R=g.blast,team=s.team;
   for(const q of G.units){
-    if(q.dead||q.team===team||q.state==='crew'||q.lay||inRoof(q))continue;
+    if(q.dead||isAllyT(q.team,team)||q.state==='crew'||q.lay||inRoof(q))continue;
     const d=Math.hypot(q.x-x,q.y-y);if(d>R)continue;
     let dmg=g.dmg*(1-.6*d/R)*(.9+Math.random()*.2);if(sameTeamTrench(q))dmg*=.7;
     hurt(q,dmg,s);if(q.gar&&G.obSet.has(q.gar))damageOb(q.gar,dmg*.4);
   }
   for(const v of G.vehicles){
-    if(v.dead||v.team===team)continue;
+    if(v.dead||isAllyT(v.team,team))continue;
     const d=Math.hypot(v.x-x,v.y-y);if(d<=R+.5)damageVehicle(v,g.dmg*g.vdm*(1-.35*Math.min(1,d/(R+.5))),s);
   }
-  for(const o of [...G.obSet])if((o.natural||o.team!==team)&&Math.hypot(o.x+o.size/2-x,o.y+o.size/2-y)<=R*.8)damageOb(o,g.dmg*.5);
+  for(const o of [...G.obSet])if((o.natural||!isAllyT(o.team,team))&&Math.hypot(o.x+o.size/2-x,o.y+o.size/2-y)<=R*.8)damageOb(o,g.dmg*.5);
   fxPush({k:'boom',x,y,t:0,d:.5});sfx('boom',x,y);clearBush(x,y,1.3);
 }
 const _suW=stepUnit;

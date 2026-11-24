@@ -110,7 +110,7 @@ function stepTurrets(dt){
       }
       if(!done){
         let best=null,bd=1e9;
-        for(const q of G.obSet){if(q.natural||q.team===o.team||q.team<0)continue;const d=Math.hypot(q.x+q.size/2-cx0,q.y+q.size/2-cy0);if(d<=R&&d<bd){bd=d;best=q;}}
+        for(const q of G.obSet){if(q.natural||isAllyT(q.team,o.team)||q.team<0)continue;const d=Math.hypot(q.x+q.size/2-cx0,q.y+q.size/2-cy0);if(d<=R&&d<bd){bd=d;best=q;}}
         if(best){T.res.bullets-=6;o.aim=Math.atan2(best.y-cy0,best.x-cx0);o.muz=.25;fxPush({k:'trace',x1:cx0,y1:cy0,x2:best.x+.5,y2:best.y+.5,t:0,d:.25});sfx('mortar',cx0,cy0);damageOb(best,best.hp+999);o.cd=6;done=true;}
       }
       if(!done)o.cd=.8;else if(!(o.cd>0))o.cd=3;
@@ -120,11 +120,11 @@ function stepTurrets(dt){
     const R=turretRange(o)*weatherSight(),src={x:cx0,y:cy0};
     // 한 번에 한 명: 직전 표적이 유효하면 계속 노린다
     let tg=o.tgt;
-    const okT=e=>e&&!e.dead&&e.team!==o.team&&!e.lay&&e.state!=='crew'&&!inRoof(e)&&!hiddenUnit(e,cx0,cy0)&&Math.hypot(e.x-cx0,e.y-cy0)<=R;
+    const okT=e=>e&&!e.dead&&!isAllyT(e.team,o.team)&&!e.lay&&e.state!=='crew'&&!inRoof(e)&&!hiddenUnit(e,cx0,cy0)&&Math.hypot(e.x-cx0,e.y-cy0)<=R;
     if(!okT(tg)){
       tg=null;let bd=R*R;
       for(const e of G.units){if(!okT(e))continue;const dx=e.x-cx0,dy=e.y-cy0,d=shotQ(src,e,dx*dx+dy*dy,bd,lv>0);if(d<bd){bd=d;tg=e;}}
-      if(!tg)for(const v of G.vehicles){if(v.dead||v.team===o.team)continue;const dx=v.x-cx0,dy=v.y-cy0,d=shotQ(src,v,dx*dx+dy*dy,bd,lv>0);if(d<bd){bd=d;tg=v;}}
+      if(!tg)for(const v of G.vehicles){if(v.dead||isAllyT(v.team,o.team))continue;const dx=v.x-cx0,dy=v.y-cy0,d=shotQ(src,v,dx*dx+dy*dy,bd,lv>0);if(d<bd){bd=d;tg=v;}}
       o.tgt=tg;
     }
     if(!tg){o.cd=.4;continue;}
@@ -149,7 +149,7 @@ stepMortars=function(dt){
     u.wt=(u.wt||0)-dt;if(u.wt>0)continue;
     const tx=Math.floor(u.x),ty=Math.floor(u.y);if(!inb(tx,ty))continue;
     const o=G.obst[ty*G.w+tx];
-    if(o&&o.type==='wire'&&!o.natural&&o.team!==u.team){
+    if(o&&o.type==='wire'&&!o.natural&&!isAllyT(o.team,u.team)){
       u.wt=.7;hurt(u,26,null);damageOb(o,14);fxPush({k:'spark',x:u.x,y:u.y,t:0,d:.2});
     }
   }
@@ -157,7 +157,7 @@ stepMortars=function(dt){
     if(v.dead)continue;v.wt=(v.wt||0)-dt;if(v.wt>0)continue;
     const tx=Math.floor(v.x),ty=Math.floor(v.y);if(!inb(tx,ty))continue;
     const o=G.obst[ty*G.w+tx];
-    if(o&&o.type==='wire'&&!o.natural&&o.team!==v.team){v.wt=.9;damageVehicle(v,12);damageOb(o,20);}
+    if(o&&o.type==='wire'&&!o.natural&&!isAllyT(o.team,v.team)){v.wt=.9;damageVehicle(v,12);damageOb(o,20);}
   }
 };
 // ---- 강화 ----

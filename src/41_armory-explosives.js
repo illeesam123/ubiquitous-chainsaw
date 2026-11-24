@@ -95,16 +95,16 @@ function landNade(n){
   const {kind,team,tx:x,ty:y}=n;
   if(kind==='frag'){
     const r=1.9;
-    for(const u of G.units){if(u.dead||u.team===team||u.state==='crew'||u.lay||inRoof(u))continue;const d=Math.hypot(u.x-x,u.y-y);if(d>r)continue;let dmg=85*(1-.65*d/r);if(sameTeamTrench(u))dmg*=.72;hurt(u,dmg,null);if(u.gar&&G.obSet.has(u.gar))damageOb(u.gar,dmg*.4);}
-    for(const v of G.vehicles){if(v.dead||v.team===team)continue;if(Math.hypot(v.x-x,v.y-y)<=r)damageVehicle(v,45);}
-    for(const o of [...G.obSet])if((o.natural||o.team!==team)&&Math.hypot(o.x+o.size/2-x,o.y+o.size/2-y)<=r*.7)damageOb(o,22);
+    for(const u of G.units){if(u.dead||isAllyT(u.team,team)||u.state==='crew'||u.lay||inRoof(u))continue;const d=Math.hypot(u.x-x,u.y-y);if(d>r)continue;let dmg=85*(1-.65*d/r);if(sameTeamTrench(u))dmg*=.72;hurt(u,dmg,null);if(u.gar&&G.obSet.has(u.gar))damageOb(u.gar,dmg*.4);}
+    for(const v of G.vehicles){if(v.dead||isAllyT(v.team,team))continue;if(Math.hypot(v.x-x,v.y-y)<=r)damageVehicle(v,45);}
+    for(const o of [...G.obSet])if((o.natural||!isAllyT(o.team,team))&&Math.hypot(o.x+o.size/2-x,o.y+o.size/2-y)<=r*.7)damageOb(o,22);
     fxPush({k:'boom',x,y,t:0,d:.5});sfx('boom',x,y);clearBush(x,y,1.6);
   }else if(kind==='molotov'){
     G.zones.push({kind:'fire',team,x,y,r:1.5,t:7,tick:.3,seed:Math.random()*9});
     clearBush(x,y,1.7);sfx('boom',x,y);fxPush({k:'smoke',x,y,t:0,d:1});
   }else if(kind==='flash'){
     G.zones.push({kind:'flash',x,y,r:3.4,t:.45,max:.45});
-    for(const u of G.units){if(u.dead||u.team===team||u.lay||u.state==='crew')continue;const d=Math.hypot(u.x-x,u.y-y);if(d<=3.4)u.stun=Math.max(u.stun||0,4.4-d*.7);}
+    for(const u of G.units){if(u.dead||isAllyT(u.team,team)||u.lay||u.state==='crew')continue;const d=Math.hypot(u.x-x,u.y-y);if(d<=3.4)u.stun=Math.max(u.stun||0,4.4-d*.7);}
     sfx('beep',x,y);
   }else if(kind==='smoke'){
     G.zones.push({kind:'smoke',team,x,y,r:2.4,t:14,max:14,seed:Math.random()*9});
@@ -119,8 +119,8 @@ function stepExp(dt){
     if(z.kind==='fire'){
       z.tick-=dt;
       if(z.tick<=0){z.tick=.5;
-        for(const u of G.units){if(u.dead||u.team===z.team||u.lay||u.state==='crew'||inRoof(u))continue;if(Math.hypot(u.x-z.x,u.y-z.y)<=z.r)hurt(u,8,null);}
-        for(const v of G.vehicles){if(!v.dead&&v.team!==z.team&&Math.hypot(v.x-z.x,v.y-z.y)<=z.r)damageVehicle(v,5);}
+        for(const u of G.units){if(u.dead||isAllyT(u.team,z.team)||u.lay||u.state==='crew'||inRoof(u))continue;if(Math.hypot(u.x-z.x,u.y-z.y)<=z.r)hurt(u,8,null);}
+        for(const v of G.vehicles){if(!v.dead&&!isAllyT(v.team,z.team)&&Math.hypot(v.x-z.x,v.y-z.y)<=z.r)damageVehicle(v,5);}
       }
     }
   }
@@ -138,7 +138,7 @@ function stepExp(dt){
       continue;
     }
     if(d<2.8||d>8.5)continue;
-    let cl=0;for(const q of G.units)if(!q.dead&&q.team!==u.team&&!q.lay&&Math.hypot(q.x-e.x,q.y-e.y)<=2)cl++;
+    let cl=0;for(const q of G.units)if(!q.dead&&!isAllyT(q.team,u.team)&&!q.lay&&Math.hypot(q.x-e.x,q.y-e.y)<=2)cl++;
     if(cl<2&&d>5.2&&!VEH[e.type])continue;
     if(k==='flash'&&VEH[e.type])continue;
     // 아군 근처 착탄은 피한다

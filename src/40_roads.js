@@ -39,7 +39,7 @@ function roadLine(ax,ay,bx,by,k,bridge,r){
   }
 }
 function genBush(r){
-  if(G.special==='superflat'||G.special==='urbanwar')return;
+  if(G.special==='superflat'||G.special==='urbanwar'||G.special==='occupied')return;
   const L=lat(r),o1=r()*500,o2=r()*500,w=G.w,h=G.h,b=G.biome;
   const thr=G.special==='mineshaft'?.84:b==='swamp'?.63:b==='arid'?.76:b==='snow'?.72:.69;
   for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){

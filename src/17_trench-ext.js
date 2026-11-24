@@ -262,7 +262,7 @@ function underClick(t,sel){
 
 // ---- 동굴 생성 ----
 function genCaves(r){
-  if(G.special==='superflat'||G.special==='urbanwar')return;
+  if(G.special==='superflat'||G.special==='urbanwar'||G.special==='occupied')return;
   const w=G.w,h=G.h,mafia=G.special==='mafia',n=Math.max(mafia?4:3,Math.round(w*h/(mafia?1450:1700))),starts=[];
   for(let k=0;k<n;k++){
     let x0,y0,mi,ok=false;

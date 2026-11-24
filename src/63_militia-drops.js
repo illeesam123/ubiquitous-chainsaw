@@ -45,6 +45,7 @@ function milStep(c,dt){
   c.sc=(c.sc||0)-dt;
   if(c.sc<=0||!c.tg||c.tg.dead||c.tg.state==='crew'||c.tg.surr>0){c.sc=.35;c.tg=milTarget(c);if(!c.tg)c.hostile={};}
   const t=c.tg,dc=Math.hypot(c.x-g.cx,c.y-g.cy);
+  if(isReclaim())c.hostile=MIL_ALL;   // 탈환전: 자경단은 모든 팀의 적
   // 거점 구조물 자율 배치/해제: 경계가 올라가면 안으로 들어가 쏘고, 한동안 조용하면 스스로 나온다
   if(post){
     c.idleT=t?0:(c.idleT||0)+dt;
@@ -72,13 +73,13 @@ function milStep(c,dt){
     }
     return true;
   }
-  if(g.purge)c.hostile=Object.assign({},g.purge);   // 소탕 작전 중인 팀은 보이지 않아도 사격 대상으로 삼는다
+  if(g.purge&&!isReclaim())c.hostile=Object.assign({},g.purge);   // 소탕 작전 중인 팀은 보이지 않아도 사격 대상으로 삼는다
   // 무리가 교전 중이면 그쪽으로 모인다(도시 안에서만)
   if(g.alert>0&&Math.hypot(g.ax-g.cx,g.ay-g.cy)<=g.R+MIL.leash+3&&Math.hypot(g.ax-c.x,g.ay-c.y)>rg*.8){civStep(c,g.ax,g.ay,CIV.speed*.9,dt);return false;}
   if(c.in)return false;
   const tx=dc>g.R+MIL.leash?g.cx:g.tx+c.off[0],ty=dc>g.R+MIL.leash?g.cy:g.ty+c.off[1];   // 무리 목적지로 함께 이동, 멀어지면 도시로 복귀
   if(Math.hypot(tx-c.x,ty-c.y)>.7)civStep(c,tx,ty,CIV.speed*.8,dt);
-  return !!g.purge;
+  return !!g.purge||isReclaim();
 }
 // ---- 드롭 ----
 function addDrop(x,y,kind,k){

@@ -15,7 +15,7 @@ function dropCommitments(u){
 // ---- 병사 패닉 ----
 function nearestEnemyDist(u){
   let bd=1e9,bt=-1;
-  for(const e of G.units){if(e.dead||e.team===u.team||e.surr>0||e.state==='crew')continue;const d=Math.hypot(e.x-u.x,e.y-u.y);if(d<bd){bd=d;bt=e.team;}}
+  for(const e of G.units){if(e.dead||isAllyT(e.team,u.team)||e.surr>0||e.state==='crew')continue;const d=Math.hypot(e.x-u.x,e.y-u.y);if(d<bd){bd=d;bt=e.team;}}
   return [bd,bt];
 }
 function panicSoldier(u,med,sev){
@@ -97,7 +97,7 @@ function genCivs(){
     return;
   }
   const vs=villageCells().filter(v=>G.flags.every(f=>Math.hypot(f.x-v.x,f.y-v.y)>14));
-  const urban=G.special==='urbanwar';
+  const urban=G.special==='urbanwar'||G.special==='occupied';
   for(const v of vs){
     if(G.civs.length>=CIV.cap)break;
     if(!urban&&rnd()>.55)continue;
@@ -112,7 +112,7 @@ function genCivs(){
       }
     }
   }
-  genMilitia(vs,rnd,urban);
+  if(!(isReclaim()||G.special==='occupied'))genMilitia(vs,rnd,urban);
 }
 function civStep(c,tx,ty,sp,dt){
   const dx=tx-c.x,dy=ty-c.y,d=Math.hypot(dx,dy);if(d<.05)return true;

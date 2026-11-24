@@ -57,7 +57,7 @@ function genMap(r){
   const SP=G.special;
   if((!SP||SP==='canyon'||SP==='mafia')&&!G.cfg.flat&&!G.cfg.noHills)genHills();   // cfg.flat: 에셋 추출용, cfg.noHills: 성능 모드
   if(SP==='superflat')return;
-  if(SP==='urbanwar'){
+  if(SP==='urbanwar'||SP==='occupied'){
     carveRiver(r,'h',.5,Math.max(6,Math.round(w/14)),.1);
     genBridges(r,'h',w>=128?5:3);
     genCity(r);

@@ -2,7 +2,7 @@
 // 1) 우회: AI 의 이동 명령은 자경단 활동 구역(도시 반경+여유)을 지나는 경로 비용이 크게 올라가 되도록 피해서 간다.
 // 2) 소탕: 본진이 안전하고 병력이 충분하면 가까운 자경단 무리를 향해 통솔 가능한 병력 전체를 보내 전멸시킨 뒤 본진으로 복귀한다.
 const PURGE={avoid:6,pad:7,every:6,cool:70,minN:6,ratio:1.1,maxDist:80,timeout:110};
-function milGroups(){return (G.militia||[]).filter(g=>milAlive(g).length>=2);}
+function milGroups(){const m=typeof isReclaim==='function'&&isReclaim()?1:2;return (G.militia||[]).filter(g=>milAlive(g).length>=m);}
 function milAlive(g){return G.civs.filter(c=>c.mil&&!c.dead&&c.grp===g);}
 function milDangerBuild(){
   if(G.milDT===G.time)return;G.milDT=G.time;
@@ -16,20 +16,23 @@ function milDangerBuild(){
 function aiPathWrap(f){
   return function(us,...a){
     const ai=us&&us.length&&G.teams[us[0].team]&&G.teams[us[0].team].ai;
-    if(!ai)return f(us,...a);
+    if(!ai||(typeof isReclaim==='function'&&isReclaim()))return f(us,...a);   // 탈환전: 자경단을 피하지 않고 찾아간다
     const T=G.teams[us[0].team],g=typeof aiDangerGrid==='function'?aiDangerGrid(T,us):(milDangerBuild(),MILD),sv=MILD;
     MILD=g;MILD_ON=!!g;
     try{return f(us,...a);}finally{MILD_ON=false;MILD=sv;}
   };
 }
 orderMove=aiPathWrap(orderMove);orderMoveL=aiPathWrap(orderMoveL);
-function aiHomeThreat(T){const my=T.flag,r=12+G.w*.05;return foesNear(T,my.x,my.y,r).n>0;}
+function aiHomeThreat(T){if(typeof isReclaim==='function'&&isReclaim())return false;const my=T.flag,r=12+G.w*.05;return foesNear(T,my.x,my.y,r).n>0;}
 function aiPurgeStart(T,A,fighters){
-  const my=T.flag,gs=milGroups().map(g=>({g,d:Math.hypot(g.cx-my.x,g.cy-my.y),n:milAlive(g).length})).filter(o=>o.d<=PURGE.maxDist).sort((a,b)=>a.d-b.d);
+  const rc=typeof isReclaim==='function'&&isReclaim();
+  // 탈환전: 이미 다른 동맹이 가는 무리는 피하고, 가까운 무리부터 (병력이 충분할 때만)
+  const my=T.flag,gs=milGroups().map(g=>({g,d:Math.hypot(g.cx-my.x,g.cy-my.y)+(rc&&g.purge?Object.keys(g.purge).length*30:0),n:milAlive(g).length})).filter(o=>rc||o.d<=PURGE.maxDist).sort((a,b)=>a.d-b.d);
   for(const o of gs){
-    if(fighters.length<Math.max(PURGE.minN,Math.ceil(o.n*PURGE.ratio)+2))continue;
+    if(fighters.length<(rc?Math.max(5,Math.ceil(o.n*1.2)+4):Math.max(PURGE.minN,Math.ceil(o.n*PURGE.ratio)+2)))continue;
     const ids=fighters.map(u=>u.id);
-    A.purge={g:o.g,ids,t:0,phase:'go'};A.squad=[];
+    const gx=o.g.cx,gy=o.g.cy,dd=Math.hypot(my.x-gx,my.y-gy)||1,rr=Math.min(dd,o.g.R+17),rally=[clamp(Math.round(gx+(my.x-gx)/dd*rr),1,G.w-2),clamp(Math.round(gy+(my.y-gy)/dd*rr),1,G.h-2)];
+    A.purge={g:o.g,ids,t:0,phase:'gather',rally};A.squad=[];   // 먼저 사정권 밖에 집결 → 한꺼번에 돌입
     o.g.purge=o.g.purge||{};o.g.purge[T.id]=true;
     if(T.id===0)return true;
     return true;
@@ -37,7 +40,7 @@ function aiPurgeStart(T,A,fighters){
   return false;
 }
 function aiPurgeEnd(T,A,why){
-  const p=A.purge;A.purge=null;A.purgeCd=G.time+PURGE.cool;
+  const p=A.purge;A.purge=null;A.purgeCd=G.time+(typeof isReclaim==='function'&&isReclaim()?18:PURGE.cool);
   if(p&&p.g.purge){delete p.g.purge[T.id];if(!Object.keys(p.g.purge).length)p.g.purge=null;}
   const my=T.flag,back=(typeof nearestOwnTrench==='function'&&nearestOwnTrench(T,my.x,my.y,10))||[my.x,my.y];
   const us=(p?p.ids:[]).map(id=>G.uid.get(id)).filter(u=>u&&!u.dead&&u.team===T.id&&!u.lay);
@@ -52,7 +55,12 @@ function aiPurgeStep(T,dt){
     const p=A.purge;p.t+=1.4;
     const sq=p.ids.map(id=>G.uid.get(id)).filter(u=>u&&!u.dead&&u.team===T.id);
     const M=milAlive(p.g);
-    if(!M.length||sq.length<Math.max(2,p.ids.length*.25)||p.t>PURGE.timeout){aiPurgeEnd(T,A);return false;}
+    if(!M.length||sq.length<Math.max(2,p.ids.length*.25)||p.t>PURGE.timeout*(typeof isReclaim==='function'&&isReclaim()?2.5:1)){aiPurgeEnd(T,A);return false;}
+    if(p.phase==='gather'){
+      if(!p.sent){p.sent=true;orderMove(sq.filter(u=>!u.lay),p.rally[0],p.rally[1]);}
+      const near=sq.filter(u=>Math.hypot(u.x-p.rally[0],u.y-p.rally[1])<=7).length;
+      if(near>=sq.length*.75||p.t>45){p.phase='go';p.t=0;}else{aiShop(T);return true;}
+    }
     // 가장 가까운 자경단원 쪽으로 밀고 들어간다. 사거리 안에서는 제자리 사격
     const work=sq.filter(u=>!u.lay&&u.state!=='med'&&u.state!=='medmove'&&u.state!=='medwait'&&u.state!=='medqueue');
     const go=[];
@@ -70,9 +78,10 @@ function aiPurgeStep(T,dt){
     return true;
   }
   // 시작 판단
-  if((A.purgeCd||0)>G.time||G.time<75)return false;
-  if(A.pchk===undefined)A.pchk=0;A.pchk-=dt;if(A.pchk>0)return false;A.pchk=PURGE.every;
-  if(!G.militia||!G.militia.length||aiHomeThreat(T)||Math.random()<.35)return false;
+  const rc=typeof isReclaim==='function'&&isReclaim();
+  if((A.purgeCd||0)>G.time||G.time<(rc?30:75))return false;
+  if(A.pchk===undefined)A.pchk=0;A.pchk-=dt;if(A.pchk>0)return false;A.pchk=rc?3:PURGE.every;
+  if(!G.militia||!G.militia.length||aiHomeThreat(T)||(!rc&&Math.random()<.35))return false;
   const mine=G.units.filter(u=>u.team===T.id&&!u.dead&&u.state!=='crew'&&!u.gar&&!u.lay&&!['med','medwait','medmove','medqueue'].includes(u.state));
   return aiPurgeStart(T,A,mine);
 }

@@ -2,7 +2,7 @@
 function foesNear(T,x,y,r){
   let n=0,sx=0,sy=0,veh=0;
   for(const e of G.units){
-    if(e.dead||e.state==='crew'||e.team===T.id||e.lay||inRoof(e)||hiddenUnit(e))continue;
+    if(e.dead||e.state==='crew'||isAllyT(e.team,T.id)||e.lay||inRoof(e)||hiddenUnit(e))continue;
     if(Math.hypot(e.x-x,e.y-y)<=r){n++;sx+=e.x;sy+=e.y;}
   }
   for(const v of G.vehicles){

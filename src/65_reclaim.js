@@ -76,6 +76,63 @@ showOver=function(){
 };
 const _updEgR=updateEndgame;
 updateEndgame=function(){if(isReclaim()){if(G)G.endgame=false;return;}return _updEgR();};
+// ---- 탈환전 AI: 시설·충원·투척물 우선 ----
+function rcFacilityCount(T,type){let n=0;for(const o of G.obSet)if(o.type===type&&!o.natural&&o.team===T.id)n++;return n;}
+function rcFacilityPending(T,type){for(const t of G.tasks.values())if(t.team===T.id&&t.kind==='build'&&t.type===type)return true;return false;}
+function rcBuildFacility(T,free,type){
+  if(rcFacilityCount(T,type)||rcFacilityPending(T,type)||free.length<2)return false;
+  const cost=OB[type].cost;
+  if(!canAfford(T,cost)){
+    if(T.res.money>200&&T.order.lines.length<3){
+      if(T.res.wood<cost.wood)shopAddTrade(T.id,'money','wood',Math.min(160,T.res.money-100));
+      else if(T.res.metal<cost.metal)shopAddTrade(T.id,'money','metal',Math.min(160,T.res.money-100));
+    }
+    return false;
+  }
+  const seen=new Set();
+  for(const ti of T.trench){
+    if(G.trench[ti]!==T.id+1)continue;
+    const x0=ti%G.w,y0=(ti/G.w)|0;
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+      const x=x0+dx,y=y0+dy,k=y*G.w+x;if(seen.has(k))continue;seen.add(k);
+      if(!inb(x,y)||G.trench[k]===T.id+1)continue;
+      if(taskCheck(T.id,'build',x,y,type))continue;
+      const task=getTask(T.id,'build',x,y,type,true);if(!task)continue;
+      orderTasks(free.slice(0,2),[task]);return true;
+    }
+  }
+  return false;
+}
+function rcFacilities(T,free){
+  if(!rcFacilityCount(T,'armory')){rcBuildFacility(T,free,'armory');return false;}
+  if(!rcFacilityCount(T,'medbay')){rcBuildFacility(T,free,'medbay');return false;}
+  const med=Array.from(G.obSet).find(o=>o.type==='medbay'&&!o.natural&&o.team===T.id);
+  if(med&&med.occ.length===0&&free.length){orderGarrison([free[0]],med);}
+  return true;
+}
+const _aiShopReclaim=aiShop;
+aiShop=function(T){
+  if(!isReclaim()||!T.ai)return _aiShopReclaim(T);
+  const current=popOf(T.id),pending=pendingRecruits(T),target=Math.min(SHOP.popCap,Math.max(30,Math.min(42,Math.ceil((G.cfg.soldiers||18)*1.5))));
+  if(!rcFacilityCount(T,'armory')||!rcFacilityCount(T,'medbay')){
+    if(T.order.lines.length<3&&T.res.money<SHOP.recruitCost+60)_aiShopReclaim(T);
+    return;
+  }
+  if(current+pending<target&&T.order.lines.length<3){
+    if(T.res.money>=SHOP.packCost+40&&current+pending+SHOP.packN<=target)shopAddRecruit(T.id,SHOP.packN);
+    else if(T.res.money>=SHOP.recruitCost+20)shopAddRecruit(T.id,1);
+    else _aiShopReclaim(T);
+    return;
+  }
+  const ready=armFree(T.id)-pendingExp(T);
+  if(ready>=3&&pendingExp(T)<9&&T.res.money>=90){
+    const n=Math.min(3,ready,Math.floor(T.res.money/30));
+    if(n>0)shopAddExp(T.id,armTot(T.id,'frag')<8?'frag':'molotov',n);
+    return;
+  }
+  _aiShopReclaim(T);
+};
+function armTot(T,item){let n=0;for(const o of armories(T.id))n+=armStock(o)[item]||0;return n;}
 // ---- AI: 경제 + 자경단 소탕 ----
 const _aiTickRc=aiTick;
 aiTick=function(T,dt){
@@ -87,7 +144,7 @@ aiTick=function(T,dt){
   T.apT=(T.apT||0)-dt;
   if(T.apT<=0){
     T.apT=AIX.every*(.9+Math.random()*.2);
-    try{const free=aiFreeUnits(T);aiArms(T,free);aiMine(T,free);aiIncome(T,free);if(typeof stAiUpgrade==='function')stAiUpgrade(T);}catch(e){console.error('[AI-reclaim]',e);}
+    try{const free=aiFreeUnits(T);const facilities=rcFacilities(T,free);aiMine(T,free);aiIncome(T,free);if(facilities)aiArms(T,free);if(typeof stAiUpgrade==='function')stAiUpgrade(T);}catch(e){console.error('[AI-reclaim]',e);}
   }
   aiPurgeStep(T,dt);
 };

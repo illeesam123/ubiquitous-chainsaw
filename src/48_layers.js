@@ -5,7 +5,7 @@
 // G.hl[i]  : 이 타일은 입체로 그려야 함(높이≠지상, 빗면, 또는 앞쪽 이웃보다 높음).
 // G.occ[i] : 이 타일은 뒤쪽(작은 x+y)보다 높아서 뒤에 있는 것들을 가린다 → 개체 정렬 때 한 번 더 그린다.
 const FLOOR_PX=28,HALF_PX=14,GROUND_LV=6,UNDER_LV=2,MAX_LV=12;
-let OCQ=null,ELK=null;   // ELK: 개체를 그리는 동안 고도를 한 값으로 고정(차량 등이 경사에서 부위별로 다른 높이로 찌그러지는 것 방지)
+let OCQ=null,ELK=null,hillOccCache=new Map(),hillOccRot=-1;   // ELK: 개체를 그리는 동안 고도를 한 값으로 고정(차량 등이 경사에서 부위별로 다른 높이로 찌그러지는 것 방지)
    // 타일별: 앞쪽에 이 타일의 서 있는 것을 가릴 만큼 높은 타일이 있는가
 function initLayers(){G.lv=new Uint8Array(G.N).fill(GROUND_LV);G.sl=new Uint8Array(G.N);G.hl=new Uint8Array(G.N);G.occ=new Uint8Array(G.N);G.hill=false;G.pit=new Uint8Array(G.N);G.npit=0;G.cl=new Map();}
 // ---- 참호 = 반층 구덩이 (층 3단계-1) ----
@@ -44,6 +44,7 @@ function elevH(x,y){
 const elevPx=(x,y)=>ELK!==null?ELK:(elevH(x,y)-GROUND_LV)*HALF_PX;
 const maxH=(i)=>G.lv[i]+(G.sl[i]?2:0);
 function layersFinalize(){
+  hillOccCache.clear();hillOccRot=-1;
   const w=G.w,h=G.h;G.hill=false;
   for(let i=0;i<G.N;i++)if(G.lv[i]!==GROUND_LV||G.sl[i]){G.hill=true;break;}
   G.hl.fill(0);G.occ.fill(0);OCQ=new Uint8Array(G.N);if(!G.hill){computeShade();return;}
@@ -237,23 +238,27 @@ function hillOcclude(e){
   else if(e.f){px=e.f.x+.5;py=e.f.y+.5;}else if(e.lad){px=(e.lad[0]%G.w)+.5;py=((e.lad[0]/G.w)|0)+.5;}else return;
   const w=G.w,tx=Math.floor(px),ty=Math.floor(py);if(tx<0||ty<0||tx>=w||ty>=G.h)return;
   if(!OCQ[ty*w+tx]&&!(e.o&&e.o.size>1))return;
-  const lvE=elevH(px,py);let list=null;
-  const R=size>1?size:0;
-  const own=(x,y)=>e.o?(x>=e.o.x&&x<e.o.x+size&&y>=e.o.y&&y<e.o.y+size):(x===tx&&y===ty);
-  for(let a=0;a<=6;a++)for(let c=0;c<=6;c++){            // 보기 좌표에서 앞쪽(+,+)에 있는 칸들
-    const [dx,dy]=unrotDir(a,c),x=tx+dx,y=ty+dy;
-    if(x<0||y<0||x>=w||y>=G.h||own(x,y))continue;       // 개체 자신이 서 있는 칸 제외
-    const j=y*w+x;if(!G.hl[j]||maxH(j)<=lvE+.5)continue;
-    (list||(list=[])).push(j);
+  const lvE=elevH(px,py),cell=ty*w+tx;
+  if(hillOccRot!==VROT){hillOccCache.clear();hillOccRot=VROT;}
+  let list=hillOccCache.get(cell);
+  if(!list){
+    list=[];
+    for(let a=0;a<=6;a++)for(let c=0;c<=6;c++){          // 보기 좌표에서 앞쪽(+,+)에 있는 언덕 후보만 칸마다 한 번 찾는다
+      const [dx,dy]=unrotDir(a,c),x=tx+dx,y=ty+dy;
+      if(x<0||y<0||x>=w||y>=G.h)continue;
+      const j=y*w+x;if(G.hl[j])list.push(j);
+    }
+    hillOccCache.set(cell,list);
   }
-  if(!list)return;
+  const own=(x,y)=>e.o?(x>=e.o.x&&x<e.o.x+size&&y>=e.o.y&&y<e.o.y+size):(x===tx&&y===ty);
+  if(!list.length)return;
   const z=cam.z,[sx,sy]=toS(px,py);
   // 개체 크기에 맞춘 상자: 병사·민간인은 작게, 건물은 크기에 비례, 나무·바위 등은 중간
   const big=e.o&&size>1,Wd=(e.u||e.civ?16:big?size*34+16:e.v?30:34)*z,up=(e.lad?(G.lv[e.lad[1]]-G.lv[e.lad[0]])*HALF_PX+30:e.u||e.civ?36:big?size*38+30:e.v?30:66)*z,dn=(e.u||e.civ?6:big?size*14:e.v?10:12)*z;
   let hit=false,hits=null;const zb=CHB.find(q=>q>=z-.001),bx0=sx-Wd,by0=sy-up,bx1=sx+Wd,by1=sy+dn;
   cx.save();if(zb===undefined){cx.beginPath();cx.rect(bx0,by0,bx1-bx0,by1-by0);cx.clip();}
   for(const j of list){
-    const x=j%w,y=(j/w)|0,[cxs,cys]=toS(x+.5,y+.5);
+    const x=j%w,y=(j/w)|0;if(own(x,y)||maxH(j)<=lvE+.5)continue;const [cxs,cys]=toS(x+.5,y+.5);
     if(Math.abs(cxs-sx)>Wd+34*z)continue;
     const ytop=cys-16*z-(Math.max(elevIn(j,0,0),elevIn(j,1,0),elevIn(j,0,1),elevIn(j,1,1))-elevH(x+.5,y+.5))*HALF_PX*z;   // 윗면의 가장 높은 꼭짓점 y
     const fdn=Math.max(0,elevH(x+.5,y+.5)-lvE)*HALF_PX*z+30*z;   // 절벽 면은 윗면 아래로 한참 이어진다
@@ -270,7 +275,7 @@ function hillOcclude(e){
   }
   cx.restore();
   // 가려진 아군 병사는 윤곽만 흐리게 한 번 더 보여 준다 (선택·확인용)
-  if(hit&&!e.bush&&!e.f&&!e.lad)xrayPass(e,px,py,hits,bx0,by0,bx1-bx0,by1-by0,zb);
+  if(hit&&mine&&!e.bush&&!e.f&&!e.lad)xrayPass(e,px,py,hits,bx0,by0,bx1-bx0,by1-by0,zb);
 }
 // 벽 투시: 가려진 부분만 단색으로. (1) 개체를 따로 한 장에 그려 단색으로 칠하고 (2) 가린 타일들의 모양(마스크)과 겹치는 곳만 남겨 (3) 맨 위 벡터층에 얹는다.
 let XS=null,XM=null;

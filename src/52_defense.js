@@ -166,12 +166,9 @@ function defRefreshSaves(){
   list.forEach((s,i)=>{const o=document.createElement('option');o.value=i;const d=new Date(s.when);o.textContent=`디펜스 · 시드 ${s.cfg.seed} · 웨이브 ${s.wave} · ${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;sel.appendChild(o);});
 }
 (function(){
-  const grid=document.querySelector('#lobby .grid');if(!grid)return;
-  const lb=document.createElement('label');lb.className='wide';
-  lb.innerHTML='모드<select id="fMode"><option value="normal" selected>일반 — 적 기지와 대결</option><option value="defense">디펜스 — 사방에서 몰려오는 웨이브 막기</option></select><small id="fModeHint" style="opacity:.6;font-weight:400;line-height:1.4"></small>';
-  grid.insertBefore(lb,grid.firstChild);
+  const mode=$('fMode');if(!mode)return;
   const hint=()=>{$('fModeHint').textContent=$('fMode').value==='defense'?'웨이브 1~5: 한 방향 5×웨이브 / 6~10: 두 방향 4×웨이브+전차 또는 트럭 / 11~: 세 방향 3×웨이브+전차·트럭(5웨이브마다 전차 +1). 제압하면 자원 보상.':'';};
-  $('fMode').onchange=hint;hint();
+  mode.onchange=hint;hint();
   const go=$('bGo'),rw=document.createElement('div');rw.id='fSaveRow';rw.hidden=true;rw.className='row';rw.style.cssText='margin-top:8px;gap:6px';
   rw.innerHTML='<select id="fSave" style="flex:1"></select><button class="btn" id="bResume" type="button">불러오기</button><button class="btn" id="bSaveDel" type="button">삭제</button>';
   go.parentNode.insertBefore(rw,go.nextSibling);

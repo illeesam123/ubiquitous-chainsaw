@@ -55,7 +55,7 @@ function genMap(r){
   if(bio==='swamp')for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x;if(G.tt[i]===2)continue;
     if((G.tt[i-1]===2||G.tt[i+1]===2||G.tt[i-w]===2||G.tt[i+w]===2)&&r()<.55)G.dec[i]=3;}
   const SP=G.special;
-  if((!SP||SP==='canyon')&&!G.cfg.flat&&!G.cfg.noHills)genHills();   // cfg.flat: 에셋 추출용, cfg.noHills: 성능 모드
+  if((!SP||SP==='canyon'||SP==='mafia')&&!G.cfg.flat&&!G.cfg.noHills)genHills();   // cfg.flat: 에셋 추출용, cfg.noHills: 성능 모드
   if(SP==='superflat')return;
   if(SP==='urbanwar'){
     carveRiver(r,'h',.5,Math.max(6,Math.round(w/14)),.1);
@@ -125,4 +125,5 @@ function genMap(r){
   const nl=Math.floor(w/12);
   for(let k=0;k<nl;k++){let x=rint(r,4,w-5),y=rint(r,4,h-5);const dx=r()<.5?1:0,dy=1-dx,len=rint(r,4,9);
     for(let j=0;j<len;j++){if(r()<.88)addOb('fence',x,y);x+=dx;y+=dy;}}
+  if(SP==='mafia')genMafia(r);
 }

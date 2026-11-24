@@ -1,7 +1,7 @@
 // ================= 설정 탭: 소리(음량 조절)·화면·에셋 설정을 한 곳에 =================
 const SET={open:false,key:'trench.vol'};
-function setLoad(){try{const o=JSON.parse(localStorage.getItem(SET.key)||'{}');if(o.sfx>=0)SFX.vol=o.sfx;if(o.mus>=0)MUS.vol=o.mus;}catch(e){}}
-function setSave(){try{localStorage.setItem(SET.key,JSON.stringify({sfx:SFX.vol,mus:MUS.vol}));}catch(e){}}
+function setLoad(){try{const o=JSON.parse(localStorage.getItem(SET.key)||'{}');if(o.sfx>=0)SFX.vol=o.sfx;if(o.mus>=0)MUS.vol=o.mus;if(typeof o.hillShadows==='boolean')setHillShadowBake(o.hillShadows);}catch(e){}}
+function setSave(){try{localStorage.setItem(SET.key,JSON.stringify({sfx:SFX.vol,mus:MUS.vol,hillShadows:HILL_SHADOWS}));}catch(e){}}
 SFX.vol=.55;setLoad();
 const _sfxInitS=sfxInit;
 sfxInit=function(){_sfxInitS();if(SFX.master)SFX.master.gain.value=SFX.vol;};
@@ -32,6 +32,7 @@ function setOpen(v){
 <div class="sec"><b>화면</b>
   <div class="tg" id="tgRot"><span class="lb">화면 회전 ( , . )</span></div>
   <div class="tg" id="tgFx"><span class="lb">시각 효과 (색조·플레어·블룸)</span></div>
+  <div class="tg" id="tgHillShadow"><span class="lb">언덕 그림자 사전 굽기</span><button class="btn" id="bHillShadow" type="button" aria-pressed="true">켜짐</button></div>
 </div>
 <div class="sec"><b>에셋</b>
   <div class="tg" id="tgGh"><span class="lb">에셋 소스 (로컬 ⇄ GitHub)</span></div>
@@ -44,10 +45,12 @@ function setOpen(v){
   top.insertBefore(gear,$('bPause'));
   gear.onclick=()=>setOpen();$('bSetClose').onclick=()=>setOpen(false);
   const sync=()=>{$('vSfx').value=Math.round(SFX.vol*100);$('vMus').value=Math.round(MUS.vol*100);$('oSfx').textContent=Math.round(SFX.vol*100)+'%';$('oMus').textContent=Math.round(MUS.vol*100)+'%';};
+  const bHill=$('bHillShadow'),syncHill=()=>{bHill.classList.toggle('on',HILL_SHADOWS);bHill.setAttribute('aria-pressed',String(HILL_SHADOWS));bHill.textContent=HILL_SHADOWS?'켜짐':'꺼짐';bHill.title='언덕 높이 그림자 사전 굽기 '+(HILL_SHADOWS?'켜짐':'꺼짐');};
+  bHill.onclick=()=>{setHillShadowBake(!HILL_SHADOWS);syncHill();setSave();};
   $('vSfx').oninput=e=>{SFX.vol=e.target.value/100;sfxInit();if(SFX.master)SFX.master.gain.value=SFX.vol;sync();setSave();};
   $('vSfx').onchange=()=>sfx('beep');
   $('vMus').oninput=e=>{MUS.vol=e.target.value/100;sync();setSave();};
-  sync();
+  sync();syncHill();
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&SET.open){setOpen(false);return;}if(e.target&&/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;if(e.key==='o'||e.key==='O')setOpen();else if(e.key==='Escape'&&SET.open)setOpen(false);});
   document.addEventListener('pointerdown',e=>{if(SET.open&&!e.target.closest('#settings,#bSet'))setOpen(false);},true);
 })();

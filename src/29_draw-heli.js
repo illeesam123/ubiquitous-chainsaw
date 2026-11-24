@@ -40,15 +40,18 @@ function drawHeliPose(ps,col){
   cx.strokeStyle='#5d6240';cx.lineWidth=5*z;cx.beginPath();cx.moveTo(-ux*10*z,-uy*10*z+1*z);cx.lineTo(-ux*38*z,-uy*38*z-2*z);cx.stroke();
   cx.fillStyle='#70764b';cx.beginPath();cx.moveTo(-ux*34*z,-uy*34*z-1*z);cx.lineTo(-ux*43*z,-uy*43*z-12*z);cx.lineTo(-ux*45*z,-uy*45*z-9*z);cx.lineTo(-ux*39*z,-uy*39*z+3*z);cx.closePath();cx.fill();
   cx.strokeStyle='rgba(30,32,25,.55)';cx.lineWidth=1.4*z;cx.beginPath();cx.moveTo(-ux*44*z,-uy*44*z-8*z+Math.sin(rot*1.7)*7*z);cx.lineTo(-ux*44*z,-uy*44*z-8*z-Math.sin(rot*1.7)*7*z);cx.stroke();
-  // 동체
+  // 동체: 둥근 수송 헬기 몸체, 분리된 조종석 창, 미닫이문과 하부 그림자를 더해 방향을 쉽게 읽는다.
   cx.save();cx.translate(0,-2*z);cx.rotate(Math.atan2(uy,ux));
-  cx.fillStyle='#7c8352';cx.beginPath();cx.ellipse(0,0,19*z,9.5*z,0,0,6.3);cx.fill();
-  cx.fillStyle='#5f6640';cx.beginPath();cx.ellipse(0,3.5*z,18*z,6*z,0,0,3.15);cx.fill();
-  cx.fillStyle='#8f9760';cx.beginPath();cx.ellipse(-2*z,-3.5*z,14*z,4*z,0,Math.PI,0);cx.fill();
-  cx.fillStyle='#a9d4e6';cx.beginPath();cx.ellipse(11*z,-1*z,7*z,6*z,0,-1.9,1.9);cx.closePath();cx.fill();
-  cx.fillStyle='rgba(255,255,255,.55)';cx.beginPath();cx.ellipse(12*z,-3*z,3*z,1.8*z,.4,0,6.3);cx.fill();
-  cx.fillStyle=col;cx.fillRect(-12*z,-1.5*z,13*z,3*z);
-  cx.fillStyle='#d9d8cc';cx.fillRect(-4*z,-8*z+2.5*z,1.2*z,0);
+  cx.fillStyle='rgba(0,0,0,.22)';cx.beginPath();cx.ellipse(0,5*z,18*z,5.5*z,0,0,6.3);cx.fill();
+  cx.fillStyle='#626944';cx.beginPath();cx.ellipse(-1*z,1.5*z,20*z,9*z,0,0,6.3);cx.fill();
+  cx.fillStyle='#858d59';cx.beginPath();cx.ellipse(-2*z,-1.5*z,17*z,8*z,0,Math.PI,6.3);cx.fill();
+  cx.fillStyle='#485238';cx.beginPath();cx.ellipse(-6*z,1*z,8*z,7*z,0,0,6.3);cx.fill();
+  cx.fillStyle='#a9d4e6';cx.beginPath();cx.ellipse(11*z,-1*z,7*z,5.6*z,0,-1.9,1.9);cx.closePath();cx.fill();
+  cx.strokeStyle='rgba(35,45,48,.65)';cx.lineWidth=.8*z;cx.beginPath();cx.moveTo(10*z,-6*z);cx.lineTo(10*z,4*z);cx.stroke();
+  cx.fillStyle='rgba(255,255,255,.52)';cx.beginPath();cx.ellipse(12*z,-3*z,2.7*z,1.4*z,.4,0,6.3);cx.fill();
+  cx.fillStyle=col;cx.fillRect(-10*z,2*z,12*z,2.2*z);
+  cx.strokeStyle='rgba(33,38,27,.65)';cx.lineWidth=.8*z;cx.strokeRect(-7*z,-3*z,7*z,7*z);
+  cx.fillStyle='#d8d7c8';cx.fillRect(-5*z,-6*z,1.2*z,1.1*z);
   cx.restore();
   // 점멸 항법등
   const blink=((tt*1.6)%1)<.2;cx.fillStyle=blink?'#ff4a3a':'#5a1f1a';cx.beginPath();cx.arc(-ux*40*z,-uy*40*z-6*z,1.7*z,0,6.3);cx.fill();

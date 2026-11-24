@@ -1,10 +1,11 @@
-// ================= 특수 시드 (superflat · urbanwar · coast · mineshaft · canyon) =================
+// ================= 특수 시드 (superflat · urbanwar · coast · mineshaft · canyon · mafia) =================
 const SPECIAL={
   superflat:{n:'Superflat',desc:'드넓게 펼쳐진 대평원. 장애물도 자원도 없고, 모두가 동등하게 빈곤합니다.'},
   urbanwar:{n:'Urban War',desc:'건물로 가득 찬 대도시와 그 사이를 가르는 강. 다리 몇 개가 유일한 통로입니다.'},
   coast:{n:'Coast',desc:'여러 갈래의 넓은 강이 사방을 가로막습니다. 차량은 다리 없이는 무용지물입니다.'},
   mineshaft:{n:'Mineshaft',desc:'과거 거대한 채굴지. 엄청난 크기의 지하 동굴망이 이미 존재합니다.'},
-  canyon:{n:'Canyon',desc:'드넓은 협곡의 양 끝에 조그마한 오두막 마을이 있습니다. 협곡에 올라서 우위를 점하거나, 빠르게 침투하여 적군을 처치하세요.'}
+  canyon:{n:'Canyon',desc:'드넓은 협곡의 양 끝에 조그마한 오두막 마을이 있습니다. 협곡에 올라서 우위를 점하거나, 빠르게 침투하여 적군을 처치하세요.'},
+  mafia:{n:'Mafia',desc:'중앙 아파트 지구와 3단계 감시탑을 호전적인 민간인과 자경단이 지킵니다. 모서리 절벽과 곳곳의 대형 동굴도 주의하세요.'}
 };
 // 협곡 중심선(가로 방향, 완만하게 굽이침)
 function canyonY(x){
@@ -109,6 +110,27 @@ function genMine(r){
       }
     }
   }
+}
+function genMafia(r){
+  const w=G.w,h=G.h,cx=Math.floor(w/2),cy=Math.floor(h/2),R=14;
+  // 중심 구역은 아파트 네 동과 감시탑이 항상 놓이도록 평탄하게 비운다.
+  for(const o of [...G.obSet])if(o.x<cx+R&&o.x+o.size>cx-R&&o.y<cy+R&&o.y+o.size>cy-R)removeOb(o);
+  for(let y=cy-R;y<=cy+R;y++)for(let x=cx-R;x<=cx+R;x++){
+    if(x<1||y<1||x>=w-1||y>=h-1)continue;const i=y*w+x;
+    G.tt[i]=0;G.mm[i]=0;G.ground[i]=tileColor(G.biome,0,hsh(x,y));G.gq[i]=Math.min(3,(hsh(x,y)*4)|0);
+    G.dec[i]=0;G.trench[i]=0;G.trenchHP[i]=0;G.road[i]=0;G.brush[i]=0;G.under[i]=0;G.mouth[i]=0;G.up[i]=0;G.lv[i]=GROUND_LV;G.sl[i]=0;
+  }
+  G.trans=G.trans.filter(i=>Math.hypot(i%w-cx,Math.floor(i/w)-cy)>R);
+  G.mafia={x:cx+.5,y:cy+.5};
+  for(const [dx,dy] of [[-4,-4],[1,-4],[-4,1],[1,1]])addOb('apartment',cx+dx,cy+dy);
+  const tower=addOb('tower',cx,cy,-1);if(tower){tower.lv=2;tower.natural=true;tower.team=-1;tower.occTeam=-1;}
+  // 네 모서리마다 3칸 폭으로 세 단의 절벽을 만든다.
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const edge=Math.max(Math.min(x,w-1-x),Math.min(y,h-1-y));if(edge>=9)continue;
+    const height=6-2*Math.floor(edge/3),i=y*w+x;
+    G.lv[i]=GROUND_LV+height;G.sl[i]=0;G.tt[i]=0;G.mm[i]=0;G.road[i]=0;
+  }
+  G.hill=true;
 }
 function specialHint(){
   const e=$('spHint');if(!e)return;

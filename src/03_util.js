@@ -21,6 +21,7 @@ function tipReg(kind,fn){TIPREG[kind]=fn;}
 function tipGet(key){const p=String(key).split(':'),f=TIPREG[p[0]];if(!f)return null;try{return f(p[1],p[2]);}catch(e){return null;}}
 function statLine(stats){return (stats||[]).filter(s=>s&&s[1]!==undefined&&s[1]!==null&&s[1]!=='').map(s=>`${s[0]} ${s[1]}`).join(' · ');}
 function tipStats(key){const d=tipGet(key);return d?statLine(d.stats):'';}
+function statRows(key){const d=tipGet(key);return d?(d.stats||[]).filter(x=>x&&x[1]!==undefined&&x[1]!=='').map(x=>`${x[0]} ${x[1]}`).join('<br>'):'';}
 function tipAttr(key){return `data-tip="${key}"`;}
 (function(){
   const el=document.createElement('div');el.id='tip';el.hidden=true;document.body.appendChild(el);
@@ -29,7 +30,7 @@ function tipAttr(key){return `data-tip="${key}"`;}
   function show(k,e){
     const d=tipGet(k);if(!d||(!d.d&&!(d.stats&&d.stats.length))){el.hidden=true;return;}
     if(cur!==k){cur=k;
-      el.innerHTML=`<b${d.col?` style="color:${d.col}"`:''}>${esc(d.t||'')}</b>${d.stats&&d.stats.length?`<div class="ts">${esc(statLine(d.stats))}</div>`:''}${d.d?`<div class="td">${esc(d.d)}</div>`:''}${d.ex?`<div class="ts">${esc(d.ex)}</div>`:''}`;}
+      el.innerHTML=`<b${d.col?` style="color:${d.col}"`:''}>${esc(d.t||'')}</b>${d.stats&&d.stats.length?`<div class="ts">${d.stats.filter(x=>x&&x[1]!==undefined&&x[1]!=='').map(x=>`<div><span>${esc(x[0])}</span> ${esc(x[1])}</div>`).join('')}</div>`:''}${d.d?`<div class="td">${esc(d.d)}</div>`:''}${d.ex?`<div class="ts">${esc(d.ex)}</div>`:''}`;}
     el.hidden=false;
     const W=innerWidth,H=innerHeight,w=el.offsetWidth,h=el.offsetHeight;
     let x=e.clientX+14,y=e.clientY+16;if(x+w>W-6)x=Math.max(6,e.clientX-w-14);if(y+h>H-6)y=Math.max(6,e.clientY-h-12);
@@ -56,12 +57,10 @@ const OBDESC={
   truck:'병력과 보급품을 실어 나르는 수송트럭. 가까운 아군 참호에 탄약을 공급합니다.',
   heli:'병력을 태워 빠르게 이동시키는 수송 헬리콥터.'
 };
+// 건물·차량 공통 능력치 순서: 체력 | 주둔 | 피해(단일/광역) | 사거리 | 건설 | 재료
+function dmgText(one,area){return [one?'단일 '+one:'',area?'광역 '+area:''].filter(Boolean).join(' / ')||'—';}
 tipReg('ob',id=>{
-  const d=OB[id],v=VEH[id],c=Object.entries(d.cost||{}).map(([k,n])=>`${RN[k]} ${n}`).join(' · '),g=d.gun,s=[];
-  s.push(['체력',v?v.hp:d.hp]);
-  if(v){s.push(['속도',v.speed]);if(v.range)s.push(['사거리',v.range]);if(v.damage)s.push(['피해',v.damage]);if(v.cargo)s.push(['화물',v.cargo]);if(v.seats)s.push(['탑승',v.seats+'명']);s.push(['승무원',v.crew+'명']);}
-  else{if(d.slots)s.push(['주둔',d.slots+'명']);if(g)s.push(['사격',`피해 ${g.dmg} · ${g.int}초 · 사거리 ${g.range}`]);
-    if(d.shell)s.push(['포격',`피해 ${d.shell} · ${d.interval}초 · 사거리 ${d.range}`]);if(d.beds)s.push(['병상',d.beds]);}
-  s.push(['건설',d.build+'초']);
-  return {t:d.n,stats:s,d:OBDESC[id]||d.desc,ex:c?'비용 '+c:''};
+  const d=OB[id],v=VEH[id],g=d.gun,c=Object.entries(d.cost||{}).map(([k,n])=>`${RN[k]} ${n}`).join(' · ');
+  const one=v?v.damage:g?g.dmg:0,area=v?(v.blast?v.damage:0):d.shell||0,rng=v?v.range:g?g.range:d.range;
+  return {t:d.n,stats:[['체력',v?v.hp:d.hp],['주둔',v?(v.seats?v.seats+'명 탑승':'—'):d.slots?d.slots+'명':'—'],['피해',dmgText(one,area)],['사거리',rng||'—'],['건설',d.build+'초'],['재료',c]],d:OBDESC[id]||d.desc};
 });

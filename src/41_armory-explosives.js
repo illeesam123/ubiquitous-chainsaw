@@ -3,7 +3,7 @@ const EXP={
   smoke:{n:'연막탄',col:'#b9bcc0',cost:{money:14,metal:1},desc:'아군 부상병이 떨어뜨려 시야를 가림',st:[['지속','14초']]},
   flash:{n:'섬광탄',col:'#fff6c8',cost:{money:20,metal:1},desc:'적 병사를 기절시킵니다(사격 불가·둔화).',st:[['기절','약 4초'],['반경','3.4칸']]},
   molotov:{n:'화염병',col:'#ff8a2a',cost:{money:16,wood:2},desc:'불길을 일으켜 지나가는 병사를 태우고 덤불을 소각합니다.',st:[['지속','7초'],['반경','1.5칸']]},
-  frag:{n:'세열수류탄',col:'#5f7a3a',cost:{money:26,metal:2},desc:'폭발로 범위 안의 병사·차량·구조물에 피해를 줍니다. 참호 속 병사는 피해가 줄어듭니다.',st:[['피해','최대 85'],['반경','1.9칸']]}
+  frag:{n:'세열수류탄',col:'#5f7a3a',cost:{money:26,metal:2},desc:'폭발로 범위 안의 병사·차량·구조물에 피해를 줍니다. 참호 속 병사는 피해가 줄어듭니다.',st:[['피해','광역 최대 85'],['반경','1.9칸']]}
 };
 const EXPK=['smoke','flash','molotov','frag'];
 tipReg('exp',k=>({t:EXP[k].n,col:EXP[k].col,stats:EXP[k].st,d:EXP[k].desc,ex:'비용 '+costText(EXP[k].cost)}));

@@ -12,7 +12,7 @@ const WEAP={
   at:{n:'대전차포',col:'#d86f6f',price:140,dmg:70,int:5.5,range:9,cost:4,acc:.85,vdm:5,blast:1.45,desc:'장전이 매우 느리지만 중거리에서 범위 공격. 전차에게 주는 피해는 5배입니다.'}
 };
 const WEAPK=['rifle','sling','pistol','assault','sniper','lmg','at'],WEAPBUY=WEAPK.slice(1);
-tipReg('weap',k=>{const w=WEAP[k],s=[['피해',w.dmg],['간격',w.int+'초'],['사거리',w.range],['명중',Math.round(w.acc*100)+'%']];if(w.mag)s.push(['탄창',w.mag+'발/재장전 '+w.reload+'초']);if(w.vdm)s.push(['차량',w.vdm+'배']);if(w.blast)s.push(['범위',w.blast+'칸']);return {t:w.n,col:w.col,stats:s,d:w.desc,ex:w.price?'가격 달러 '+w.price+' / 정':''};});
+tipReg('weap',k=>{const w=WEAP[k],s=[['피해',dmgText(w.dmg,w.blast?w.dmg:0)],['사거리',w.range],['간격',w.int+'초'],['명중',Math.round(w.acc*100)+'%']];if(w.mag)s.push(['탄창',w.mag+'발/재장전 '+w.reload+'초']);if(w.vdm)s.push(['차량',w.vdm+'배']);if(w.blast)s.push(['범위',w.blast+'칸']);if(w.price)s.push(['재료','달러 '+w.price+' / 정']);return {t:w.n,col:w.col,stats:s,d:w.desc};});
 Object.assign(GUNS,{
   rifle:{n:'소총',look:'rifle',tip:13},sling:{n:'새총',look:'sling',tip:7},pistol:{n:'권총',look:'pistol',tip:9.5},
   assault:{n:'돌격소총',look:'assault',tip:15},sniper:{n:'저격총',look:'sniper',tip:20},lmg:{n:'경기관총',look:'lmg',tip:15},at:{n:'대전차포',look:'at',tip:16}
@@ -145,16 +145,16 @@ const _ssW=stepShells;stepShells=function(dt){_ssW(dt);stepWeapons(dt);};
     const er=shopAddWeapon(0,b.closest('.shWpnRow').dataset.k,+b.dataset.n);if(er)toast(er);renderShop(true);
   });
   const st=document.createElement('style');
-  st.textContent=`#armMenu{position:absolute;top:56px;right:12px;z-index:26;width:340px;max-height:calc(100% - 80px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 28px rgba(0,0,0,.5);padding:10px 12px;font-size:12px;display:flex;flex-direction:column;gap:8px}
+  st.textContent=`#armMenu{position:absolute;top:56px;right:12px;z-index:26;width:400px;max-height:calc(100% - 80px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 28px rgba(0,0,0,.5);padding:10px 12px;font-size:12px;display:flex;flex-direction:column;gap:8px}
 #armMenu[hidden]{display:none}#armMenu h3{margin:0;font:600 13px var(--body);display:flex;justify-content:space-between;align-items:center}
 #armMenu table{width:100%;border-collapse:collapse}#armMenu td,#armMenu th{padding:3px 4px;text-align:left;border-bottom:1px solid var(--line)}#armMenu th{color:var(--dim);font-weight:600}
-#armMenu .rw{display:flex;gap:6px;align-items:center}#armMenu select,#armMenu input{min-width:0}#armMenu .sw{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center}
+#armMenu .amBuy{padding:1px 6px;margin-left:3px;font-size:11px}#armMenu .rw{display:flex;gap:6px;align-items:center}#armMenu select,#armMenu input{min-width:0}#armMenu .sw{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center}
 #armMenu .job{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center;padding:4px 0;border-bottom:1px solid var(--line)}`;
   document.head.appendChild(st);
   const m=document.createElement('aside');m.id='armMenu';m.hidden=true;
   m.innerHTML=`<h3><span>🔫 무기고</span><button class="btn" id="amX" type="button">닫기 ✕</button></h3>
 <div id="amInfo" style="color:var(--dim)"></div>
-<table><thead><tr><th>무기</th><th>병사</th><th>재고</th></tr></thead><tbody id="amTab"></tbody></table>
+<table><thead><tr><th>무기</th><th>병사</th><th>재고</th><th>구매</th></tr></thead><tbody id="amTab"></tbody></table>
 <div><b>무기 교체</b><div class="sw" style="margin-top:6px"><select id="amFrom"></select><span>→</span><select id="amTo"></select></div>
 <div class="rw" style="margin-top:6px"><label>인원 <input type="number" id="amN" min="1" value="1" style="width:64px"></label><button class="btn" id="amGo" type="button" style="flex:1">교체 주문</button></div>
 <small style="color:var(--dim)">무기고 ${SWAP.range}칸 안의 대기 병사가 하나씩 가서 헌 무기를 반납하고 새 무기를 받습니다. 새 무기는 헬기로 구매하세요.</small></div>
@@ -163,6 +163,7 @@ const _ssW=stepShells;stepShells=function(dt){_ssW(dt);stepWeapons(dt);};
   const mk=(sel,items)=>{sel.innerHTML=items;};
   m.addEventListener('click',e=>{
     if(e.target.id==='amX'){armMenu(false);return;}
+    const bb=e.target.closest('button[data-buy]');if(bb&&G){const [kd,k]=bb.dataset.buy.split(':'),n=+bb.dataset.n;const er=kd==='weap'?shopAddWeapon(0,k,n):shopAddExp(0,k,n);if(er)toast(er);else toast((kd==='weap'?WEAP[k].n:EXP[k].n)+' '+n+'개를 주문했습니다 (헬기로 도착)','ok');amRender(true);try{renderShop(true);}catch(_){}return;}
     if(e.target.id==='amGo'&&G){const er=swapAdd(0,$('amFrom').value,$('amTo').value,Math.max(1,+$('amN').value|0));if(er)toast(er);else toast('교체 주문을 등록했습니다','ok');amRender(true);}
     const c=e.target.closest('button[data-cancel]');if(c&&G){swapCancel(0,+c.dataset.cancel);amRender(true);}
   });
@@ -177,7 +178,7 @@ const _ssW=stepShells;stepShells=function(dt){_ssW(dt);stepWeapons(dt);};
     const sig=JSON.stringify([A,cnt,WEAPK.map(k=>wst(T)[k]|0),jobs.map(s=>[s.id,s.left,s.fly]),$('amFrom').value,$('amTo').value]);
     if(!force&&sig===amSig)return;amSig=sig;
     $('amInfo').textContent=A?`무기고 ${A}동`:'🔒 무기고를 건설해야 합니다 (건설 시설 → 무기고).';
-    $('amTab').innerHTML=WEAPK.map(k=>`<tr ${tipAttr('weap:'+k)}><td><b style="color:${WEAP[k].col}">${WEAP[k].n}</b></td><td>${cnt[k]}명</td><td>${k==='rifle'?'∞':stk[k]}</td></tr>`).join('');
+    $('amTab').innerHTML=WEAPK.map(k=>`<tr ${tipAttr('weap:'+k)}><td><b style="color:${WEAP[k].col}">${WEAP[k].n}</b></td><td>${cnt[k]}명</td><td>${k==='rifle'?'∞':stk[k]}</td><td>${k==='rifle'?'—':`<button class="btn amBuy" data-buy="weap:${k}" data-n="1" ${A?'':'disabled'}>+1</button><button class="btn amBuy" data-buy="weap:${k}" data-n="5" ${A?'':'disabled'}>+5</button>`}</td></tr>`).join('');
     sel0('amFrom',WEAPK.map(k=>`<option value="${k}">${WEAP[k].n} (${cnt[k]}명)</option>`).join(''));
     sel0('amTo',WEAPK.map(k=>`<option value="${k}">${WEAP[k].n} (${cnt[k]}명)${k==='rifle'?'':' · 재고 '+stk[k]}</option>`).join(''));
     if($('amTo').value===$('amFrom').value&&!$('amFrom').dataset.touched){const o=[...$('amTo').options].find(x=>x.value!==$('amFrom').value&&x.value!=='rifle');if(o)$('amTo').value=o.value;}

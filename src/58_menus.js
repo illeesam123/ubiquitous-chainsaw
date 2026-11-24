@@ -1,5 +1,5 @@
 // ================= 메뉴 정리: 헬기 상점 기능별 묶음 + 무기고 클릭 메뉴(투척물 재고 통합) =================
-// 1) 헬기 상점: 보급 / 무장 / 주문 내역 세 묶음. 머리글을 눌러야 펼쳐진다 (한 번에 하나만).
+// 1) 헬기 상점: 보급 / 무기 / 폭발물 / 주문 내역 묶음. 머리글을 눌러야 펼쳐진다 (한 번에 하나만).
 (function(){
   const body=document.querySelector('#shopDrawer .shopBody');if(!body)return;
   const st=document.createElement('style');
@@ -11,7 +11,7 @@
 .shGB section{border:0;background:none;padding:0}.shGrp.one .shGB section>h3{display:none}`;
   document.head.appendChild(st);
   const find=(t)=>[...body.children].find(s=>s.tagName==='SECTION'&&s.querySelector('h3')&&s.querySelector('h3').textContent.trim()===t);
-  const GR=[['📦 보급',['병력 충원','자원 교환'],'병사 · 자원 교환'],['🔫 무장',['총기','폭발물'],'총기 · 폭발물'],['📋 주문 내역',['주문 내역'],'']];
+  const GR=[['📦 보급',['병력 충원','자원 교환'],'병사 · 자원 교환'],['🔫 무기',['총기'],'총기 7종'],['💣 폭발물',['폭발물'],'투척물'],['📋 주문 내역',['주문 내역'],'']];
   const grps=[];
   for(const [name,list,sub] of GR){
     const secs=list.map(find).filter(Boolean);if(!secs.length)continue;
@@ -21,6 +21,7 @@
     g.querySelector('.shGH').addEventListener('click',()=>{const was=g.classList.contains('open');grps.forEach(x=>x.classList.remove('open'));if(!was)g.classList.add('open');});
     grps.push(g);
   }
+  {const gw=grps.find(g=>g.querySelector('#shWpn')),ge=grps.find(g=>g.querySelector('#shExp'));if(gw&&ge&&(ge.compareDocumentPosition(gw)&Node.DOCUMENT_POSITION_FOLLOWING))ge.parentNode.insertBefore(gw,ge);}
   // 주문 내역 머리글에 건수를 표시
   const cartSmall=grps[grps.length-1]&&grps[grps.length-1].querySelector('.shGH small');
   setInterval(()=>{if(!cartSmall||typeof G==='undefined'||!G||!G.teams)return;const n=G.teams[0].order.lines.length;cartSmall.textContent=n?`${n}건 대기`:'비어 있음';},500);
@@ -46,7 +47,7 @@ updateExpUI=function(){
     _ar(force);
     if(m.hidden||!G)return;
     const A=armories(0),t={};for(const k of EXPK)t[k]=0;for(const o of A){const s=armStock(o);for(const k of EXPK)t[k]+=s[k];}
-    d.innerHTML=`<b>투척물</b><table style="margin-top:4px"><thead><tr><th>종류</th><th>재고</th><th>효과</th></tr></thead><tbody>${EXPK.map(k=>`<tr ${tipAttr('exp:'+k)}><td><b style="color:${EXP[k].col}">${EXP[k].n}</b></td><td>${t[k]}</td><td style="color:var(--dim);font-size:11px">${tipStats('exp:'+k)}</td></tr>`).join('')}</tbody></table><small style="color:var(--dim)">입고 대기 ${pendingExp(G.teams[0])} · 여유 ${armFree(0)}칸 · 무기고 ${ARM.range}칸 안의 대기 병사가 가까운 순으로 1개씩 수령합니다. 구매는 헬기 상점 → 무장.</small>`;
+    d.innerHTML=`<b>투척물</b><table style="margin-top:4px"><thead><tr><th>종류</th><th>재고</th><th>효과</th><th>구매</th></tr></thead><tbody>${EXPK.map(k=>`<tr ${tipAttr('exp:'+k)}><td><b style="color:${EXP[k].col}">${EXP[k].n}</b></td><td>${t[k]}</td><td style="color:var(--dim);font-size:11px">${tipStats('exp:'+k)}</td><td><button class="btn amBuy" data-buy="exp:${k}" data-n="1" ${A.length?'':'disabled'}>+1</button><button class="btn amBuy" data-buy="exp:${k}" data-n="5" ${A.length?'':'disabled'}>+5</button></td></tr>`).join('')}</tbody></table><small style="color:var(--dim)">입고 대기 ${pendingExp(G.teams[0])} · 여유 ${armFree(0)}칸 · 무기고 ${ARM.range}칸 안의 대기 병사가 가까운 순으로 1개씩 수령합니다. 구매 버튼을 누르면 헬기 주문에 추가됩니다(헬기 상점의 무기·폭발물과 동일).</small>`;
   };
 })();
 // 3) 클릭 처리: 해체 도구가 아닐 때 시설을 누르면 메뉴가 뜬다 (22_input.js 에서 호출)

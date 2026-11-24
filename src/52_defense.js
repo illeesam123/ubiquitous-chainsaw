@@ -3,6 +3,14 @@
 const DEF={first:75,interval:90,aiTick:1.4,saveKey:'trench.saves',maxSaves:12,workMul:1.8,hill:2.6};   // interval: 웨이브를 제압한 뒤 다음 웨이브까지 / workMul: 해체·채굴 속도 / hill: 언덕 사거리 보정 배수
 const DEF_SIDE=['북동','남동','남서','북서'];   // 월드 가장자리 y=0 / x=max / y=max / x=0 (기본 화면 기준)
 const isDef=()=>!!(G&&G.cfg&&G.cfg.mode==='defense');
+function defTrackReinforcement(u){
+  if(!u||u.team!==1||!isDef()||!G.def)return u;
+  const W=[...G.def.waves].reverse().find(w=>!w.cleared);
+  if(W){u.wv=W.n;W.ids.add(u.id);W.total++;}
+  return u;
+}
+const _mkUnitDefD=mkUnit;
+mkUnit=function(team,x,y){return defTrackReinforcement(_mkUnitDefD(team,x,y));};
 function waveSpec(n){
   if(n<=5)return {dirs:1,per:n*5,tanks:0,trucks:0,either:0};
   if(n<=10)return {dirs:2,per:n*4,tanks:0,trucks:0,either:1};
@@ -43,7 +51,7 @@ function spawnWave(n){
   toast(`⚔ 웨이브 ${n} — ${sides.map(s=>DEF_SIDE[s]).join('·')}쪽에서 적 ${W.total}기 접근!`);
   sfx('beep');
 }
-function waveAlive(W){let c=0;for(const id of W.ids){const e=G.uid.get(id)||G.vehicles.find(v=>v.id===id);if(e&&!e.dead)c++;}return c;}
+function waveAlive(W){let c=0;for(const id of W.ids){const e=G.uid.get(id)||G.vehicles.find(v=>v.id===id);if(e&&!e.dead&&e.team!==0)c++;}return c;}
 function defAlive(){let c=0;for(const W of G.def.waves)if(!W.cleared)c+=waveAlive(W);return c;}
 // ---- 웨이브 AI: 가까운 아군 병사, 없으면 깃발을 향해 진격 ----
 function defCommand(W){

@@ -80,6 +80,21 @@ function genCivs(){
   G.civs=[];G.civsInit=true;
   if(G.special==='superflat'||G.special==='mineshaft')return;
   const rnd=mulberry(hashStr(G.cfg.seed+'#civ'));
+  if(G.special==='mafia'){
+    const home=G.mafia||{x:G.w/2,y:G.h/2},grp={cx:home.x,cy:home.y,R:11,tx:home.x,ty:home.y,tt:0,alert:0,ax:home.x,ay:home.y},hostile={};
+    for(const T of G.teams)hostile[T.id]=true;
+    const guns=['rifle','pistol','assault','sniper','lmg'],spots=[];
+    for(let ty=Math.floor(home.y-11);ty<=home.y+11;ty++)for(let tx=Math.floor(home.x-11);tx<=home.x+11;tx++)if(Math.hypot(tx+.5-home.x,ty+.5-home.y)>=3.8&&Math.hypot(tx+.5-home.x,ty+.5-home.y)<=11&&civOK(tx,ty))spots.push([tx,ty]);
+    for(let i=spots.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[spots[i],spots[j]]=[spots[j],spots[i]];}
+    for(let made=0;made<Math.min(44,spots.length);made++){
+      const [tx,ty]=spots[made];
+      const mil=made<26,gun=guns[Math.floor(rnd()*guns.length)];
+      G.civs.push({id:G.nextId++,team:9,civ:true,mil,x:tx+.5,y:ty+.5,hp:mil?40:60,max:mil?40:60,state:'idle',path:[],queue:[],task:null,gar:null,cd:rnd(),face:rnd()*6.28,anim:rnd()*6,wait:0,flash:0,sel:false,
+        armed:true,gun,item:null,mag:WEAP[gun].mag,rl:0,home:[tx+.5,ty+.5],mode:mil?'patrol':'shoot',mafiaHostile:!mil,tm:0,tgt:null,seen:{},hostile:mil?{}:Object.assign({},hostile),reveal:0,variant:Math.floor(rnd()*4),grp,off:[(rnd()-.5)*3,(rnd()-.5)*3]});
+      made++;
+    }
+    return;
+  }
   const vs=villageCells().filter(v=>G.flags.every(f=>Math.hypot(f.x-v.x,f.y-v.y)>14));
   const urban=G.special==='urbanwar';
   for(const v of vs){
@@ -194,7 +209,7 @@ function stepCivs(dt){
     }else if(c.mode==='melee'||c.mode==='shoot'){
       let t=null,bd=1e9;
       for(const u of G.units){if(u.dead||u.surr>0||u.state==='crew'||u.lay||!c.hostile[u.team])continue;const d=Math.hypot(u.x-c.x,u.y-c.y);if(d<bd){bd=d;t=u;}}
-      if(!t||bd>14){c.mode='wander';c.tm=1;c.seen={};c.hostile={};}
+      if(!t||bd>14&&!c.mafiaHostile){c.mode='wander';c.tm=1;c.seen={};c.hostile={};}
       else{
         hostile=true;
         if(c.mode==='melee'){

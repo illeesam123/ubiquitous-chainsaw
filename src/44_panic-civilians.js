@@ -93,6 +93,7 @@ function genCivs(){
         armed:true,gun,item:null,mag:WEAP[gun].mag,rl:0,home:[tx+.5,ty+.5],mode:mil?'patrol':'shoot',mafiaHostile:!mil,tm:0,tgt:null,seen:{},hostile:mil?{}:Object.assign({},hostile),reveal:0,variant:Math.floor(rnd()*4),grp,off:[(rnd()-.5)*3,(rnd()-.5)*3]});
       made++;
     }
+    genMafiaMilitia(rnd,home);
     return;
   }
   const vs=villageCells().filter(v=>G.flags.every(f=>Math.hypot(f.x-v.x,f.y-v.y)>14));

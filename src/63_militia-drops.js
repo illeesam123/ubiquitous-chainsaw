@@ -36,7 +36,7 @@ function milStep(c,dt){
   const g=c.grp,w=WEAP[c.gun],rg=milRange(c);
   if(c.rl>0)c.rl-=dt;
   if(g.stamp!==G.time){g.stamp=G.time;g.tt-=dt;g.alert=Math.max(0,g.alert-dt);
-    if(g.tt<=0){g.tt=5+Math.random()*5;for(let i=0;i<8;i++){const a=Math.random()*6.283,r=Math.random()*g.R*.8,x=g.cx+Math.cos(a)*r,y=g.cy+Math.sin(a)*r;if(civOK(Math.floor(x),Math.floor(y))){g.tx=x;g.ty=y;break;}}}}
+    if(g.tt<=0&&!g.fixed){g.tt=5+Math.random()*5;for(let i=0;i<8;i++){const a=Math.random()*6.283,r=Math.random()*g.R*.8,x=g.cx+Math.cos(a)*r,y=g.cy+Math.sin(a)*r;if(civOK(Math.floor(x),Math.floor(y))){g.tx=x;g.ty=y;break;}}}}
   c.sc=(c.sc||0)-dt;
   if(c.sc<=0||!c.tg||c.tg.dead||c.tg.state==='crew'||c.tg.surr>0){c.sc=.35;c.tg=milTarget(c);if(!c.tg)c.hostile={};}
   const t=c.tg,dc=Math.hypot(c.x-g.cx,c.y-g.cy);
@@ -65,7 +65,7 @@ function milStep(c,dt){
 function addDrop(x,y,kind,k){
   G.drops=G.drops||[];
   G.drops.push({id:G.nextId++,drop:true,kind,k,x:x+(Math.random()-.5)*.5,y:y+(Math.random()-.5)*.5,rot:(Math.random()-.5)*.9,t:0});
-  if(G.drops.length>60)G.drops.shift();
+  if(G.drops.length>(G.special==='mafia'?160:60))G.drops.shift();
 }
 function addDrops(x,y,gun,item){
   if(gun&&gun!=='rifle'&&WEAP[gun])addDrop(x,y,'gun',gun);
@@ -125,3 +125,50 @@ drawCiv=function(c){
   else if(c.mil&&c.tg){cx.fillStyle='#ff5a44';cx.font=`bold ${Math.round(11*z)}px sans-serif`;cx.textAlign='center';cx.fillText('!',sx,sy-30*z);cx.textAlign='start';}
   if(c.hp<c.max)hpBar(sx,sy-27*z,14*z,Math.max(0,c.hp/c.max),'#d0583f');
 };
+
+// ================= Mafia 시드: 자경단이 맵의 주인 =================
+// 아파트·감시탑·각종 구조물에 거점 무리, 중심부 둘레에 저격수·경기관총 사수 대군, 도시마다 순찰 무리,
+// 중심 지구 밖 들판의 순찰 무리. 본진까지 진군하지는 않는다. (거점 무리는 'fixed' : 제자리 경계)
+function milMk(rnd,grp,x,y,gun,item){
+  const g=WEAP[gun],c={id:G.nextId++,team:9,civ:true,mil:true,x:x+.5,y:y+.5,hp:MIL.hp,max:MIL.hp,state:'idle',path:[],queue:[],task:null,gar:null,cd:rnd(),face:rnd()*6.28,anim:rnd()*6,wait:0,flash:0,sel:false,
+    armed:true,gun,item:item||null,mag:g.mag,rl:0,home:[grp.cx,grp.cy],mode:'patrol',tm:0,tgt:null,seen:{},hostile:{},reveal:0,grp,off:[(rnd()-.5)*(grp.fixed?1.2:3),(rnd()-.5)*(grp.fixed?1.2:3)]};
+  G.civs.push(c);grp.n=(grp.n||0)+1;return c;
+}
+function milGroup(cx,cy,R,o){const g=Object.assign({cx,cy,R,tx:cx,ty:cy,tt:0,alert:0,ax:0,ay:0,n:0},o||{});G.militia.push(g);return g;}
+function milSpot(rnd,cx,cy,rad){for(let t=0;t<24;t++){const x=Math.floor(cx+(rnd()-.5)*2*rad),y=Math.floor(cy+(rnd()-.5)*2*rad);if(civOK(x,y))return [x,y];}return null;}
+function milFill(rnd,grp,guns,rad,molo){
+  let n=0;for(const gun of guns){const p=milSpot(rnd,grp.cx,grp.cy,rad);if(!p)continue;milMk(rnd,grp,p[0],p[1],gun,molo&&rnd()<molo?'molotov':null);n++;}return n;
+}
+function milGuns(rnd,n,heavy){const o=[];for(let i=0;i<n;i++)o.push(heavy&&rnd()<heavy?(rnd()<.55?'sniper':'lmg'):milPick(rnd));return o;}
+function genMafiaMilitia(rnd,home){
+  G.militia=G.militia||[];
+  {const cg=G.civs.find(c=>c.mil&&c.grp);if(cg){cg.grp.n=G.civs.filter(c=>c.grp===cg.grp).length;G.militia.push(cg.grp);}}   // 중앙 무리도 소탕 대상에 포함
+  const hx=home.x,hy=home.y,teams=G.teams.length;
+  // 1) 아파트·감시탑 거점
+  for(const o of G.obSet){
+    if(!o.natural)continue;const sz=OB[o.type].size||1,cx=o.x+sz/2,cy=o.y+sz/2,center=Math.hypot(cx-hx,cy-hy)<16;
+    if(o.type==='apartment'){const g=milGroup(cx,cy,2.4,{fixed:true});milFill(rnd,g,['sniper','sniper','lmg','assault','assault','pistol','rifle'],sz/2+1.6,.5);}
+    else if(o.type==='tower'){const g=milGroup(cx,cy,1.8,{fixed:true});milFill(rnd,g,['sniper','sniper','lmg'],sz/2+1.4,0);}
+    else if(!center&&['house','shed','warehouse','ruin','bunker','mg','tower'].includes(o.type)&&G.civs.length<260&&rnd()<.22){
+      const g=milGroup(cx,cy,2.2,{fixed:true}),heavy=o.type==='bunker'||o.type==='mg'?.6:.15;
+      milFill(rnd,g,milGuns(rnd,2+Math.floor(rnd()*3),heavy),sz/2+1.8,.4);
+    }
+  }
+  // 2) 중심 지구 둘레: 저격수·경기관총 사수 대군
+  for(let k=0;k<22;k++){
+    const a=rnd()*6.283,r=11+rnd()*13,x=hx+Math.cos(a)*r,y=hy+Math.sin(a)*r;if(!civOK(Math.floor(x),Math.floor(y)))continue;
+    const g=milGroup(x,y,1.6,{fixed:true});milFill(rnd,g,k%5<3?['sniper','assault']:['lmg','lmg','pistol'],1.5,.3);
+  }
+  // 3) 도시마다 순찰 무리
+  for(const v of villageCells()){
+    if(Math.hypot(v.x-hx,v.y-hy)<14||G.flags.some(f=>Math.hypot(f.x-v.x,f.y-v.y)<=14))continue;
+    const g=milGroup(v.x,v.y,Math.min(9,5+v.n*.15)),n=5+Math.floor(rnd()*7);milFill(rnd,g,milGuns(rnd,n,.2),5,.5);
+  }
+  // 4) 중심 지구 밖 들판의 순찰 무리 (제자리 반경 안에서만 돌아다닌다. 본진으로 진군하지 않는다)
+  for(let k=0;k<Math.min(14,teams*4);k++){
+    const a=rnd()*6.283,r=14+rnd()*Math.min(26,G.w*.25),x=hx+Math.cos(a)*r,y=hy+Math.sin(a)*r;
+    if(G.flags.some(f=>Math.hypot(f.x-x,f.y-y)<=20))continue;const p=milSpot(rnd,x,y,3);if(!p)continue;
+    const g=milGroup(p[0]+.5,p[1]+.5,7);milFill(rnd,g,milGuns(rnd,7+Math.floor(rnd()*6),.25),5,.6);
+  }
+  G.militia=G.militia.filter(g=>g.n>0);
+}

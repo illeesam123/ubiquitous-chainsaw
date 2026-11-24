@@ -17,8 +17,9 @@ function aiPathWrap(f){
   return function(us,...a){
     const ai=us&&us.length&&G.teams[us[0].team]&&G.teams[us[0].team].ai;
     if(!ai)return f(us,...a);
-    milDangerBuild();MILD_ON=!!MILD;
-    try{return f(us,...a);}finally{MILD_ON=false;}
+    const T=G.teams[us[0].team],g=typeof aiDangerGrid==='function'?aiDangerGrid(T,us):(milDangerBuild(),MILD),sv=MILD;
+    MILD=g;MILD_ON=!!g;
+    try{return f(us,...a);}finally{MILD_ON=false;MILD=sv;}
   };
 }
 orderMove=aiPathWrap(orderMove);orderMoveL=aiPathWrap(orderMoveL);

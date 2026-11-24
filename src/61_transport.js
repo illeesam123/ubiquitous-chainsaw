@@ -4,12 +4,14 @@
 function vehSeats(v){return (VEH[v.type]&&VEH[v.type].seats)||0;}
 function vehPax(v){const a=[];for(const id of (v.pax||[])){const u=G.uid.get(id);if(u&&!u.dead)a.push(u);}v.pax=a.map(u=>u.id);return a;}
 function seatsPending(v){let n=0;for(const u of G.units)if(!u.dead&&u.boardV===v.id)n++;return n;}
-function canBoard(v){
-  return !!v&&!v.dead&&v.team===0&&vehSeats(v)>0&&v.state==='idle'&&!(v.alt>.02)&&!(v.dest)&&vehPax(v).length+seatsPending(v)<vehSeats(v);
+function canBoard(v,team){
+  return !!v&&!v.dead&&v.team===(team||0)&&vehSeats(v)>0&&v.state==='idle'&&!(v.alt>.02)&&!(v.dest)&&vehPax(v).length+seatsPending(v)<vehSeats(v);
 }
 function tryBoard(units,v){
-  if(!v||vehSeats(v)<=0||v.team!==0)return false;
-  if(!canBoard(v)){
+  const tm=units.length?units[0].team:0;
+  if(!v||vehSeats(v)<=0||v.team!==tm)return false;
+  if(!canBoard(v,tm)){
+    if(tm!==0)return false;
     if(v.state!=='idle'||v.alt>.02)toast(v.type==='heli'?'착륙한 헬리콥터에만 탑승할 수 있습니다':'정차한 차량에만 탑승할 수 있습니다');
     else toast('빈 자리가 없습니다');
     return false;
@@ -25,7 +27,7 @@ function tryBoard(units,v){
     u.boardV=v.id;u.path=p;u.state='move';n++;
     if(!p.length)boardArrive(u);
   }
-  toast(n?`${n}명이 ${OB[v.type].n}에 탑승합니다 (${vehPax(v).length+seatsPending(v)}/${vehSeats(v)})`:'탑승할 수 없는 위치입니다');
+  if(tm===0)toast(n?`${n}명이 ${OB[v.type].n}에 탑승합니다 (${vehPax(v).length+seatsPending(v)}/${vehSeats(v)})`:'탑승할 수 없는 위치입니다');
   return n>0;
 }
 function boardArrive(u){

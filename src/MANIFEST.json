@@ -63,5 +63,6 @@
   "src/61_transport.js",
   "src/62_heli-draw.js",
   "src/63_militia-drops.js",
-  "src/64_ai-purge.js"
+  "src/64_ai-purge.js",
+  "src/65_ai-smart.js"
 ]

@@ -86,8 +86,9 @@ const AIP={
   tricky:{delay:1,frac:.55,ready:.95,ret:1.5,dig:1,w:{ambush:.4,flank:.45,frontal:.1,rush:.05}},
   balanced:{delay:1,frac:.6,ready:1,ret:1.6,dig:1,w:{frontal:.4,flank:.3,ambush:.2,rush:.1}}
 };
-function aiPickTactic(P,strengthRatio,hasBush){
+function aiPickTactic(P,strengthRatio,hasBush,A){
   const w=Object.assign({},P.w);
+  if(A&&A.tw)for(const k in w)w[k]*=A.tw[k]||1;   // 지난 원정 성과로 보정
   if(!hasBush)w.ambush=0;
   if(strengthRatio>1.5)w.rush=(w.rush||0)+.25;
   if(strengthRatio<.9){w.rush=0;w.flank=(w.flank||0)+.15;}
@@ -133,7 +134,7 @@ function aiTick(T,dt){
   const fighters=mine.filter(u=>!u.gar&&!u.lay&&!['med','medwait','medmove','medqueue'].includes(u.state));
   A.squad=(A.squad||[]).filter(id=>{const u=G.uid.get(id);return u&&!u.dead&&u.team===T.id;});
   const inSquad=new Set(A.squad);
-  let free=mine.filter(u=>!u.gar&&!u.lay&&!u.garTarget&&!u.task&&u.state!=='move'&&u.state!=='work'&&!u.queue.length&&!inSquad.has(u.id));
+  let free=mine.filter(u=>!u.gar&&!u.lay&&!u.garTarget&&!u.task&&u.state!=='move'&&u.state!=='work'&&!u.queue.length&&!inSquad.has(u.id)&&!u.aiRole);
   const take=(n)=>free.splice(0,n);
   const tanks=G.vehicles.filter(v=>v.team===T.id&&!v.dead&&v.type==='tank');
   const homeR=12+G.w*.05;
@@ -171,10 +172,11 @@ function aiTick(T,dt){
   const prepared=fighters.length>=8&&strengthRatio>.9;
   const ready=G.time>A.attackAt*(prepared?.5:1)&&(strengthRatio>.6*P.ready||prepared||G.time>A.attackAt+35);
   if(!A.squad.length&&ready&&fighters.length>=4){
-    const pool=fighters.filter(u=>!u.task||u.state!=='work').sort((a,b)=>Math.hypot(a.x-tf.x,a.y-tf.y)-Math.hypot(b.x-tf.x,b.y-tf.y));
+    const pool=fighters.filter(u=>(!u.task||u.state!=='work')&&!u.aiRole).sort((a,b)=>aiRoleRank(a)-aiRoleRank(b)||Math.hypot(a.x-tf.x,a.y-tf.y)-Math.hypot(b.x-tf.x,b.y-tf.y));   // 돌격소총·소총수 우선, 저격·경기관총은 진지 역할
     // 전술 선택: 매복 후보 덤불을 진격선 60% 지점 근처에서 찾는다
     const bushSpot=aiFindBush(my.x+dxl*.6+(-dyl/L)*A.side*L*.1,my.y+dyl*.6+(dxl/L)*A.side*L*.1,12);
-    A.tactic=aiPickTactic(P,strengthRatio,!!bushSpot);
+    A.tactic=aiPickTactic(P,strengthRatio,!!bushSpot,A);
+    if(A.tactic==='flank')A.side=aiPickSide(T,my,tf,dxl,dyl,L);   // 위협이 약한 쪽으로 우회
     A.ambush=A.tactic==='ambush'?bushSpot:null;A.ambushGo=false;A.ambushT=0;
     const frac=A.tactic==='rush'?.9:(strengthRatio>1.3?P.frac+.15:P.frac);
     const take2=pool.slice(0,Math.max(4,Math.floor(fighters.length*frac)));
@@ -242,6 +244,7 @@ function aiTick(T,dt){
   else types=['mg','tower','bunker','mortar','medbay','tank','truck','sandbag','sandbag'];
   if(A.persona==='defensive')types=types.concat(['mg','bunker','mortar','tower']);
   if(A.persona==='aggressive')types=types.concat(['tank','truck']);
+  types=types.concat(aiTuneTypes(T,types));
   aiBuildNear(T,free,take,tf,types);
   // 참호 굴착 / 포탄 구덩이 개조 / 개량
   if(free.length>=2&&T.trench.length<Math.round((40+G.w*1.1)*P.dig)){
@@ -342,13 +345,14 @@ function aiArmsBuy(T){
   const mineN=popOf(T.id),enemyVeh=G.vehicles.some(v=>!v.dead&&v.team!==T.id);
   const w=Object.assign({},AI_WPREF[A.persona||'balanced']);
   if(enemyVeh)w.at=(w.at||0)+4;else w.at=Math.min(w.at||0,1);
+  aiTuneW(T,w);
   const held=WEAPBUY.reduce((a,k)=>a+wCount(T.id,k)+(wst(T)[k]|0)+pendingWk(T,k),0);
   if(held<Math.ceil(mineN*.7)){
     const k=aiPick(w),want=WEAP[k].price<=60?4:WEAP[k].price<=100?3:2,n=Math.min(want,Math.floor((T.res.money-20)/WEAP[k].price));
     if(n>=1&&!shopAddWeapon(T.id,k,n))return true;
   }
   if(armFree(T.id)>=3&&pendingExp(T)<6&&T.res.money>=90){
-    const k=aiPick({frag:4,molotov:2,flash:2,smoke:1});
+    const k=aiPick(aiTuneExp(T,{frag:4,molotov:2,flash:2,smoke:1}));
     if(!shopAddExp(T.id,k,3))return true;
   }
   return false;

@@ -64,12 +64,21 @@ function railGfx(x,y,L,gravel,col){
   if(gravel){tileDia(x,y,.1);cx.fillStyle=col||'#6e6a62';cx.fill();}
   for(const [dx,dy] of L){
     const M=toS(x+.5+dx*.5,y+.5+dy*.5),vx=M[0]-C[0],vy=M[1]-C[1],len=Math.hypot(vx,vy)||1,ux=vx/len,uy=vy/len,px=-uy,py=ux;
-    cx.strokeStyle='#4a3a28';cx.lineWidth=Math.max(1,2.2*z);cx.beginPath();
-    const fl=hsh(x*2.3,y*1.7)>.5?-1:1;   // 침목 기울기·간격을 칸마다 좌우반전해 반복감을 줄인다
-    [.15,.4,.65,.9].forEach((t0,n)=>{const t=fl>0?t0:t0-.05,bx=C[0]+vx*t,by=C[1]+vy*t,lean=((n%2)?1:-1)*fl*1.3*z;cx.moveTo(bx-px*7*z-ux*lean,by-py*7*z*.9-uy*lean);cx.lineTo(bx+px*7*z+ux*lean,by+py*7*z*.9+uy*lean);});
+    // 단단한 밸러스트 가장자리와 목재 침목을 고정 간격으로 그려 타일 경계에서 철로가 이어진다.
+    cx.strokeStyle='rgba(48,43,36,.62)';cx.lineWidth=Math.max(1,4.8*z);cx.beginPath();
+    for(const side of [-1,1]){cx.moveTo(C[0]+px*5.4*z*side,C[1]+py*4.8*z*side);cx.lineTo(M[0]+px*5.4*z*side,M[1]+py*4.8*z*side);}
     cx.stroke();
-    cx.strokeStyle='#aeb3b8';cx.lineWidth=Math.max(1,1.5*z);cx.beginPath();
-    for(const s of [-1,1]){cx.moveTo(C[0]+px*3.6*z*s,C[1]+py*3.2*z*s);cx.lineTo(M[0]+px*3.6*z*s,M[1]+py*3.2*z*s);}
+    [.12,.37,.62,.87].forEach((t,n)=>{
+      const bx=C[0]+vx*t,by=C[1]+vy*t,lean=(n%2?1:-1)*.6*z;
+      cx.strokeStyle='rgba(31,29,25,.42)';cx.lineWidth=Math.max(2,3.5*z);cx.beginPath();cx.moveTo(bx-px*7.2*z-ux*lean,by-py*6.5*z-uy*lean);cx.lineTo(bx+px*7.2*z+ux*lean,by+py*6.5*z+uy*lean);cx.stroke();
+      cx.strokeStyle='#786447';cx.lineWidth=Math.max(1,2.3*z);cx.beginPath();cx.moveTo(bx-px*7*z-ux*lean,by-py*6.3*z-uy*lean);cx.lineTo(bx+px*7*z+ux*lean,by+py*6.3*z+uy*lean);cx.stroke();
+    });
+    // 레일은 어두운 웹과 밝은 상단 헤드 두 겹으로 금속 단면을 표현한다.
+    cx.strokeStyle='#34383b';cx.lineWidth=Math.max(2,3.2*z);cx.beginPath();
+    for(const side of [-1,1]){cx.moveTo(C[0]+px*3.6*z*side,C[1]+py*3.2*z*side);cx.lineTo(M[0]+px*3.6*z*side,M[1]+py*3.2*z*side);}
+    cx.stroke();
+    cx.strokeStyle='#c2c7c9';cx.lineWidth=Math.max(1,1.15*z);cx.beginPath();
+    for(const side of [-1,1]){cx.moveTo(C[0]+px*3.6*z*side-.35*z,C[1]+py*3.2*z*side-.35*z);cx.lineTo(M[0]+px*3.6*z*side-.35*z,M[1]+py*3.2*z*side-.35*z);}
     cx.stroke();
   }
 }

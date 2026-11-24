@@ -190,7 +190,7 @@ function computeShade(){
   }
   const hAt=(x,y)=>{x=x<0?0:x>w?w:x;y=y<0?0:y>h?h:y;const x0=Math.min(w-1,x|0),y0=Math.min(h-1,y|0),fx=x-x0,fy=y-y0;
     return (V[y0*W1+x0]*(1-fx)+V[y0*W1+x0+1]*fx)*(1-fy)+(V[(y0+1)*W1+x0]*(1-fx)+V[(y0+1)*W1+x0+1]*fx)*fy;};
-  const [Lx,Ly]=unrotDir(-.92,-.38),TAN=1.15,dark=new Float32Array(W1*H1);
+  const [Lx,Ly]=unrotDir(-.92,-.38),TAN=1.15,cast=new Float32Array(W1*H1),contact=new Float32Array(W1*H1),dark=new Float32Array(W1*H1);
   for(let vy=0;vy<H1;vy++)for(let vx=0;vx<W1;vx++){
     const h0=V[vy*W1+vx];let sh=0;
     for(let t=.5;t<=11;t+=.5){
@@ -199,8 +199,18 @@ function computeShade(){
     }
     // 접지 그림자: 8방향 이웃 평균이 나보다 높을수록
     let avg=0,n=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const a=vx+dx,b=vy+dy;if(a<0||b<0||a>=W1||b>=H1)continue;avg+=V[b*W1+a];n++;}
-    const ao=Math.max(0,Math.min(1,(avg/n-h0)/3))*.5;
-    dark[vy*W1+vx]=Math.min(.6,Math.min(1,sh)*.38+ao);
+    const ao=Math.max(0,Math.min(1,(avg/n-h0)/3))*.5,i=vy*W1+vx;
+    cast[i]=Math.min(1,sh)*.38;contact[i]=ao;
+  }
+  // 그림자 경계만 가볍게 부드럽게 하고, 지면에 붙는 접촉 음영은 선명하게 남긴다.
+  const soft=new Float32Array(W1*H1);
+  for(let vy=0;vy<H1;vy++)for(let vx=0;vx<W1;vx++){
+    let sum=0,weight=0;
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+      const x=vx+dx,y=vy+dy;if(x<0||y<0||x>=W1||y>=H1)continue;
+      const wt=!dx&&!dy?4:!dx||!dy?2:1;sum+=cast[y*W1+x]*wt;weight+=wt;
+    }
+    const i=vy*W1+vx;soft[i]=cast[i]*.65+(sum/weight)*.35;dark[i]=Math.min(.6,soft[i]+contact[i]);
   }
   const cv=document.createElement('canvas');cv.width=W1;cv.height=H1;const g=cv.getContext('2d'),im=g.createImageData(W1,H1);
   for(let i=0;i<W1*H1;i++){im.data[i*4]=12;im.data[i*4+1]=9;im.data[i*4+2]=5;im.data[i*4+3]=Math.round(dark[i]*255);}

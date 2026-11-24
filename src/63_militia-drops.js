@@ -1,19 +1,20 @@
 // ================= 민간인 스프라이트 · 자경단(검은 민간인) · 무기/투척물 드롭 =================
 // 민간인은 병사 몸 에셋(ubodyc: 모자 없는 중립 몸 + ubodyt 마스크)을 회색으로 칠해 재사용한다. 자경단은 같은 에셋을 검정으로 칠한다.
-const MIL={guns:['rifle','pistol','assault','sniper','lmg'],gw:[3,3,2,1,1],sight:8.5,molo:.5,leash:2.5};
+const MIL={guns:['rifle','pistol','assault','sniper','lmg'],gw:[3,3,2,1,1],sight:6.5,molo:.5,leash:2.5,cityP:.22,maxN:30,hp:40,rng:.7,dmg:.8,acc:.7};   // 너프: 체력 40, 사거리 70%, 피해 80%, 명중 70%
+const milRange=(c)=>WEAP[c.gun].range*MIL.rng;
 function milPick(rnd){let t=0;for(const w of MIL.gw)t+=w;let r=rnd()*t;for(let i=0;i<MIL.guns.length;i++){r-=MIL.gw[i];if(r<=0)return MIL.guns[i];}return 'rifle';}
 // ---- 생성: 도시마다 4~15명이 한 무리로 ----
 function genMilitia(vs,rnd,urban){
   G.militia=[];
   for(const v of vs){
-    if(!urban&&rnd()>.6)continue;
-    const n=4+Math.floor(rnd()*12),grp={cx:v.x,cy:v.y,R:Math.min(9,5+v.n*.15),tx:v.x,ty:v.y,tt:0,alert:0,ax:0,ay:0,n};
+    if(rnd()>(urban?.5:MIL.cityP)||G.civs.filter(c=>c.mil).length>=MIL.maxN)continue;
+    const n=4+Math.floor(rnd()*rnd()*12),grp={cx:v.x,cy:v.y,R:Math.min(9,5+v.n*.15),tx:v.x,ty:v.y,tt:0,alert:0,ax:0,ay:0,n};
     let made=0;
     for(let k=0;k<n;k++)for(let tr=0;tr<16;tr++){
       const x=Math.floor(v.x+(rnd()-.5)*9),y=Math.floor(v.y+(rnd()-.5)*9);
       if(!civOK(x,y))continue;
       const gun=milPick(rnd),g=WEAP[gun];
-      G.civs.push({id:G.nextId++,team:9,civ:true,mil:true,x:x+.5,y:y+.5,hp:70,max:70,state:'idle',path:[],queue:[],task:null,gar:null,cd:rnd(),face:rnd()*6.28,anim:rnd()*6,wait:0,flash:0,sel:false,
+      G.civs.push({id:G.nextId++,team:9,civ:true,mil:true,x:x+.5,y:y+.5,hp:MIL.hp,max:MIL.hp,state:'idle',path:[],queue:[],task:null,gar:null,cd:rnd(),face:rnd()*6.28,anim:rnd()*6,wait:0,flash:0,sel:false,
         armed:true,gun,item:rnd()<MIL.molo?'molotov':null,mag:g.mag,rl:0,home:[v.x,v.y],mode:'patrol',tm:0,tgt:null,seen:{},hostile:{},reveal:0,grp,off:[(rnd()-.5)*3,(rnd()-.5)*3]});
       made++;break;
     }
@@ -22,7 +23,7 @@ function genMilitia(vs,rnd,urban){
 }
 // ---- 행동 ----
 function milTarget(c){
-  const sg=Math.max(MIL.sight,WEAP[c.gun].range+.5);let best=null,bd=1e9;
+  const sg=Math.max(MIL.sight,milRange(c)+.5);let best=null,bd=1e9;
   for(const u of G.units){
     if(u.dead||u.surr>0||u.state==='crew'||u.lay&&Math.random()<.7)continue;
     const d=Math.hypot(u.x-c.x,u.y-c.y);if(d>sg||d>=bd)continue;
@@ -32,7 +33,7 @@ function milTarget(c){
   return best;
 }
 function milStep(c,dt){
-  const g=c.grp,w=WEAP[c.gun];
+  const g=c.grp,w=WEAP[c.gun],rg=milRange(c);
   if(c.rl>0)c.rl-=dt;
   if(g.stamp!==G.time){g.stamp=G.time;g.tt-=dt;g.alert=Math.max(0,g.alert-dt);
     if(g.tt<=0){g.tt=5+Math.random()*5;for(let i=0;i<8;i++){const a=Math.random()*6.283,r=Math.random()*g.R*.8,x=g.cx+Math.cos(a)*r,y=g.cy+Math.sin(a)*r;if(civOK(Math.floor(x),Math.floor(y))){g.tx=x;g.ty=y;break;}}}}
@@ -43,21 +44,22 @@ function milStep(c,dt){
     g.alert=6;g.ax=t.x;g.ay=t.y;c.hostile[t.team]=true;
     const bd=Math.hypot(t.x-c.x,t.y-c.y);c.face=Math.atan2(t.y-c.y,t.x-c.x);
     if(c.item==='molotov'&&bd>=2.4&&bd<=7&&c.cd<=0){throwNade(c,'molotov',t.x,t.y);c.item=null;c.cd=1.2;return true;}
-    if(bd>w.range*.85&&Math.hypot(t.x-g.cx,t.y-g.cy)<=g.R+MIL.leash+3)civStep(c,t.x,t.y,CIV.speed*1.1,dt);   // 도시 밖으로는 쫓지 않는다
-    if(bd<=w.range&&c.cd<=0&&!(c.rl>0)){
+    if(bd>rg*.85&&Math.hypot(t.x-g.cx,t.y-g.cy)<=g.R+MIL.leash+3)civStep(c,t.x,t.y,CIV.speed*1.1,dt);   // 도시 밖으로는 쫓지 않는다
+    if(bd<=rg&&c.cd<=0&&!(c.rl>0)){
       c.cd=w.int*(.9+Math.random()*.2);c.muz=.08;c.reveal=2;
       fxPush({k:'trace',x1:c.x,y1:c.y,x2:t.x,y2:t.y,t:0,d:.08});sfx('rifle',c.x,c.y);
       if(w.mag){c.mag--;if(c.mag<=0){c.rl=w.reload;c.mag=w.mag;}}
       WXE=w.wx===undefined?1:w.wx;
-      try{if(Math.random()<w.acc*(1-.35*bd/w.range)*weatherAccuracy()*.85)hurt(t,w.dmg*(.85+Math.random()*.3),c);}finally{WXE=1;}
+      try{if(Math.random()<w.acc*MIL.acc*(1-.35*bd/rg)*weatherAccuracy())hurt(t,w.dmg*MIL.dmg*(.85+Math.random()*.3),c);}finally{WXE=1;}
     }
     return true;
   }
+  if(g.purge)c.hostile=Object.assign({},g.purge);   // 소탕 작전 중인 팀은 보이지 않아도 사격 대상으로 삼는다
   // 무리가 교전 중이면 그쪽으로 모인다(도시 안에서만)
-  if(g.alert>0&&Math.hypot(g.ax-g.cx,g.ay-g.cy)<=g.R+MIL.leash+3&&Math.hypot(g.ax-c.x,g.ay-c.y)>w.range*.8){civStep(c,g.ax,g.ay,CIV.speed*.9,dt);return false;}
+  if(g.alert>0&&Math.hypot(g.ax-g.cx,g.ay-g.cy)<=g.R+MIL.leash+3&&Math.hypot(g.ax-c.x,g.ay-c.y)>rg*.8){civStep(c,g.ax,g.ay,CIV.speed*.9,dt);return false;}
   const tx=dc>g.R+MIL.leash?g.cx:g.tx+c.off[0],ty=dc>g.R+MIL.leash?g.cy:g.ty+c.off[1];   // 무리 목적지로 함께 이동, 멀어지면 도시로 복귀
   if(Math.hypot(tx-c.x,ty-c.y)>.7)civStep(c,tx,ty,CIV.speed*.8,dt);
-  return false;
+  return !!g.purge;
 }
 // ---- 드롭 ----
 function addDrop(x,y,kind,k){

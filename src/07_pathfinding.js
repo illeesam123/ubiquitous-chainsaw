@@ -1,5 +1,6 @@
 // ================= 길찾기 (A*) =================
 let pfN=0,pfG,pfP,pfS,pfC,pfStamp=0;
+let MILD=null,MILD_ON=false;   // 자경단 위험 지대(길찾기 비용 배수 격자). AI 의 이동 명령일 때만 적용된다 (src/64_ai-purge.js)
 function findPath(sx,sy,gx,gy,adj,size,vehicle){
   const w=G.w,N=G.N,gs=size||1;
   if(pfN!==N){pfN=N;pfG=new Float32Array(N);pfP=new Int32Array(N);pfS=new Uint32Array(N);pfC=new Uint32Array(N);}
@@ -33,7 +34,7 @@ function findPath(sx,sy,gx,gy,adj,size,vehicle){
       if(!(pass(n)||(!adj&&n===gi)))continue;
       if(dx&&dy&&(!pass(cy*w+nx)||!pass(ny*w+cx)||(G.hill&&(!stepH(c,cy*w+nx)||!stepH(c,ny*w+cx)))))continue;
       if(!pfLay){if(!stepOK(c,n))continue;if(dx&&dy&&(roofedI(c)||roofedI(n)))continue;}
-      const tr=pfLay?1:(G.trench[n]===255?3:G.trench[n]>0?.8:1)*(G.tt[n]===2&&G.up[n]!==1?2.4:G.tt[n]===1?1.15:1)*(vehicle?roadCost(n):(G.brush[n]?1.4:1)),ng=pfG[c]+cs*tr+(G.cl&&G.cl.size&&ladderLink(c,n)?4:0);
+      const tr=pfLay?1:(G.trench[n]===255?3:G.trench[n]>0?.8:1)*(G.tt[n]===2&&G.up[n]!==1?2.4:G.tt[n]===1?1.15:1)*(vehicle?roadCost(n):(G.brush[n]?1.4:1))*(MILD_ON&&MILD?MILD[n]||1:1),ng=pfG[c]+cs*tr+(G.cl&&G.cl.size&&ladderLink(c,n)?4:0);
       if(pfS[n]!==pfStamp||ng<pfG[n]){pfS[n]=pfStamp;pfG[n]=ng;pfP[n]=c;push(ng+hh(nx,ny),n);}
     }
   }

@@ -9,7 +9,7 @@ const WS={
     },
     armor:{wood:{wood:14},plate:{metal:18,wood:2},stone:{metal:20,wood:8}},
     exp:{smoke:{metal:2,wood:4},flash:{metal:4},molotov:{metal:1,wood:5},frag:{metal:5,wood:1}},
-    drone:{drone:{metal:70}}
+    drone:{}
   },
   time:{weapon:2.2,armor:2.2,exp:1.5,drone:5}
 };
@@ -42,7 +42,7 @@ function wsArmoryCapacity(T,n){
 function wsQueue(o,kind,item,n,quiet){
   if(!G.obSet.has(o)||o.type!=='workshop')return '공방을 찾을 수 없습니다';
   const T=G.teams[o.team];n=Math.floor(+n||1);
-  if(kind==='drone'&&wsTier(o)<2)return '군수공장 단계에서 드론이 해금됩니다';
+  if(kind==='drone')return '드론은 건설 시설의 차량 목록에서 제작하세요';
   if(o.job)return '현재 제작이 진행 중입니다';
   if(n<1||n>WS.batches[wsTier(o)])return '이 단계에서 제작할 수 있는 양을 초과했습니다';
   const cost=wsRecipe(kind,item,n,wsTier(o));if(!cost)return '지원하지 않는 제작 품목입니다';
@@ -126,12 +126,18 @@ function wsStepDrones(dt){
   for(const v of G.vehicles){
     if(v.type!=='drone'||v.dead)continue;
     v.anim+=dt;v.alt=.55;v.droneSense=(v.droneSense||0)-dt;
-    if(!v.target||v.target.kind==='ob'&&!G.obSet.has(v.target.e)||v.target.kind==='unit'&&(v.target.e.dead||!G.units.includes(v.target.e))||v.target.kind==='vehicle'&&(v.target.e.dead||!G.vehicles.includes(v.target.e))||v.target.kind==='civ'&&v.target.e.dead||v.droneSense<=0){
-      v.target=wsDroneTarget(v);v.droneSense=.75;
+    let tx=null,ty=null;
+    if(v.droneDest){
+      tx=v.droneDest.x;ty=v.droneDest.y;
+    }else{
+      if(!v.target||v.target.kind==='ob'&&!G.obSet.has(v.target.e)||v.target.kind==='unit'&&(v.target.e.dead||!G.units.includes(v.target.e))||v.target.kind==='vehicle'&&(v.target.e.dead||!G.vehicles.includes(v.target.e))||v.target.kind==='civ'&&v.target.e.dead||v.droneSense<=0){
+        v.target=wsDroneTarget(v);v.droneSense=.75;
+      }
+      const tar=v.target;if(!tar)continue;
+      const e=tar.e;tx=tar.kind==='ob'?e.x+e.size/2:e.x;ty=tar.kind==='ob'?e.y+e.size/2:e.y;
     }
-    const tar=v.target;if(!tar)continue;
-    const e=tar.e,tx=tar.kind==='ob'?e.x+e.size/2:e.x,ty=tar.kind==='ob'?e.y+e.size/2:e.y,dx=tx-v.x,dy=ty-v.y,d=Math.hypot(dx,dy);
-    if(d<=.85){wsDroneBlast(v);continue;}
+    const dx=tx-v.x,dy=ty-v.y,d=Math.hypot(dx,dy);
+    if(d<=.14){v.x=tx;v.y=ty;wsDroneBlast(v);continue;}
     const step=VEH.drone.speed*weatherSpeed()*dt,move=Math.min(step,d),nx=v.x+dx/d*move,ny=v.y+dy/d*move;
     if(!inb(Math.floor(nx),Math.floor(ny))){wsDroneBlast(v);continue;}
     v.face=Math.atan2(dy,dx);v.x=nx;v.y=ny;
@@ -172,12 +178,12 @@ objClick=function(o){if(o&&o.type==='workshop'&&!o.natural&&o.team===0&&tool!=='
 // ---- 제작 창 ----
 let wsPanelId=null,wsUiTick=0;
 function wsProductList(kind,tier){
-  const recipes=WS.recipes[kind]||{};return Object.keys(recipes).filter(k=>kind!=='drone'||tier>=2);
+  const recipes=WS.recipes[kind]||{};return Object.keys(recipes);
 }
 function wsMakePanel(){
   if(document.getElementById('wsPanel'))return document.getElementById('wsPanel');
   const el=document.createElement('div');el.id='wsPanel';el.style.cssText='position:fixed;inset:0;z-index:70;background:rgba(4,6,4,.72);display:none;align-items:center;justify-content:center;padding:16px;font:14px/1.5 system-ui,sans-serif;color:#e8e4cf';
-  el.innerHTML='<div style="width:min(620px,96vw);max-height:90vh;overflow:auto;background:#1b1e14;border:1px solid #8a7746;border-radius:5px;box-shadow:0 18px 60px #000b;padding:18px"><header style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #45442f;padding-bottom:10px;margin-bottom:14px"><div><b id="wsTitle" style="font-size:23px;color:#d9ad4e">공방</b><div id="wsSubtitle" style="color:#aaa58b;font-size:12px"></div></div><button id="wsClose" class="btn">닫기 ✕</button></header><div id="wsUpgradeBox" style="margin-bottom:13px"></div><section style="border:1px solid #3b412a;padding:12px;margin:10px 0"><h3 style="margin:0 0 8px;color:#d9ad4e">제작</h3><div style="display:grid;grid-template-columns:1fr 1.2fr;gap:8px"><label>분류<select id="wsKind" class="wsSelect"><option value="weapon">총기</option><option value="armor">방어구</option><option value="exp">투척물</option><option value="drone" hidden>드론</option></select></label><label>품목<select id="wsItem" class="wsSelect"></select></label></div><label style="display:block;margin-top:10px">인분 <input id="wsN" style="width:100%;accent-color:#d9ad4e" type="range" min="1" max="5" value="1"></label><div id="wsAmount" style="font:12px ui-monospace;color:#d9ad4e"></div><div id="wsCost" style="margin:8px 0;padding:8px;background:#252a1a;border:1px solid #3b412a"></div><button id="wsCraft" class="go" style="font-size:17px;margin-top:4px">제작 시작</button></section><div id="wsJob" style="margin-top:10px"></div><div id="wsStock" style="font-size:12px;color:#aaa58b;margin-top:8px"></div></div>';
+  el.innerHTML='<div style="width:min(620px,96vw);max-height:90vh;overflow:auto;background:#1b1e14;border:1px solid #8a7746;border-radius:5px;box-shadow:0 18px 60px #000b;padding:18px"><header style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #45442f;padding-bottom:10px;margin-bottom:14px"><div><b id="wsTitle" style="font-size:23px;color:#d9ad4e">공방</b><div id="wsSubtitle" style="color:#aaa58b;font-size:12px"></div></div><button id="wsClose" class="btn">닫기 ✕</button></header><div id="wsUpgradeBox" style="margin-bottom:13px"></div><section style="border:1px solid #3b412a;padding:12px;margin:10px 0"><h3 style="margin:0 0 8px;color:#d9ad4e">제작</h3><div style="display:grid;grid-template-columns:1fr 1.2fr;gap:8px"><label>분류<select id="wsKind" class="wsSelect"><option value="weapon">총기</option><option value="armor">방어구</option><option value="exp">투척물</option></select></label><label>품목<select id="wsItem" class="wsSelect"></select></label></div><label style="display:block;margin-top:10px">인분 <input id="wsN" style="width:100%;accent-color:#d9ad4e" type="range" min="1" max="5" value="1"></label><div id="wsAmount" style="font:12px ui-monospace;color:#d9ad4e"></div><div id="wsCost" style="margin:8px 0;padding:8px;background:#252a1a;border:1px solid #3b412a"></div><button id="wsCraft" class="go" style="font-size:17px;margin-top:4px">제작 시작</button></section><div id="wsJob" style="margin-top:10px"></div><div id="wsStock" style="font-size:12px;color:#aaa58b;margin-top:8px"></div></div>';
   document.body.appendChild(el);el.querySelectorAll('.wsSelect').forEach(q=>q.style.cssText='width:100%;display:block;margin-top:4px;background:#12140d;border:1px solid #3b412a;padding:8px;color:#e8e4cf');
   el.querySelector('#wsClose').onclick=wsClose;
   el.querySelector('#wsKind').onchange=()=>wsPanelRender(wsPanelObj());
@@ -197,9 +203,7 @@ function wsPanelRender(o){
   e.querySelector('#wsSubtitle').textContent='제작 상한 '+WS.batches[tier]+'인분 · 재료 단가 '+Math.round((1-.1*tier)*100)+'% · 총기·방어구·투척물은 무기고 입고';
   const up=e.querySelector('#wsUpgradeBox'),uc=wsUpgradeCost(tier),T=G.teams[o.team];
   if(uc)up.innerHTML='<button data-upgrade class="btn" style="width:100%;padding:10px;border-color:#a68a45">강화: '+WS.names[tier+1]+' · '+wsCostText(uc)+'</button>';
-  else up.innerHTML='<div style="padding:9px;color:#d9ad4e;border:1px solid #3b412a">최종 단계 · 폭발 드론 제작 가능</div>';
-  kind.querySelector('option[value="drone"]').hidden=tier<2;
-  if(kind.value==='drone'&&tier<2)kind.value='weapon';
+  else up.innerHTML='<div style="padding:9px;color:#d9ad4e;border:1px solid #3b412a">최종 단계 · 차량 목록에서 폭발 드론 해금</div>';
   item.innerHTML=wsProductList(kind.value,tier).map(k=>{const name=kind.value==='weapon'?WEAP[k].n:kind.value==='armor'?ARMOR[k].n:kind.value==='exp'?EXP[k].n:'폭발 드론';return '<option value="'+k+'">'+name+'</option>';}).join('');
   e.querySelector('#wsN').max=WS.batches[tier];
   if(+e.querySelector('#wsN').value>WS.batches[tier])e.querySelector('#wsN').value=WS.batches[tier];
@@ -249,7 +253,7 @@ function aiPartWorkshop(T,dt){
   const o=os[0],free=aiFreeUnits(T),target=Math.min(2,Math.ceil((G.cfg.soldiers||18)/24));
   if(wsTier(o)<2&&wsUpgrade(o,true))return;
   const droneCount=G.vehicles.filter(v=>v.type==='drone'&&v.team===T.id&&!v.dead).length;
-  if(wsTier(o)>=2&&droneCount<target&&T.res.metal>110&&!o.job){wsQueue(o,'drone','drone',1,true);return;}
+  if(wsTier(o)>=2&&droneCount<target&&T.res.metal>=OB.drone.cost.metal&&!o.job){wsAiDroneBuild(T,free);return;}
   if(armories(T.id).length&&!o.job){
     const stock=wst(T),want=Math.max(3,Math.floor(popOf(T.id)*.22));
     if((stock.assault||0)<want&&T.res.metal>30&&T.res.wood>12){wsQueue(o,'weapon','assault',Math.min(WS.batches[wsTier(o)],Math.max(1,want-(stock.assault||0)),5),true);return;}
@@ -274,3 +278,64 @@ const _tipObWS=TIPREG.ob;
 tipReg('ob',(id,...args)=>id==='workshop'?{t:'공방',stats:[['크기','2×2'],['주둔','불가'],['건설','병사 1명 · 250 금속'],['강화','공예소 → 군수공장']],d:'총기·방어구·투척물을 금속과 목재로 제작합니다.'}:_tipObWS(id,...args));
 
 window.addEventListener('keydown',e=>{if(e.key==='Escape'&&wsPanelId!==null)wsClose();});
+
+function wsHasFactory(team){
+  return !!(G&&G.obSet&&[...G.obSet].some(o=>o.type==='workshop'&&!o.natural&&o.team===team&&wsTier(o)>=2));
+}
+function wsAiDroneBuild(T,free){
+  if(!free.length||!canAfford(T,OB.drone.cost))return false;
+  if([...G.tasks.values()].some(q=>q.kind==='build'&&q.type==='drone'&&q.team===T.id))return true;
+  const seen=new Set();
+  for(const ti of T.trench){
+    if(G.trench[ti]!==T.id+1)continue;
+    const tx=ti%G.w,ty=(ti/G.w)|0;
+    for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){
+      const x=tx+dx,y=ty+dy,k=y*G.w+x;if(seen.has(k))continue;seen.add(k);
+      if(!inb(x,y)||taskCheck(T.id,'build',x,y,'drone'))continue;
+      const q=getTask(T.id,'build',x,y,'drone',true);if(q){orderTasks([free[0]],[q]);return true;}
+    }
+  }
+  return false;
+}
+const _orderVehiclesDroneWS=orderVehicles;
+orderVehicles=function(list,tx,ty){
+  const drones=list.filter(v=>v.type==='drone'&&!v.dead),others=list.filter(v=>v.type!=='drone'&&!v.dead);
+  if(others.length)_orderVehiclesDroneWS(others,tx,ty);
+  if(!inb(tx,ty))return;
+  for(const v of drones){v.path=[];v.state='move';v.target=null;v.droneSense=0;v.droneDest={x:tx+.5,y:ty+.5};}
+};
+const _taskCheckDroneWS=taskCheck;
+taskCheck=function(team,kind,x,y,type){
+  if(kind==='build'&&type==='drone'&&!wsHasFactory(team))return '군수공장이 필요합니다';
+  return _taskCheckDroneWS(team,kind,x,y,type);
+};
+const _buildDrawerDroneWS=buildBuildDrawer;
+buildBuildDrawer=function(){
+  _buildDrawerDroneWS();
+  const b=document.querySelector('#buildList .buildCard[data-id="drone"]');if(!b)return;
+  const unlocked=wsHasFactory(0),small=b.querySelector('small');
+  b.disabled=!unlocked;b.setAttribute('aria-disabled',String(!unlocked));
+  if(small&&!unlocked)small.innerHTML+=' <br>🔒 군수공장 필요';
+  let st=document.getElementById('wsDroneLockStyle');
+  if(!st){st=document.createElement('style');st.id='wsDroneLockStyle';st.textContent='#buildList .buildCard[data-id="drone"]:disabled{opacity:.48;filter:saturate(.45);cursor:not-allowed}';document.head.appendChild(st);}
+};
+const _stepTurretsDroneWS=stepTurrets;
+stepTurrets=function(dt){
+  if(G)for(const o of G.obSet){
+    if(o.type!=='mortar'||stLv(o)<2)continue;
+    const T=o.fort?FORT_T:G.teams[o.team];if(!T||T.res.bullets<6)continue;
+    o.cd=(o.cd||0)-dt;if(o.cd>0)continue;
+    const cx0=o.x+.5,cy0=o.y+.5,R=turretRange(o);
+    let best=null,bd=R;
+    for(const v of G.vehicles){
+      if(v.type!=='drone'||v.dead||isAllyT(v.team,o.team))continue;
+      const d=Math.hypot(v.x-cx0,v.y-cy0);if(d<=bd){bd=d;best=v;}
+    }
+    if(best){
+      T.res.bullets-=6;o.aim=Math.atan2(best.y-cy0,best.x-cx0);o.muz=.25;o.cd=1.55;
+      fxPush({k:'trace',x1:cx0,y1:cy0,x2:best.x,y2:best.y,t:0,d:.2});sfx('mortar',cx0,cy0);
+      damageVehicle(best,VEH.drone.hp+1,{team:o.team});
+    }
+  }
+  _stepTurretsDroneWS(dt);
+};

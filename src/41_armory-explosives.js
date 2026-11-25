@@ -62,7 +62,7 @@ function stepArmory(dt){
       const s=armStock(o);if(armTotal(o)<=0)continue;
       const cx0=o.x+o.size/2,cy0=o.y+o.size/2,c=[];
       for(const u of G.units){
-        if(u.dead||u.team!==T.id||u.state!=='idle'||u.item||u.fetch||u.lay||u.gar||u.queue.length||u.task||(u.medTarget))continue;
+        if(u.dead||u.team!==T.id||u.state!=='idle'||u.paxOf||u.vehicleId||u.item||u.fetch||u.lay||u.gar||u.queue.length||u.task||(u.medTarget))continue;
         const d=Math.hypot(u.x-cx0,u.y-cy0);if(d<=ARM.range)c.push([d,u]);
       }
       c.sort((a,b)=>a[0]-b[0]);

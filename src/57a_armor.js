@@ -12,7 +12,7 @@ tipReg('arm',k=>{const a=ARMOR[k],s=[['방어력','+'+Math.round(a.def*100)+'%']
   s.push(['재료',Object.entries(a.cost).map(([r,n])=>`${RN[r]} ${n}`).join(' · ')]);return {t:a.n,col:a.col,stats:s,d:a.desc};});
 const armSpd=u=>{const a=ARMOR[u.arm];return a?1+(a.spd||0):1;};
 function ast(T){return T.ast||(T.ast={wood:0,plate:0,stone:0});}
-function aCount(team,k){let n=0;for(const u of G.units)if(!u.dead&&u.team===team&&(u.arm||'none')===k)n++;return n;}
+function aCount(team,k){let n=0;for(const u of G.units)if(!u.dead&&!u.paxOf&&!u.vehicleId&&u.state!=='crew'&&u.team===team&&(u.arm||'none')===k)n++;return n;}
 function aStock(T,k){return k==='none'?Infinity:(ast(T)[k]|0);}
 // ---- 효과 ----
 const _hurtAr=hurt;
@@ -76,7 +76,7 @@ function stepArmor(dt){
         if(aStock(T,s.to)<1){s.left=Math.min(s.left,s.fly);break;}
         let best=null,bd=1e9,bo=null;
         for(const u of G.units){
-          if(u.dead||u.team!==T.id||(u.arm||'none')!==s.from||u.state!=='idle'||u.item||u.fetch||u.wf||u.af||u.lay||u.gar||u.queue.length||u.task||u.medTarget)continue;
+          if(u.dead||u.team!==T.id||(u.arm||'none')!==s.from||u.state!=='idle'||u.paxOf||u.vehicleId||u.item||u.fetch||u.wf||u.af||u.lay||u.gar||u.queue.length||u.task||u.medTarget)continue;
           for(const o of A){const d=Math.hypot(u.x-(o.x+o.size/2),u.y-(o.y+o.size/2));if(d<bd&&d<=SWAP.range){bd=d;best=u;bo=o;}}
         }
         if(!best)break;

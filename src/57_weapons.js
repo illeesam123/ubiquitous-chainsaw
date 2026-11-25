@@ -19,7 +19,7 @@ Object.assign(GUNS,{
 });
 function gunOf(u){return WEAP[u.gun]||RIFLE;}
 function wst(T){return T.wst||(T.wst={sling:0,pistol:0,assault:0,sniper:0,lmg:0,at:0});}
-function wCount(team,k){let n=0;for(const u of G.units)if(!u.dead&&u.team===team&&(u.gun||'rifle')===k)n++;return n;}
+function wCount(team,k){let n=0;for(const u of G.units)if(!u.dead&&!u.paxOf&&!u.vehicleId&&u.state!=='crew'&&u.team===team&&(u.gun||'rifle')===k)n++;return n;}
 function wStock(T,k){return k==='rifle'?Infinity:(wst(T)[k]|0);}
 // ---- 사격 ----
 const _wxA=weatherAccuracy;let WXE=1;
@@ -116,7 +116,7 @@ function stepWeapons(dt){
         if(wStock(T,s.to)<1){s.left=Math.min(s.left,s.fly);break;}   // 재고가 바닥나면 남은 주문은 접는다
         let best=null,bd=1e9,bo=null;
         for(const u of G.units){
-          if(u.dead||u.team!==T.id||(u.gun||'rifle')!==s.from||u.state!=='idle'||u.item||u.fetch||u.wf||u.lay||u.gar||u.queue.length||u.task||u.medTarget)continue;
+          if(u.dead||u.team!==T.id||(u.gun||'rifle')!==s.from||u.state!=='idle'||u.paxOf||u.vehicleId||u.item||u.fetch||u.wf||u.lay||u.gar||u.queue.length||u.task||u.medTarget)continue;
           for(const o of A){const d=Math.hypot(u.x-(o.x+o.size/2),u.y-(o.y+o.size/2));if(d<bd&&d<=SWAP.range){bd=d;best=u;bo=o;}}
         }
         if(!best)break;

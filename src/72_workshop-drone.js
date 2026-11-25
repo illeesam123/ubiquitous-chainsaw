@@ -50,7 +50,7 @@ function wsQueue(o,kind,item,n,quiet){
   if(kind==='exp'&&!wsArmoryCapacity(T,n))return '무기고 저장 공간이 부족합니다';
   if(!canAfford(T,cost))return '금속 또는 목재가 부족합니다';
   pay(T,cost);
-  const duration=WS.time[kind]*n;
+  const duration=wsDuration(kind,n);
   o.job={kind,item,n,cost,elapsed:0,duration};
   if(!quiet&&T.id===0)wsPanelRender(o);
   return null;
@@ -177,54 +177,75 @@ const _objClickWS=objClick;
 objClick=function(o){if(o&&o.type==='workshop'&&!o.natural&&o.team===0&&tool!=='demo'){wsPanelOpen(o);return true;}return _objClickWS(o);};
 // ---- 제작 창 ----
 let wsPanelId=null,wsUiTick=0;
-function wsProductList(kind,tier){
-  const recipes=WS.recipes[kind]||{};return Object.keys(recipes);
-}
+const WS_KINDS={weapon:'총기',armor:'방어구',exp:'투척물'};
+let wsSel={kind:'weapon',item:null,n:1};
+function wsItemName(kind,k){return kind==='weapon'?WEAP[k].n:kind==='armor'?ARMOR[k].n:kind==='exp'?EXP[k].n:'폭발 드론';}
+function wsItemCol(kind,k){return kind==='weapon'?WEAP[k].col:kind==='armor'?ARMOR[k].col:kind==='exp'?EXP[k].col:'#aaa';}
+function wsStockOf(T,kind,k){return kind==='weapon'?(wst(T)[k]|0):kind==='armor'?(ast(T)[k]|0):armories(T.id).reduce((a,o)=>a+(armStock(o)[k]|0),0);}
+// 제작 시간: 수량이 늘수록 개당 시간이 조금씩 길어진다(개당 +6%씩, 최대 +60%)
+function wsDuration(kind,n){return WS.time[kind]*n*(1+Math.min(.6,.06*(n-1)));}
 function wsMakePanel(){
-  if(document.getElementById('wsPanel'))return document.getElementById('wsPanel');
-  const el=document.createElement('div');el.id='wsPanel';el.style.cssText='position:fixed;inset:0;z-index:70;background:rgba(4,6,4,.72);display:none;align-items:center;justify-content:center;padding:16px;font:14px/1.5 system-ui,sans-serif;color:#e8e4cf';
-  el.innerHTML='<div style="width:min(620px,96vw);max-height:90vh;overflow:auto;background:#1b1e14;border:1px solid #8a7746;border-radius:5px;box-shadow:0 18px 60px #000b;padding:18px"><header style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #45442f;padding-bottom:10px;margin-bottom:14px"><div><b id="wsTitle" style="font-size:23px;color:#d9ad4e">공방</b><div id="wsSubtitle" style="color:#aaa58b;font-size:12px"></div></div><button id="wsClose" class="btn">닫기 ✕</button></header><div id="wsUpgradeBox" style="margin-bottom:13px"></div><section style="border:1px solid #3b412a;padding:12px;margin:10px 0"><h3 style="margin:0 0 8px;color:#d9ad4e">제작</h3><div style="display:grid;grid-template-columns:1fr 1.2fr;gap:8px"><label>분류<select id="wsKind" class="wsSelect"><option value="weapon">총기</option><option value="armor">방어구</option><option value="exp">투척물</option></select></label><label>품목<select id="wsItem" class="wsSelect"></select></label></div><label style="display:block;margin-top:10px">인분 <input id="wsN" style="width:100%;accent-color:#d9ad4e" type="range" min="1" max="5" value="1"></label><div id="wsAmount" style="font:12px ui-monospace;color:#d9ad4e"></div><div id="wsCost" style="margin:8px 0;padding:8px;background:#252a1a;border:1px solid #3b412a"></div><button id="wsCraft" class="go" style="font-size:17px;margin-top:4px">제작 시작</button></section><div id="wsJob" style="margin-top:10px"></div><div id="wsStock" style="font-size:12px;color:#aaa58b;margin-top:8px"></div></div>';
-  document.body.appendChild(el);el.querySelectorAll('.wsSelect').forEach(q=>q.style.cssText='width:100%;display:block;margin-top:4px;background:#12140d;border:1px solid #3b412a;padding:8px;color:#e8e4cf');
-  el.querySelector('#wsClose').onclick=wsClose;
-  el.querySelector('#wsKind').onchange=()=>wsPanelRender(wsPanelObj());
-  el.querySelector('#wsItem').onchange=()=>wsPanelCost();
-  el.querySelector('#wsN').oninput=()=>wsPanelCost();
-  el.querySelector('#wsCraft').onclick=()=>{const o=wsPanelObj();if(!o)return;const n=+el.querySelector('#wsN').value,kind=el.querySelector('#wsKind').value,item=el.querySelector('#wsItem').value,e=wsQueue(o,kind,item,n);if(e)toast(e);else wsPanelRender(o);};
-  el.querySelector('#wsUpgradeBox').onclick=e=>{if(e.target.closest('[data-upgrade]')){const o=wsPanelObj();if(o)wsUpgrade(o,false);wsPanelRender(o);}};
-  el.addEventListener('pointerdown',e=>{if(e.target===el)wsClose();});
-  return el;
+  let m=document.getElementById('wsPanel');if(m)return m;
+  const st=document.createElement('style');
+  st.textContent=`#wsPanel{position:absolute;top:56px;right:12px;z-index:27;width:400px;max-height:calc(100% - 80px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 28px rgba(0,0,0,.5);padding:10px 12px;font-size:12px;display:flex;flex-direction:column;gap:8px}
+#wsPanel[hidden]{display:none}#wsPanel h3{margin:0;font:600 13px var(--body);display:flex;justify-content:space-between;align-items:center}
+#wsPanel table{width:100%;border-collapse:collapse}#wsPanel td,#wsPanel th{padding:3px 4px;text-align:left;border-bottom:1px solid var(--line)}#wsPanel th{color:var(--dim);font-weight:600}
+#wsPanel tr.pick{background:rgba(217,173,78,.14)}#wsPanel tbody tr{cursor:pointer}#wsPanel tbody tr:hover{background:rgba(255,255,255,.05)}
+#wsPanel input[type=number]{background:var(--bg);border:1px solid var(--line);color:var(--fg);padding:3px 6px}#wsPanel .rw{display:flex;gap:6px;align-items:center}#wsPanel .tabs{display:flex;gap:6px}#wsPanel .tabs .btn{flex:1}#wsPanel input{min-width:0}
+#wsPanel .bar{height:6px;background:#111;border-radius:3px;overflow:hidden;margin-top:5px}#wsPanel .bar i{display:block;height:100%;background:var(--accent)}
+#wsPanel .sum{padding:6px 8px;background:var(--panel2);border:1px solid var(--line);border-radius:3px;line-height:1.6}`;
+  document.head.appendChild(st);
+  m=document.createElement('aside');m.id='wsPanel';m.hidden=true;
+  m.innerHTML=`<h3><span id="wsTitle">🔧 공방</span><button class="btn" id="wsClose" type="button">닫기 ✕</button></h3>
+<div id="wsSubtitle" style="color:var(--dim)"></div><div id="wsUpgradeBox"></div>
+<div class="tabs" id="wsTabs">${Object.keys(WS_KINDS).map(k=>`<button class="btn" type="button" data-kind="${k}">${WS_KINDS[k]}</button>`).join('')}</div>
+<table><thead><tr><th>품목</th><th>재고</th><th>단가</th><th>시간</th></tr></thead><tbody id="wsTab"></tbody></table>
+<div><div class="rw"><label>수량 <input type="number" id="wsN" min="1" value="1" style="width:64px"></label><span id="wsMax" style="color:var(--dim)"></span></div>
+<div class="rw" style="margin-top:6px">${[-10,-5,-1,1,5,10].map(n=>`<button class="btn" type="button" data-qty="${n}" style="flex:1">${n>0?'+':''}${n}</button>`).join('')}</div></div>
+<div class="sum" id="wsSum"></div><button class="btn on" id="wsCraft" type="button">제작 시작</button>
+<div id="wsJob"></div><div id="wsStock" style="color:var(--dim)"></div>`;
+  $('stage').appendChild(m);
+  m.addEventListener('click',e=>{
+    const o=wsPanelObj();if(!o)return;
+    if(e.target.id==='wsClose'){wsClose();return;}
+    const k=e.target.closest('button[data-kind]');if(k){wsSel.kind=k.dataset.kind;wsSel.item=null;wsPanelRender(o);return;}
+    const tr=e.target.closest('tr[data-item]');if(tr){wsSel.item=tr.dataset.item;wsPanelRender(o);return;}
+    const q=e.target.closest('button[data-qty]');if(q){const mx=WS.batches[wsTier(o)];$('wsN').value=Math.max(1,Math.min(mx,(+$('wsN').value|0)+(+q.dataset.qty)));wsPanelCost();return;}
+    if(e.target.closest('[data-upgrade]')){wsUpgrade(o,false);wsPanelRender(o);return;}
+    if(e.target.id==='wsCraft'){const er=wsQueue(o,wsSel.kind,wsSel.item,+$('wsN').value);if(er)toast(er);else wsPanelRender(o);}
+  });
+  m.addEventListener('input',e=>{if(e.target.id==='wsN')wsPanelCost();});
+  return m;
 }
 function wsPanelObj(){return wsPanelId===null||!G?null:[...G.obSet].find(o=>o.id===wsPanelId)||null;}
-function wsPanelOpen(o){wsPanelId=o.id;const e=wsMakePanel();e.style.display='flex';wsPanelRender(o);}
-function wsClose(){const e=document.getElementById('wsPanel');if(e)e.style.display='none';wsPanelId=null;}
+function wsPanelOpen(o){wsPanelId=o.id;if(typeof armMenu==='function')armMenu(false);const e=wsMakePanel();e.hidden=false;wsPanelRender(o);}
+function wsClose(){const e=document.getElementById('wsPanel');if(e)e.hidden=true;wsPanelId=null;}
 function wsPanelRender(o){
-  if(!o)return wsClose();const e=wsMakePanel(),tier=wsTier(o),kind=e.querySelector('#wsKind'),item=e.querySelector('#wsItem');
-  e.querySelector('#wsTitle').textContent=wsName(o);
-  e.querySelector('#wsSubtitle').textContent='제작 상한 '+WS.batches[tier]+'인분 · 재료 단가 '+Math.round((1-.1*tier)*100)+'% · 총기·방어구·투척물은 무기고 입고';
-  const up=e.querySelector('#wsUpgradeBox'),uc=wsUpgradeCost(tier),T=G.teams[o.team];
-  if(uc)up.innerHTML='<button data-upgrade class="btn" style="width:100%;padding:10px;border-color:#a68a45">강화: '+WS.names[tier+1]+' · '+wsCostText(uc)+'</button>';
-  else up.innerHTML='<div style="padding:9px;color:#d9ad4e;border:1px solid #3b412a">최종 단계 · 차량 목록에서 폭발 드론 해금</div>';
-  item.innerHTML=wsProductList(kind.value,tier).map(k=>{const name=kind.value==='weapon'?WEAP[k].n:kind.value==='armor'?ARMOR[k].n:kind.value==='exp'?EXP[k].n:'폭발 드론';return '<option value="'+k+'">'+name+'</option>';}).join('');
-  e.querySelector('#wsN').max=WS.batches[tier];
-  if(+e.querySelector('#wsN').value>WS.batches[tier])e.querySelector('#wsN').value=WS.batches[tier];
+  if(!o)return wsClose();const e=wsMakePanel(),tier=wsTier(o),T=G.teams[o.team],kind=wsSel.kind,list=Object.keys(WS.recipes[kind]||{});
+  if(!list.includes(wsSel.item))wsSel.item=list[0];
+  e.querySelector('#wsTitle').textContent='🔧 '+wsName(o);
+  e.querySelector('#wsSubtitle').textContent='제작 상한 '+WS.batches[tier]+'개 · 재료 단가 '+Math.round((1-.1*tier)*100)+'% · 완성품은 무기고에 입고';
+  const uc=wsUpgradeCost(tier);
+  e.querySelector('#wsUpgradeBox').innerHTML=uc?'<button data-upgrade class="btn" type="button" style="width:100%">강화: '+WS.names[tier+1]+' · '+wsCostText(uc)+'</button>':'<div style="color:var(--accent)">최종 단계 · 차량 목록에서 폭발 드론 해금</div>';
+  e.querySelectorAll('#wsTabs .btn').forEach(b=>b.classList.toggle('on',b.dataset.kind===kind));
+  e.querySelector('#wsTab').innerHTML=list.map(k=>`<tr data-item="${k}" class="${k===wsSel.item?'pick':''}"><td><b style="color:${wsItemCol(kind,k)}">${wsItemName(kind,k)}</b></td><td>${wsStockOf(T,kind,k)}</td><td style="color:var(--dim);font-size:11px">${wsCostText(wsRecipe(kind,k,1,tier))}</td><td>${WS.time[kind]}초</td></tr>`).join('');
+  e.querySelector('#wsMax').textContent='최대 '+WS.batches[tier]+'개';
+  const inp=e.querySelector('#wsN');inp.max=WS.batches[tier];if(+inp.value>WS.batches[tier])inp.value=WS.batches[tier];if(+inp.value<1)inp.value=1;
+  e.querySelector('#wsStock').textContent=(armories(T.id).length?'무기고 연결됨':'무기고 없음 · 먼저 무기고를 건설하세요')+(o.job?' · 제작 중':'');
   wsPanelCost();wsPanelProgress(o);
-  const stock=armories(T.id).length?'무기고 연결됨':'무기고 없음 · 먼저 무기고를 건설하세요';
-  e.querySelector('#wsStock').textContent=stock+(o.job?' · 제작 중':' · 방어구와 투척물도 재료로 제작해 보관합니다');
-  e.querySelector('#wsCraft').disabled=!!o.job;
 }
 function wsPanelCost(){
-  const o=wsPanelObj();if(!o)return;const e=wsMakePanel(),kind=e.querySelector('#wsKind').value,item=e.querySelector('#wsItem').value,n=+e.querySelector('#wsN').value;
-  const cost=wsRecipe(kind,item,n,wsTier(o)),T=G.teams[o.team],enough=cost&&canAfford(T,cost);
-  e.querySelector('#wsAmount').textContent=n+'인분 제작';
-  e.querySelector('#wsCost').innerHTML=(cost?wsCostText(cost):'재료 없음')+'<span style="float:right;color:'+(enough?'#86b45e':'#d0583f')+'">'+(enough?'제작 가능':'재료 부족')+'</span>';
-  e.querySelector('#wsCraft').disabled=!!o.job||!enough||(kind!=='drone'&&!armories(T.id).length);
+  const o=wsPanelObj();if(!o)return;const e=wsMakePanel(),kind=wsSel.kind,n=Math.max(1,+e.querySelector('#wsN').value|0),T=G.teams[o.team];
+  const cost=wsRecipe(kind,wsSel.item,n,wsTier(o)),enough=cost&&canAfford(T,cost),dur=wsDuration(kind,n);
+  e.querySelector('#wsSum').innerHTML=`<b>${wsSel.item?wsItemName(kind,wsSel.item):'-'} ×${n}</b><br>재료 ${cost?wsCostText(cost):'-'}<br>소요 <b>${dur.toFixed(1)}초</b> <span style="color:var(--dim)">(개당 ${(dur/n).toFixed(2)}초 · 수량이 많을수록 길어짐)</span><span style="float:right;color:${enough?'var(--good)':'var(--danger)'}">${enough?'제작 가능':'재료 부족'}</span>`;
+  e.querySelector('#wsCraft').disabled=!!o.job||!enough||!armories(T.id).length;
 }
 function wsPanelProgress(o){
-  const e=document.getElementById('wsPanel');if(!e||e.style.display==='none')return;
+  const e=document.getElementById('wsPanel');if(!e||e.hidden)return;
   const box=e.querySelector('#wsJob');
-  if(!o.job){box.innerHTML='<small style="color:#aaa58b">제작 대기 중</small>';e.querySelector('#wsCraft').disabled=false;wsPanelCost();return;}
+  if(!o.job){box.innerHTML='';wsPanelCost();return;}
   const j=o.job,p=Math.min(1,j.elapsed/j.duration);
-  box.innerHTML='<div style="padding:9px;border:1px solid #3b412a">제작 진행 '+Math.floor(p*100)+'% · '+wsCostText(j.cost)+'<div style="height:5px;background:#111;margin-top:7px"><i style="display:block;height:100%;width:'+Math.floor(p*100)+'%;background:#d9ad4e"></i></div></div>';
+  box.innerHTML=`<div class="sum"><b>제작 중</b> · ${wsItemName(j.kind,j.item)} ×${j.n}<br>${Math.floor(p*100)}% · 남은 ${Math.max(0,j.duration-j.elapsed).toFixed(1)}초<div class="bar"><i style="width:${Math.floor(p*100)}%"></i></div></div>`;
   e.querySelector('#wsCraft').disabled=true;
 }
 // ---- AI: 공방 건설·강화·장비 제작·드론 운용 ----

@@ -38,7 +38,7 @@ function renderShop(force){
     else{
       let h='';
       for(const l of T.order.lines){
-        const name=l.kind==='wpn'?`${WEAP[l.item].n} ×${l.n}`:l.kind==='exp'?`${EXP[l.item].n} ×${l.n}`:l.kind==='recruit'?`병사 +${l.n}명`:`${RN[l.from]} ${l.amt} → ${RN[l.to]} ${l.out}`;
+        const name=l.kind==='wpn'?`${WEAP[l.item].n} ×${l.n}`:l.kind==='exp'?`${EXP[l.item].n} ×${l.n}`:l.kind==='arm'?`${ARMOR[l.item].n} ×${l.n}`:l.kind==='recruit'?`병사 +${l.n}명`:`${RN[l.from]} ${l.amt} → ${RN[l.to]} ${l.out}`;
         h+=`<div class="cartLine"><span>${name}</span><em>${costText(l.cost)}</em><button class="btn" data-id="${l.id}">취소</button></div>`;
       }
       const esc=orderEscrow(T);

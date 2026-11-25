@@ -157,19 +157,21 @@ const _ssW=stepShells;stepShells=function(dt){_ssW(dt);stepWeapons(dt);};
 <table><thead><tr><th>무기</th><th>병사</th><th>재고</th><th>구매</th></tr></thead><tbody id="amTab"></tbody></table>
 <div><b>무기 교체</b><div class="sw" style="margin-top:6px"><select id="amFrom"></select><span>→</span><select id="amTo"></select></div>
 <div class="rw" style="margin-top:6px"><label>인원 <input type="number" id="amN" min="1" value="1" style="width:64px"></label><button class="btn" id="amGo" type="button" style="flex:1">교체 주문</button></div>
+<div class="rw qty" style="margin-top:4px">${[-10,-5,5,10].map(n=>`<button class="btn" type="button" data-qty="${n}" data-t="amN" style="flex:1">${n>0?'+':''}${n}</button>`).join('')}</div>
 <small style="color:var(--dim)">무기고 ${SWAP.range}칸 안의 대기 병사가 하나씩 가서 헌 무기를 반납하고 새 무기를 받습니다. 새 무기는 헬기로 구매하세요.</small></div>
 <div id="amJobs"></div>`;
   $('stage').appendChild(m);
   const mk=(sel,items)=>{sel.innerHTML=items;};
   m.addEventListener('click',e=>{
     if(e.target.id==='amX'){armMenu(false);return;}
+    const qb=e.target.closest('button[data-qty]');if(qb){const inp=$(qb.dataset.t);inp.value=Math.max(1,(+inp.value|0)+(+qb.dataset.qty));return;}
     const bb=e.target.closest('button[data-buy]');if(bb&&G){const [kd,k]=bb.dataset.buy.split(':'),n=+bb.dataset.n;const er=kd==='weap'?shopAddWeapon(0,k,n):shopAddExp(0,k,n);if(er)toast(er);else toast((kd==='weap'?WEAP[k].n:EXP[k].n)+' '+n+'개를 주문했습니다 (헬기로 도착)','ok');amRender(true);try{renderShop(true);}catch(_){}return;}
     if(e.target.id==='amGo'&&G){const er=swapAdd(0,$('amFrom').value,$('amTo').value,Math.max(1,+$('amN').value|0));if(er)toast(er);else toast('교체 주문을 등록했습니다','ok');amRender(true);}
     const c=e.target.closest('button[data-cancel]');if(c&&G){swapCancel(0,+c.dataset.cancel);amRender(true);}
   });
   window.armMenu=function(v){m.hidden=!v;if(v){amSig='';amRender(true);}};
   const sel0=(id,html)=>{const s=$(id),cur=s.value;s.innerHTML=html;if(cur)s.value=cur;if(!s.value)s.selectedIndex=0;};
-  let amSig='';
+  let amSig='',amSel='';
   window.amRender=function(force){
     if(m.hidden||!G)return;
     const T=G.teams[0],A=armories(0).length;
@@ -182,6 +184,8 @@ const _ssW=stepShells;stepShells=function(dt){_ssW(dt);stepWeapons(dt);};
     sel0('amFrom',WEAPK.map(k=>`<option value="${k}">${WEAP[k].n} (${cnt[k]}명)</option>`).join(''));
     sel0('amTo',WEAPK.map(k=>`<option value="${k}">${WEAP[k].n} (${cnt[k]}명)${k==='rifle'?'':' · 재고 '+stk[k]}</option>`).join(''));
     if($('amTo').value===$('amFrom').value&&!$('amFrom').dataset.touched){const o=[...$('amTo').options].find(x=>x.value!==$('amFrom').value&&x.value!=='rifle');if(o)$('amTo').value=o.value;}
+    // 편의: 선택이 바뀌면 인원을 '바꿀 병사 수'와 '목표 재고' 중 작은 쪽으로 자동 설정
+    {const sel=$('amFrom').value+'>'+$('amTo').value;if(sel!==amSel){amSel=sel;const v=Math.min(cnt[$('amFrom').value],stk[$('amTo').value]);$('amN').value=Math.max(1,isFinite(v)?v:cnt[$('amFrom').value]);}}
     $('amJobs').innerHTML=jobs.length?'<b>진행 중인 교체</b>'+jobs.map(s=>`<div class="job"><span>${WEAP[s.from].n} (${cnt[s.from]}명) → ${WEAP[s.to].n} (${cnt[s.to]}명)<br><small style="color:var(--dim)">남은 ${s.left+s.fly}명 / 총 ${s.total}명</small></span><button class="btn" data-cancel="${s.id}" type="button">취소</button></div>`).join(''):'';
     $('amGo').disabled=!A;
   };

@@ -11,7 +11,7 @@
 .shGB section{border:0;background:none;padding:0}.shGrp.one .shGB section>h3{display:none}`;
   document.head.appendChild(st);
   const find=(t)=>[...body.children].find(s=>s.tagName==='SECTION'&&s.querySelector('h3')&&s.querySelector('h3').textContent.trim()===t);
-  const GR=[['📦 보급',['병력 충원','자원 교환'],'병사 · 자원 교환'],['🔫 무기',['총기'],'총기 7종'],['💣 폭발물',['폭발물'],'투척물'],['📋 주문 내역',['주문 내역'],'']];
+  const GR=[['📦 보급',['병력 충원','자원 교환'],'병사 · 자원 교환'],['🔫 무기',['총기'],'총기 7종'],['💣 폭발물',['폭발물'],'투척물'],['🛡 방호구',['방호구'],'3종'],['📋 주문 내역',['주문 내역'],'']];
   const grps=[];
   for(const [name,list,sub] of GR){
     const secs=list.map(find).filter(Boolean);if(!secs.length)continue;
@@ -36,10 +36,6 @@ updateExpUI=function(){
 };
 (function(){
   const m=document.getElementById('armMenu');if(!m)return;
-  const armor=document.createElement('div');armor.id='amArmorSlot';
-  armor.style.cssText='border:1px dashed var(--line);border-radius:4px;padding:8px 10px;color:var(--dim);font-size:12px';
-  armor.innerHTML='<b style="color:var(--fg)">🛡 '+ARMOR_SLOT.name+'</b> <span>— '+ARMOR_SLOT.description+'</span>';
-  m.insertBefore(armor,document.getElementById('amJobs'));
   const d=document.createElement('div');d.id='amExp';
   m.insertBefore(d,document.getElementById('amJobs'));
   const _ar=window.amRender;

@@ -125,9 +125,7 @@ function drawDrop(d){
     if(sprOk(e)){cx.save();cx.translate(sx,sy-2*z);cx.rotate(d.rot);cx.scale(1.15,1.15);const b=sprBkt(z),bm=sprRaster(e,b),k=z/b;cx.drawImage(bm,e.x*z,e.y*z,bm.width*k,bm.height*k);cx.restore();return;}
     cx.strokeStyle=WEAP[d.k].col;cx.lineWidth=2.4*z;cx.beginPath();cx.moveTo(sx-6*z,sy-2*z);cx.lineTo(sx+6*z,sy-3*z);cx.stroke();return;
   }
-  const col=EXP[d.k].col;
-  cx.fillStyle='#2a2a24';cx.fillRect(sx-2.4*z,sy-7*z,4.8*z,6*z);cx.fillStyle=col;cx.fillRect(sx-2.4*z,sy-4.6*z,4.8*z,2.4*z);
-  cx.fillStyle=d.k==='molotov'?'#ffb84a':'#bbb';cx.fillRect(sx-1*z,sy-9.5*z,2*z,2.6*z);
+  {const e=sprGetX('dropx|'+d.k);if(sprOk(e))sprBlit(e,sx,sy,z,false);}
 }
 // ---- 민간인 그리기: 병사 에셋 재사용 ----
 const _dcP=drawCiv;

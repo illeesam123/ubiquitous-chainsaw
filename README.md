@@ -276,3 +276,6 @@ npm run dist         # 설치 파일 생성 (Windows NSIS / macOS dmg / Linux Ap
 - AI 는 ‘파츠’를 매 틱 순서대로 실행하는 구조이며, 구성은 이 파일 하나에서 관리한다. 기존 `aiTick` 래퍼 사슬(52·64·65·66·69)은 제거하고 각 기능을 파츠 함수(`aiPartPurge`·`aiCoreTick`·`aiPartSmart`·`aiPartEconomy`·`aiPartSniper`·`aiPartRcEconomy`·`aiPartSurface`·`aiPartRcPurge`)로 바꿨다.
 - 구성: `AILOAD`(모드별 목록 — normal: purge→core→smart→economy→sniper, reclaim: rcEconomy→surface→rcPurge→economy→sniper, defense: 없음), `AIPERSONA`(성향별 추가), 팀별 `T.ai.parts`(전체 교체)/`T.ai.extraParts`(추가), `AIOFF.add('id')`(끄기), `aiPartsInfo()`(현황).
 - 새 파츠: ① 함수 `aiPartXxx(T,dt)` 작성 ② `aiPart('id',{name,desc,run,every?,gate?,blockable?})` 등록 ③ `AILOAD`/`AIPERSONA` 에 id 추가. `gate` 파츠가 true 를 돌려주면 `blockable` 파츠(기본 본체)는 그 틱에 건너뛴다.
+
+- 방어구(나무판자·장갑판·석재 갑주)는 병사 머리·몸통에 SVG(`armor|종류|head/body`)로 덧그려진다. 광석(`ore|종류|변형`)·동굴 입구(`mouth|0`)·수직갱 뚜껑(`hatch|0`)·투척물 드롭(`dropx|종류`)도 SVG 에셋이며, `tools/bake-misc.js`(굽기)·`tools/add-svg.js`·`tools/extra-svgs.js`(수작업 SVG)로 비파괴 추가한다.
+- 무기고의 폭발물 지급·무기/방호구 교체·보유 수 계산에서는 차량에 탄 병사를 제외한다.

@@ -290,7 +290,7 @@ function genCaves(r){
 function drawMouth(x,y){
   const z=cam.z,[sx,sy]=toS(x+.5,y+.5);
   cx.fillStyle='rgba(0,0,0,.35)';cx.beginPath();cx.ellipse(sx,sy+2*z,24*z,12.5*z,0,0,6.3);cx.fill();
-  const g=cx.createRadialGradient(sx,sy,2*z,sx,sy,20*z);g.addColorStop(0,'#050403');g.addColorStop(.75,'#14100c');g.addColorStop(1,'#3c352b');
+  let g='#0e0b08';if(!REC){g=cx.createRadialGradient(sx,sy,2*z,sx,sy,20*z);g.addColorStop(0,'#050403');g.addColorStop(.75,'#14100c');g.addColorStop(1,'#3c352b');}
   cx.fillStyle=g;cx.beginPath();cx.ellipse(sx,sy,19*z,9.5*z,0,0,6.3);cx.fill();
   for(let k=0;k<7;k++){const a=k/7*6.283+hsh(x,y)*2,rx=Math.cos(a)*20*z,ry=Math.sin(a)*10*z;
     poly([[sx+rx-4*z,sy+ry],[sx+rx-1*z,sy+ry-6*z],[sx+rx+4*z,sy+ry-2*z],[sx+rx+3*z,sy+ry+2*z]],k%2?'#6b6559':'#7b7568','#2a2620',1);}

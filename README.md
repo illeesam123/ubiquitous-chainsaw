@@ -283,3 +283,4 @@ npm run dist         # 설치 파일 생성 (Windows NSIS / macOS dmg / Linux Ap
 - 덤불(`bush|바이옴|변형`)·지하 철로(`urail|마스크`)도 SVG 에셋(`tools/bake-misc.js`).
 - 효과(폭발·연기·먼지·불꽃·포탄)·철거 폭약·사다리도 SVG 에셋(`fx|…`, `charge|…`, `ladder|방향|높이차`, `tools/bake-fx.js`). 폭발·연기 등은 진행도를 프레임으로 나눠 순서대로 찍는다. fortress의 강화 중립 구조물도 단계별 에셋을 쓴다. 총알 궤적선·이동 표시·화면 조명 오버레이는 도형/후처리라 코드로 그린다.
 - 공방 제작 창은 무기고 창과 같은 패널 틀(탭·표·±수량 버튼·요약)을 쓴다. 제작 시간은 수량이 늘수록 개당 +6%씩(최대 +60%) 길어진다(`wsDuration`).
+- 공방 건물은 단계별(공방·공예소·군수공장) SVG(`workshop|단계`, 팀색 깃발 마스크 `workshopt|단계`). 손으로 조립하는 생성기: `node tools/gen-workshop.js`.

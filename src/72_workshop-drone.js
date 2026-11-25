@@ -152,14 +152,10 @@ const _issueWorkWS=issueWork;
 issueWork=function(team,kind,tiles,type,n,pool){if(kind==='build'&&type==='workshop')n=1;return _issueWorkWS(team,kind,tiles,type,n,pool);};
 // ---- SVG 건물·드론 그리기 ----
 function wsDrawBuilding(o){
-  const z=cam.z,[sx,sy]=toS(o.x+1,o.y+1),L=o.fl>0?'#fff':'#d8d5bd';
-  shadowAt(o.x+1.1,o.y+1.15,45,20);
-  if(WS_IMG.complete&&WS_IMG.naturalWidth)cx.drawImage(WS_IMG,sx-46*z,sy-67*z,92*z,74*z);
-  else{
-    cx.fillStyle='#665844';cx.beginPath();cx.moveTo(sx-38*z,sy-18*z);cx.lineTo(sx,sy-36*z);cx.lineTo(sx+38*z,sy-18*z);cx.lineTo(sx,sy);cx.closePath();cx.fill();
-    cx.fillStyle='#81765f';cx.fillRect(sx-30*z,sy-42*z,60*z,34*z);cx.strokeStyle='#302a20';cx.lineWidth=2*z;cx.strokeRect(sx-30*z,sy-42*z,60*z,34*z);
-  }
-  if(wsTier(o)>0){cx.fillStyle=L;cx.font='bold '+Math.max(8,11*z)+'px system-ui';cx.textAlign='center';cx.fillText(wsTier(o)===1?'II':'III',sx+28*z,sy-42*z);}
+  const z=cam.z,[sx,sy]=toS(o.x+1,o.y+1),t=wsTier(o);
+  const e=sprGetX('workshop|'+t),m=sprGetX('workshopt|'+t);
+  if(sprOk(e)){sprBlit(e,sx,sy,z,false);if(sprOk(m))sprBlitTint(m,sx,sy,z,o.team>=0?TEAM_COL[o.team]:'#888',false);
+    if(o.fl>0){cx.globalAlpha=.35;cx.fillStyle='#fff';cx.beginPath();cx.ellipse(sx,sy-18*z,46*z,30*z,0,0,6.3);cx.fill();cx.globalAlpha=1;}}
   if(o.job){cx.fillStyle='rgba(0,0,0,.65)';cx.fillRect(sx-22*z,sy+5*z,44*z,4*z);cx.fillStyle='#d9ad4e';cx.fillRect(sx-22*z,sy+5*z,44*z*o.job.elapsed/o.job.duration,4*z);}
 }
 const _drawObFullWS=drawObFull;

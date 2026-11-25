@@ -17,6 +17,21 @@ drawShaftHatch=function(x,y){if(REC)return _dhBase(x,y);const e=sprGetX('hatch|0
 function dropExpDraw(sx,sy,z,k){const col=EXP[k].col;
   cx.fillStyle='#2a2a24';cx.fillRect(sx-2.4*z,sy-7*z,4.8*z,6*z);cx.fillStyle=col;cx.fillRect(sx-2.4*z,sy-4.6*z,4.8*z,2.4*z);
   cx.fillStyle=k==='molotov'?'#ffb84a':'#bbb';cx.fillRect(sx-1*z,sy-9.5*z,2*z,2.6*z);}
+// 덤불(바이옴 × 변형 4) · 지하 철로(연결 마스크 E1 W2 S4 N8)
+const _dbuBase=drawBush;
+function bushVar(x,y){return (hsh(x,y)*4)|0;}
+drawBush=function(x,y){
+  if(REC)return _dbuBase(x,y);
+  const e=sprGetX('bush|'+G.biome+'|'+bushVar(x,y));if(!sprOk(e))return;
+  const [sx,sy]=toS(x+.5,y+.5);sprBlit(e,sx,sy,cam.z,true);
+};
+const _durBase=drawUndRail,RAILD=[[1,0],[-1,0],[0,1],[0,-1]];
+drawUndRail=function(x,y,i){
+  if(REC)return _durBase(x,y,i);
+  let m=0;for(let k=0;k<4;k++){const nx=x+RAILD[k][0],ny=y+RAILD[k][1];if(inb(nx,ny)&&G.urail[ny*G.w+nx]&&G.under[ny*G.w+nx])m|=1<<k;}
+  const e=sprGetX('urail|'+m);if(!sprOk(e))return;
+  const [sx,sy]=toS(x+.5,y+.5);sprBlit(e,sx,sy,cam.z,true);
+};
 function sprBakeMisc(){
   const o={},put=(k,fn,wx,wy)=>{const s=sprRecord(fn,wx,wy);if(s)o[k]=s;};
   const bake=(i0,kind,v,wx,wy)=>{const i=i0;const so=G.ore[i];G.ore[i]=kind;try{put('ore|'+kind+'|'+v,()=>_doBase(wx,wy,i),wx,wy);}finally{G.ore[i]=so;}};
@@ -27,5 +42,7 @@ function sprBakeMisc(){
   put('mouth|0',()=>_dmBase(10,10),10.5,10.5);
   put('hatch|0',()=>_dhBase(10,10),10.5,10.5);
   for(const k of EXPK)put('dropx|'+k,()=>dropExpDraw(0,0,1,k),0,0);
+  for(let m=0;m<16;m++){const L=RAILD.filter((_,k)=>m>>k&1);put('urail|'+m,()=>railGfx(10,10,L.length?L:[],false),10.5,10.5);}
+  for(const bk of BIOME_KEYS){G.biome=bk;for(let v=0;v<4;v++){let fx=0,fy=0;for(let a=8;a<80&&!fx;a++)for(let b=8;b<80;b++)if(bushVar(a,b)===v){fx=a;fy=b;break;}put('bush|'+bk+'|'+v,()=>_dbuBase(fx,fy),fx+.5,fy+.5);}}
   return o;
 }

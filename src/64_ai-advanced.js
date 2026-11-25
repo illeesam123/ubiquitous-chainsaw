@@ -171,7 +171,7 @@ function aiRoles(T,A,mine){
   let nS=0,nL=0;
   for(const u of mine){
     const k=u.gun;if(k!=='sniper'&&k!=='lmg'){if(u.aiRole){u.aiRole=null;u.aiTo=null;}continue;}
-    if(sq.has(u.id)||u.gar||u.garTarget||u.task||u.queue.length||u.fetch||u.lay||u.medTarget||u.state==='work')continue;
+    if(sq.has(u.id)||u.gar||u.garTarget||u.task||u.queue.length||u.fetch||u.lay||u.medTarget||u.state==='work')continue;if((u.snT||0)>G.time)continue;   // 저격수 전술(69_ai-sniper.js)이 조종 중
     if(u.aiRole&&u.aiTo){
       const d=Math.hypot(u.x-u.aiTo[0]-.5,u.y-u.aiTo[1]-.5);
       if(d<=3||u.state==='move')continue;

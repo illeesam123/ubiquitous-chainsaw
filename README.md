@@ -271,3 +271,8 @@ npm run dist         # 설치 파일 생성 (Windows NSIS / macOS dmg / Linux Ap
 ## 경기관총 제압 사격 · AI 저격수 운용
 - 경기관총(`src/68_lmg-suppress.js`): 사거리 5→11. 겨눈 적을 맞히지 못한 탄은 75% 확률로 사선 뒤쪽(사거리×1.35까지, 폭 `LMG_SUP.width`)의 다른 적·차량을 명중률 ×0.6 으로 한 번 더 노린다(`WEAP.*.sup:true` 인 총기에 적용).
 - AI 저격수(`src/69_ai-sniper.js`, `SNP`): 적이 없으면 위협 방향의 덤불로 들어가 매복, 적이 사거리 밖이면 사거리의 90% 지점까지만 접근해 사격, 쏘아서 노출되면(`reveal`) 4.5칸 이상 옮겨 다른 덤불·참호로 이동, 너무 가깝거나(사거리 55% 미만) 체력이 낮으면 후퇴. 원정·소탕·주둔·작업 중인 저격수는 제외하고, 조종 중에는 `u.snT` 로 `aiRoles` 재배치를 막는다.
+
+## AI 파츠 시스템 (`src/70_ai-parts.js`)
+- AI 는 ‘파츠’를 매 틱 순서대로 실행하는 구조이며, 구성은 이 파일 하나에서 관리한다. 기존 `aiTick` 래퍼 사슬(52·64·65·66·69)은 제거하고 각 기능을 파츠 함수(`aiPartPurge`·`aiCoreTick`·`aiPartSmart`·`aiPartEconomy`·`aiPartSniper`·`aiPartRcEconomy`·`aiPartSurface`·`aiPartRcPurge`)로 바꿨다.
+- 구성: `AILOAD`(모드별 목록 — normal: purge→core→smart→economy→sniper, reclaim: rcEconomy→surface→rcPurge→economy→sniper, defense: 없음), `AIPERSONA`(성향별 추가), 팀별 `T.ai.parts`(전체 교체)/`T.ai.extraParts`(추가), `AIOFF.add('id')`(끄기), `aiPartsInfo()`(현황).
+- 새 파츠: ① 함수 `aiPartXxx(T,dt)` 작성 ② `aiPart('id',{name,desc,run,every?,gate?,blockable?})` 등록 ③ `AILOAD`/`AIPERSONA` 에 id 추가. `gate` 파츠가 true 를 돌려주면 `blockable` 파츠(기본 본체)는 그 틱에 건너뛴다.

@@ -105,8 +105,8 @@ function aiPurgeStep(T,dt){
   const mine=G.units.filter(u=>u.team===T.id&&!u.dead&&u.state!=='crew'&&!u.gar&&!u.lay&&!['med','medwait','medmove','medqueue'].includes(u.state));
   return aiPurgeStart(T,A,mine);
 }
-const _aiTickP=aiTick;
-aiTick=function(T,dt){if(T.ai&&aiPurgeStep(T,dt))return;return _aiTickP(T,dt);};
+// 파츠 'purge': 소탕 작전 중이면 true(기본 AI 본체는 건너뜀)
+function aiPartPurge(T,dt){return !!(T.ai&&aiPurgeStep(T,dt));}
 
 
 // ================= AI 고도화: 위협 지도 · 병과별 역할 · 수송 · 결과 학습 · 적 구성에 따른 구매 =================
@@ -302,13 +302,12 @@ function aiTuneTypes(T,types){
   return out;
 }
 // ---- 통합 ----
-const _aiTickS=aiTick;
-aiTick=function(T,dt){
-  const r=_aiTickS(T,dt);
-  const A=T.ai;if(!A||G.phase!=='play'||!T.flag)return r;
-  A.smT=(A.smT||0)-dt;if(A.smT>0)return r;A.smT=1;
+// 파츠 'smart': 위협 지도 · 병과별 역할 · 수송 · 결과 학습
+function aiPartSmart(T,dt){
+  const A=T.ai;if(!A||G.phase!=='play'||!T.flag)return;
+  A.smT=(A.smT||0)-dt;if(A.smT>0)return;A.smT=1;
   if(!A.squad)A.squad=[];
-  const mine=G.units.filter(u=>u.team===T.id&&!u.dead&&u.state!=='crew');if(!mine.length)return r;
+  const mine=G.units.filter(u=>u.team===T.id&&!u.dead&&u.state!=='crew');if(!mine.length)return;
   try{
     aiThrUpdate(T,A,mine);aiLearn(T,A);
     if(!A.purge){
@@ -317,6 +316,5 @@ aiTick=function(T,dt){
       aiThreatRally(T,A,mine.filter(u=>u.state==='idle'&&!u.gar&&!u.lay&&!u.task&&!u.queue.length&&!(A.squad||[]).includes(u.id)));
     }
   }catch(e){console.error('[AI-smart]',e);}
-  return r;
-};
+}
 orderVehicles=aiPathWrap(orderVehicles);

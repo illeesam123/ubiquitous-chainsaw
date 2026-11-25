@@ -160,9 +160,8 @@ function rcSurface(T){
     if(e&&u.state==='idle'){u.ugFail=(u.ugFail||0)+1;if(u.ugFail>=3&&transitOK(u.team,Math.floor(u.y)*G.w+Math.floor(u.x))){u.lay=0;u.ugFail=0;}}else u.ugFail=0;
   }
 }
-const _aiTickRc=aiTick;
-aiTick=function(T,dt){
-  if(!isReclaim())return _aiTickRc(T,dt);
+// 파츠 'rcEconomy': 탈환전 경제(구매·시설·채굴·수입·강화) — 기지 확장이나 원정은 하지 않는다
+function aiPartRcEconomy(T,dt){
   const A=T.ai;if(!A||!T.flag||T.dead||G.phase!=='play')return;
   if(!A.squad)A.squad=[];
   A.rcT=(A.rcT||0)-dt;
@@ -172,9 +171,17 @@ aiTick=function(T,dt){
     T.apT=AIX.every*(.9+Math.random()*.2);
     try{let free=aiFreeUnits(T);const facilities=rcFacilities(T,free);if(facilities){free=aiFreeUnits(T);aiArms(T,free);free=aiFreeUnits(T);aiMine(T,free);free=aiFreeUnits(T);aiIncome(T,free);}else if(!rcFacilityPending(T,'armory')&&!rcFacilityPending(T,'medbay')){aiMine(T,free);free=aiFreeUnits(T);rcHarvest(T,free);free=aiFreeUnits(T);aiIncome(T,free);}if(typeof stAiUpgrade==='function')stAiUpgrade(T);}catch(e){console.error('[AI-reclaim]',e);}
   }
+}
+// 파츠 'surface': 지하에서 할 일이 끝난 병사를 지상으로 복귀
+function aiPartSurface(T,dt){
+  const A=T.ai;if(!A||!T.flag||T.dead||G.phase!=='play')return;
   A.sfT=(A.sfT||0)-dt;if(A.sfT<=0){A.sfT=1.5;rcSurface(T);}
+}
+// 파츠 'rcPurge': 자경단 소탕(집결 → 돌입)
+function aiPartRcPurge(T,dt){
+  const A=T.ai;if(!A||!T.flag||T.dead||G.phase!=='play')return;
   aiPurgeStep(T,dt);
-};
+}
 // ---- HUD: 남은 자경단 ----
 const _ssRc=stepShells;
 stepShells=function(dt){

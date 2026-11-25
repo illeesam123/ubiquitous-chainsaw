@@ -67,5 +67,6 @@
   "src/66_ai-economy.js",
   "src/67_ai-avoid.js",
   "src/68_lmg-suppress.js",
-  "src/69_ai-sniper.js"
+  "src/69_ai-sniper.js",
+  "src/70_ai-parts.js"
 ]

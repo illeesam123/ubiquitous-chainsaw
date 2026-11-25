@@ -1,5 +1,5 @@
 // ================= AI 경제: 채굴조 상시 운영 · 잉여 자원 환전 · 대량 증원 =================
-// 기존 aiTick 위에 얹는 래퍼. 일반 모드·탈환전 모두 적용된다(탈환전은 aiTick 을 따로 쓰므로 가장 바깥에서 호출).
+// 파츠 aiPartEconomy (70_ai-parts.js 에서 등록). 일반 모드·탈환전 모두 구성에 포함된다.
 // 1) 채굴조: 열린 광석이 있으면 값비싼 것(수레>금광>철광)·가까운 것부터 2인 조를 성향별 상한까지 동시에 보낸다.
 // 2) 환전: 금속·나무·총알이 안전 재고를 넘으면 초과분을 달러로 바꾸는 헬기 주문을 넣는다.
 // 3) 증원: 달러가 모이면 5인 묶음을 한 번에 여러 건 주문한다(인구 상한·주문 칸 수 한도 안에서).
@@ -73,9 +73,7 @@ function aiEconomy(T){
   if(aiEconSell(T,P))e.sold++;
   e.packs+=aiEconRecruit(T,P);
 }
-const _aiTickE=aiTick;
-aiTick=function(T,dt){
-  const r=_aiTickE(T,dt);
+// 파츠 'economy'
+function aiPartEconomy(T,dt){
   if(T.ai&&T.id!==0){T.ai.ecT=(T.ai.ecT||0)-dt;if(T.ai.ecT<=0){T.ai.ecT=AIE.every*(.9+Math.random()*.2);try{aiEconomy(T);}catch(e){console.error('AI 경제 오류',e);}}}
-  return r;
-};
+}

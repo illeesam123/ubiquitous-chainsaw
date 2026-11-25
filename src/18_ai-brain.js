@@ -106,7 +106,8 @@ function aiFindBush(px,py,r){
   }
   return best;
 }
-function aiTick(T,dt){
+// 기본 AI 본체(방어·원정·확장·건설). 실행은 70_ai-parts.js 의 파츠 디스패처(aiTick)가 맡는다.
+function aiCoreTick(T,dt){
   const A=T.ai;
   T.apT=(T.apT||0)-dt;
   if(T.apT<=0&&G.phase==='play'){T.apT=AIX.every*(.9+Math.random()*.2);try{aiPlus(T);}catch(e){console.error('[AI+]',e);}}

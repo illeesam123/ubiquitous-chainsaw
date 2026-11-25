@@ -23,7 +23,7 @@ function taskSpeed(t){return isDef()&&t.team===0&&(t.kind==='demo'||t.kind==='mi
 const _newGameD=newGame;
 newGame=function(cfg){const g=_newGameD(cfg);if(cfg.mode==='defense')g.def={wave:0,next:DEF.first,waves:[],cleared:0,t:0,got:{money:0,bullets:0,metal:0,wood:0}};return g;};
 const _aiPlaceFlagsD=aiPlaceFlags;aiPlaceFlags=function(){if(isDef())return;return _aiPlaceFlagsD();};
-const _aiTickD=aiTick;aiTick=function(T,dt){if(isDef())return;return _aiTickD(T,dt);};
+// (수비전에서 AI 가 멈추는 것은 70_ai-parts.js 의 AILOAD.defense=[] 로 처리)
 // ---- 스폰 ----
 function defSpots(side,count){
   const w=G.w,h=G.h,r0=Math.random,t=.25+r0()*.5;let cx0,cy0;

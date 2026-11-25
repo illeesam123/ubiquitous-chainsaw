@@ -77,9 +77,7 @@ function aiSnipers(T){
     }
   }
 }
-const _aiTickSn=aiTick;
-aiTick=function(T,dt){
-  const r=_aiTickSn(T,dt);
+// 파츠 'sniper'
+function aiPartSniper(T,dt){
   if(T.ai&&T.id!==0&&G.phase==='play'){T.ai.snT=(T.ai.snT||0)-dt;if(T.ai.snT<=0){T.ai.snT=SNP.every;try{aiSnipers(T);}catch(e){console.error('AI 저격수 오류',e);}}}
-  return r;
-};
+}

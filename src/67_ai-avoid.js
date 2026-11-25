@@ -7,6 +7,7 @@ function avZones(){
   if(G._avz)return G._avz;
   const z=[];
   try{for(const v of villageCells())z.push({x:v.x,y:v.y,r:AV.villR+Math.min(4,v.n/4)});}catch(e){}
+  if(G.fort)z.push({x:G.fort.cx,y:G.fort.cy,r:G.fort.LH*1.05});
   if(G.mafia)z.push({x:G.mafia.x,y:G.mafia.y,r:AV.mafiaR});
   return G._avz=z;
 }

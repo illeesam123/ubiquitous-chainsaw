@@ -4,7 +4,7 @@
 // G.sl[i]  : 빗면 방향. 0 없음 / 1 +x쪽이 높음 / 2 -x쪽이 높음 / 3 +y쪽이 높음 / 4 -y쪽이 높음. 높은 쪽 변이 한 층(2반층) 올라간다.
 // G.hl[i]  : 이 타일은 입체로 그려야 함(높이≠지상, 빗면, 또는 앞쪽 이웃보다 높음).
 // G.occ[i] : 이 타일은 뒤쪽(작은 x+y)보다 높아서 뒤에 있는 것들을 가린다 → 개체 정렬 때 한 번 더 그린다.
-const FLOOR_PX=28,HALF_PX=14,GROUND_LV=6,UNDER_LV=2,MAX_LV=12;
+const FLOOR_PX=28,HALF_PX=14,GROUND_LV=6,UNDER_LV=2,MAX_LV=16;
 let OCQ=null,ELK=null,hillOccCache=new Map(),hillOccRot=-1;   // ELK: 개체를 그리는 동안 고도를 한 값으로 고정(차량 등이 경사에서 부위별로 다른 높이로 찌그러지는 것 방지)
    // 타일별: 앞쪽에 이 타일의 서 있는 것을 가릴 만큼 높은 타일이 있는가
 function initLayers(){G.lv=new Uint8Array(G.N).fill(GROUND_LV);G.sl=new Uint8Array(G.N);G.hl=new Uint8Array(G.N);G.occ=new Uint8Array(G.N);G.hill=false;G.pit=new Uint8Array(G.N);G.npit=0;G.cl=new Map();}
@@ -93,6 +93,7 @@ function genHills(){
   }
   // 물 가까이는 평지, 작은 덩어리 제거
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){const k=G.tt[y*w+x];if(k===2||k===4)for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){const a=x+dx,b=y+dy;if(a>=0&&b>=0&&a<w&&b<h)F[b*w+a]=0;}}
+  if(G._hillF){for(let i=0;i<G.N;i++)F[i]=G._hillF[i];}   // fortress: 귀퉁이 언덕 지정
   const seen=new Uint8Array(G.N),st=[];
   for(let s0=0;s0<G.N;s0++){
     if(!F[s0]||seen[s0])continue;const comp=[s0];seen[s0]=1;st.length=0;st.push(s0);

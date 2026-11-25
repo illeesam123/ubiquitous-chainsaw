@@ -96,8 +96,9 @@ function genCivs(){
     genMafiaMilitia(rnd,home);
     return;
   }
+  if(G.special==='fortress'){genFortressMilitia(rnd);return;}
   const vs=villageCells().filter(v=>G.flags.every(f=>Math.hypot(f.x-v.x,f.y-v.y)>14));
-  const urban=G.special==='urbanwar'||G.special==='occupied';
+  const urban=G.special==='urbanwar';
   for(const v of vs){
     if(G.civs.length>=CIV.cap)break;
     if(!urban&&rnd()>.55)continue;
@@ -112,7 +113,7 @@ function genCivs(){
       }
     }
   }
-  if(!(isReclaim()||G.special==='occupied'))genMilitia(vs,rnd,urban);
+  if(!isReclaim())genMilitia(vs,rnd,urban);
 }
 function civStep(c,tx,ty,sp,dt){
   const dx=tx-c.x,dy=ty-c.y,d=Math.hypot(dx,dy);if(d<.05)return true;

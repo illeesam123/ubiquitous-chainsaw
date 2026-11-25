@@ -1,11 +1,11 @@
-// ================= 특수 시드 (superflat · urbanwar · coast · mineshaft · canyon · mafia) =================
+// ================= 특수 시드 (superflat · urbanwar · coast · mineshaft · canyon · mafia · fortress) =================
 const SPECIAL={
   superflat:{n:'Superflat',desc:'드넓게 펼쳐진 대평원. 장애물도 자원도 없고, 모두가 동등하게 빈곤합니다.'},
   urbanwar:{n:'Urban War',desc:'건물로 가득 찬 대도시와 그 사이를 가르는 강. 다리 몇 개가 유일한 통로입니다.'},
   coast:{n:'Coast',desc:'여러 갈래의 넓은 강이 사방을 가로막습니다. 차량은 다리 없이는 무용지물입니다.'},
   mineshaft:{n:'Mineshaft',desc:'과거 거대한 채굴지. 엄청난 크기의 지하 동굴망이 이미 존재합니다.'},
   canyon:{n:'Canyon',desc:'드넓은 협곡의 양 끝에 조그마한 오두막 마을이 있습니다. 협곡에 올라서 우위를 점하거나, 빠르게 침투하여 적군을 처치하세요.'},
-  occupied:{n:'Occupied',desc:'자경단에게 점령당한 대도시. 건물마다 사수가 숨어 있고, 거리를 순찰대가 장악했습니다. 탈환전 추천 시드.'},
+  fortress:{n:'Fortress',desc:'사방이 평지인 맵 한가운데의 거대한 호수와 섬. 섬 모서리는 4층 절벽 위 2강화 감시탑의 저격수가 지키고, 안쪽엔 금광 동굴·벙커·소이포가 있습니다. 네 귀퉁이 언덕 마을에는 자경단과 SAM 터렛이 있습니다. 탈환전 추천 시드.'},
   mafia:{n:'Mafia',desc:'중앙 아파트 지구와 3단계 감시탑을 호전적인 민간인과 자경단이 지킵니다. 모서리 절벽과 곳곳의 대형 동굴도 주의하세요.'}
 };
 // 협곡 중심선(가로 방향, 완만하게 굽이침)

@@ -50,10 +50,10 @@ function genReclaimFill(rnd){
 const _genCivsR=genCivs;
 genCivs=function(){
   _genCivsR();
-  if(isReclaim()||G.special==='occupied'){
+  if(isReclaim()){
     const rnd=mulberry(hashStr(G.cfg.seed+'#rec'));
     if(G.special!=='mafia'&&!G.civs.some(c=>c.mil&&c.grp&&c.grp.fixed)&&G.special!=='superflat'&&G.special!=='mineshaft')genReclaimMilitia(villageCells().filter(v=>G.flags.every(f=>Math.hypot(f.x-v.x,f.y-v.y)>14)),rnd);
-    if(isReclaim())genReclaimFill(rnd);
+    if(isReclaim()&&G.special!=='fortress')genReclaimFill(rnd);
   }
   G.milTotal=G.civs.filter(c=>c.mil).length;
 };

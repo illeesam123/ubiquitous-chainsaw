@@ -57,7 +57,7 @@ function milStep(c,dt){
         if(Math.hypot(tx-c.x,ty-c.y)<=sz/2+.9)milEnter(c,post);
         return !!t;
       }
-    }else if(c.idleT>14&&g.alert<=0&&Math.random()<dt*.15){milExit(c,false);return false;}
+    }else if(!g.stay&&c.idleT>14&&g.alert<=0&&Math.random()<dt*.15){milExit(c,false);return false;}
   }
   if(t){
     g.alert=6;g.ax=t.x;g.ay=t.y;c.hostile[t.team]=true;

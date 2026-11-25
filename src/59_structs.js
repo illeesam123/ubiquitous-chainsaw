@@ -98,8 +98,8 @@ function heliKill(T,o){
 }
 function stepTurrets(dt){
   for(const o of G.obSet){
-    if(o.type!=='mortar'||o.natural)continue;
-    const T=G.teams[o.team];if(!T)continue;
+    if(o.type!=='mortar'||(o.natural&&!o.fort))continue;
+    const T=o.fort?FORT_T:G.teams[o.team];if(!T)continue;
     const lv=stLv(o),cx0=o.x+.5,cy0=o.y+.5;
     o.cd=(o.cd||0)-dt;if(o.cd>0)continue;
     if(lv>=2){   // SAM: 지상 병력은 공격하지 않는다
@@ -109,7 +109,7 @@ function stepTurrets(dt){
         if(E.id===o.team||!E.heli||!E.pad||E.heli.state==='wait'||E.heli.delivered||E.heli.state==='leaving')continue;
         if(Math.hypot(E.pad.x+1.5-cx0,E.pad.y+1.5-cy0)<=R){T.res.bullets-=6;o.aim=Math.atan2(E.pad.y+1.5-cy0,E.pad.x+1.5-cx0);o.muz=.25;fxPush({k:'trace',x1:cx0,y1:cy0,x2:E.pad.x+1.5,y2:E.pad.y+1.5,t:0,d:.25});sfx('mortar',cx0,cy0);heliKill(E,o);done=true;break;}
       }
-      if(!done){
+      if(!done&&!o.fort){
         let best=null,bd=1e9;
         for(const q of G.obSet){if(q.natural||isAllyT(q.team,o.team)||q.team<0)continue;const d=Math.hypot(q.x+q.size/2-cx0,q.y+q.size/2-cy0);if(d<=R&&d<bd){bd=d;best=q;}}
         if(best){T.res.bullets-=6;o.aim=Math.atan2(best.y-cy0,best.x-cx0);o.muz=.25;fxPush({k:'trace',x1:cx0,y1:cy0,x2:best.x+.5,y2:best.y+.5,t:0,d:.25});sfx('mortar',cx0,cy0);damageOb(best,best.hp+999);o.cd=6;done=true;}

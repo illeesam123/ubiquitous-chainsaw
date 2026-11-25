@@ -11,7 +11,7 @@ function newGame(cfg){
   G.weather.type=pickWeather(null);
   G.up=new Uint8Array(N);G.under=new Uint8Array(N);G.mouth=new Uint8Array(N);G.road=new Uint8Array(N);G.brush=new Uint8Array(N);G.urail=new Uint8Array(N);G.open=G.teams.map(()=>new Uint8Array(N));G.trans=[];viewLay=0;initLayers();
   genMap(rnd);
-  if(G.special==='mineshaft')genMine(rnd);else genCaves(mulberry(hashStr(cfg.seed+'#cave')()));
+  if(G.special==='mineshaft')genMine(rnd);else if(G.special!=='fortress')genCaves(mulberry(hashStr(cfg.seed+'#cave')()));
   genBush(rnd);
   if(G.hill){for(let i=0;i<G.N;i++)if(G.sl[i]){G.road[i]=0;if(G.trench[i]===255)G.trench[i]=0;}
     for(const o of [...G.obSet])if(o.cells.some(j=>G.sl[j])||(o.cells.length>1&&!flatArea(o.x,o.y,o.size)))removeOb(o);   // 경사면·비탈에 걸친 장애물은 지운다
@@ -55,9 +55,11 @@ function genMap(r){
   if(bio==='swamp')for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x;if(G.tt[i]===2)continue;
     if((G.tt[i-1]===2||G.tt[i+1]===2||G.tt[i-w]===2||G.tt[i+w]===2)&&r()<.55)G.dec[i]=3;}
   const SP=G.special;
-  if((!SP||SP==='canyon'||SP==='mafia')&&!G.cfg.flat&&!G.cfg.noHills)genHills();   // cfg.flat: 에셋 추출용, cfg.noHills: 성능 모드
+  if(SP==='fortress')G._hillF=fortressHillF();
+  if((!SP||SP==='canyon'||SP==='mafia'||SP==='fortress')&&!G.cfg.flat&&!G.cfg.noHills)genHills();   // cfg.flat: 에셋 추출용, cfg.noHills: 성능 모드
   if(SP==='superflat')return;
-  if(SP==='urbanwar'||SP==='occupied'){
+  if(SP==='fortress'){genFortress(r);return;}
+  if(SP==='urbanwar'){
     carveRiver(r,'h',.5,Math.max(6,Math.round(w/14)),.1);
     genBridges(r,'h',w>=128?5:3);
     genCity(r);

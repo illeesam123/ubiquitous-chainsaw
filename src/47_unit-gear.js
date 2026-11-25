@@ -37,7 +37,8 @@ function unitSprite(u,sx,by,z,body,inG){
     if(held!=='proc'&&u.muz>0){const tl=(GUNS[u.gun]||GUNS.rifle).tip||13;tip=[sx+Math.cos(u.gA)*tl*L*z,by-10*z+bob+Math.sin(u.gA)*tl*L*z];}
   }
   const dBody=()=>{sprBlit(eb,sx,by,z,false);if(u.mil)sprBlitTint(et,sx,by,z,'#222',false);   // 자경단: 검은 옷
-    else sprBlitTint(et,sx,by,z,u.civ?'#8e8e89':TEAM_COL[u.team],false);};
+    else sprBlitTint(et,sx,by,z,u.civ?'#8e8e89':TEAM_COL[u.team],false);
+    if(u.arm&&!u.civ){const ab=sprGetX('armor|'+u.arm+'|body'),ah=sprGetX('armor|'+u.arm+'|head');if(sprOk(ab))sprBlit(ab,sx,by,z,false);if(sprOk(ah))sprBlit(ah,sx,by,z,false);}};
   const dHeld=()=>{
     if(held==='proc'){unitHeld(u,sx,by,z,body);return;}
     if(!held)return;

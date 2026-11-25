@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 96">
+<defs>
+ <linearGradient id="body" x2="0" y2="1"><stop stop-color="#aab09b"/><stop offset="1" stop-color="#566354"/></linearGradient>
+ <linearGradient id="payload" x2="0" y2="1"><stop stop-color="#d79a4c"/><stop offset="1" stop-color="#7d432c"/></linearGradient>
+</defs>
+<ellipse cx="64" cy="83" rx="33" ry="7" fill="#11150f" opacity=".28"/>
+<!-- four reinforced arms -->
+<path d="m53 43-27-20-6 5 28 25m27-10 27-20 6 5-28 25M52 51 27 70l-5-6 26-21m28 8 25 19 5-6-26-21" fill="none" stroke="#353d34" stroke-width="7" stroke-linecap="round"/>
+<path d="m53 43-27-20m49 20 27-20M52 51 27 70m49-19 25 19" fill="none" stroke="#98a18c" stroke-width="3"/>
+<!-- rotor guards and blades -->
+<g fill="none" stroke="#3a4339" stroke-width="3">
+ <circle cx="22" cy="22" r="14"/><circle cx="106" cy="22" r="14"/><circle cx="22" cy="72" r="14"/><circle cx="106" cy="72" r="14"/>
+</g>
+<g stroke="#b8c0a8" stroke-width="3" stroke-linecap="round">
+ <path d="M12 22h20m-10-10v20M96 22h20m-10-10v20M12 72h20m-10-10v20M96 72h20m-10-10v20"/>
+</g>
+<!-- explosive payload -->
+<path d="M56 53h16l4 17H52z" fill="url(#payload)" stroke="#482c20" stroke-width="3"/>
+<path d="M59 53v-8h10v8" fill="none" stroke="#c6b88b" stroke-width="3"/>
+<path d="m64 43 4-8 4 8" fill="none" stroke="#e5a044" stroke-width="3"/>
+<circle cx="64" cy="62" r="3" fill="#f5c05a"/>
+<!-- central armored fuselage -->
+<path d="m64 34 18 12-4 17-14 8-14-8-4-17z" fill="url(#body)" stroke="#30382f" stroke-width="4" stroke-linejoin="round"/>
+<path d="m64 39 12 8-3 11-9 5-9-5-3-11z" fill="#414c42"/>
+<path d="m58 47 6-4 6 4-6 8z" fill="#8bc1bd" opacity=".9"/>
+<path d="M64 56v7" stroke="#e4a247" stroke-width="3"/>
+</svg>

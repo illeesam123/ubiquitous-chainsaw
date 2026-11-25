@@ -279,3 +279,5 @@ npm run dist         # 설치 파일 생성 (Windows NSIS / macOS dmg / Linux Ap
 
 - 방어구(나무판자·장갑판·석재 갑주)는 병사 머리·몸통에 SVG(`armor|종류|head/body`)로 덧그려진다. 광석(`ore|종류|변형`)·동굴 입구(`mouth|0`)·수직갱 뚜껑(`hatch|0`)·투척물 드롭(`dropx|종류`)도 SVG 에셋이며, `tools/bake-misc.js`(굽기)·`tools/add-svg.js`·`tools/extra-svgs.js`(수작업 SVG)로 비파괴 추가한다.
 - 무기고의 폭발물 지급·무기/방호구 교체·보유 수 계산에서는 차량에 탄 병사를 제외한다.
+- UI: `style.css` 끝의 '통일 레이어'가 간격·모서리·표면·버튼 상태(호버/눌림/비활성)를 토큰으로 묶는다. 새 UI는 `.btn`·`--r`·`--surf` 토큰을 쓰면 같은 모양이 된다.
+- 덤불(`bush|바이옴|변형`)·지하 철로(`urail|마스크`)도 SVG 에셋(`tools/bake-misc.js`).

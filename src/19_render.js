@@ -265,11 +265,11 @@ function render(){
   for(const e of list){const ea=e.u||e.v||e.civ;if((G.hill||G.npit)&&ea){ELK=null;ELK=elevPx(ea.x,ea.y)-(e.u?pitAt(ea.x,ea.y)*PIT_PX:0)+(e.u&&e.u.cz?e.u.cz*HALF_PX:0);}if(e.o){drawOb(e.o);drawCharges(e.o);}else if(e.lad)drawLadder(e.lad[0],e.lad[1]);else if(e.bush)drawBush(e.bush[0],e.bush[1]);else if(e.roof!==undefined)drawRoof(e.roof);else if(e.u){if(e.ghost)cx.globalAlpha=.4;drawUnit(e.u);cx.globalAlpha=1;if(e.u.under){ELK=null;drawBridge(Math.floor(e.u.x),Math.floor(e.u.y));}}else if(e.v)drawVehicle(e.v);else if(e.civ)drawCiv(e.civ);else drawFlag(e.f);ELK=null;if(G.hill)hillOcclude(e);}
   }finally{if(glOn)glEnd();}
   for(const T of G.teams)if(T.pad&&T.heli.state!=='wait')drawHeli(T);
-  for(const sh of G.shells){const p=Math.min(1,sh.t/sh.d),x=sh.x+(sh.tx-sh.x)*p,y=sh.y+(sh.ty-sh.y)*p,arc=Math.sin(p*Math.PI)*3.2,[sx,sy]=toS(x,y);cx.fillStyle='#27251d';cx.beginPath();cx.arc(sx,sy-arc*cam.z,3.2*cam.z,0,6.3);cx.fill();cx.fillStyle='rgba(255,190,90,.7)';cx.beginPath();cx.arc(sx-1*cam.z,sy-(arc+1)*cam.z,1.2*cam.z,0,6.3);cx.fill();}
+  for(const sh of G.shells){const p=Math.min(1,sh.t/sh.d),x=sh.x+(sh.tx-sh.x)*p,y=sh.y+(sh.ty-sh.y)*p,arc=Math.sin(p*Math.PI)*3.2,[sx,sy]=toS(x,y);drawShellSpr(sx,sy-arc*cam.z);}
   for(const f of G.fx){
     if(f.k==='trace'){const [a,b]=toS(f.x1,f.y1),[c,d]=toS(f.x2,f.y2);cx.strokeStyle='rgba(255,230,150,.85)';cx.lineWidth=1.2;cx.beginPath();cx.moveTo(a,b-10*cam.z);cx.lineTo(c,d-10*cam.z);cx.stroke();}
-    else if(f.k==='spark'){const [a,b]=toS(f.x,f.y);cx.fillStyle='#ffe29a';cx.beginPath();cx.arc(a,b-10*cam.z,Math.max(0,4*cam.z*(1-f.t/f.d)),0,6.3);cx.fill();}
-    else if(f.k==='dust'||f.k==='chip'){const [a,b]=toS(f.x,f.y);const p=f.t/f.d;cx.globalAlpha=1-p;cx.fillStyle=f.kind==='demo'?'#b0a080':f.kind==='heal'?'#a8d8a0':'#6a5234';cx.beginPath();cx.arc(a+Math.sin(f.t*40)*8*cam.z,b-p*18*cam.z,3*cam.z,0,6.3);cx.fill();cx.globalAlpha=1;}
+    else if(f.k==='spark')drawFxSpark(f);
+    else if(f.k==='dust'||f.k==='chip')drawFxDust(f);
     else if(f.k==='boom')drawFxBoom(f);else if(f.k==='smoke')drawFxSmoke(f);
   }
   // 기상 효과는 전장 위에 얹되 HUD와 미니맵은 가리지 않는다.

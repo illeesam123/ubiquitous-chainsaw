@@ -73,11 +73,7 @@ function drawCharges(o){
     const p=face?pt(x1+.03,y0+(y1-y0)*f,h):pt(x0+(x1-x0)*f,y1+.03,h);
     if(prev[face])wline(prev[face],[p[0],p[1]-2*z],'rgba(15,15,15,.85)',Math.max(1,1.1*z));
     prev[face]=[p[0],p[1]-2*z];
-    cx.fillStyle='#3b4730';cx.fillRect(p[0]-3.5*z,p[1]-5*z,7*z,9*z);
-    cx.fillStyle='#d4b13c';cx.fillRect(p[0]-3.5*z,p[1]-1.5*z,7*z,2*z);
-    cx.strokeStyle='#1c2216';cx.lineWidth=Math.max(.6,.8*z);cx.strokeRect(p[0]-3.5*z,p[1]-5*z,7*z,9*z);
-    cx.fillStyle=blink?'#ff3b30':'#5a1410';cx.beginPath();cx.arc(p[0],p[1]-3.2*z,1.5*z,0,6.3);cx.fill();
-    if(blink&&t.phase){cx.fillStyle='rgba(255,60,40,.25)';cx.beginPath();cx.arc(p[0],p[1]-3.2*z,5*z,0,6.3);cx.fill();}
+    drawChargeSpr(p[0],p[1],blink,blink&&t.phase);
   }
 }
 function drawRubble(o,L,occ){

@@ -57,7 +57,7 @@ function sprKey(o,biome){
   if(SPR_LINEAR.has(t)||t==='rubble'||t==='rubble2'||t==='rubble3'){
     for(const [vdx,vdy] of [[1,0],[-1,0],[0,1],[0,-1]]){const [dx,dy]=unrotDir(vdx,vdy),x=o.x+dx,y=o.y+dy,q=inb(x,y)?G.obst[y*G.w+x]:null;nb+=q&&q.type===o.type?1:0;}
   }
-  const stock=t==='armory'?Math.min(8,Math.ceil(armTotal(o)/3)):(!o.natural&&SPR_LV.has(t)?(o.lv|0):0);
+  const stock=t==='armory'?Math.min(8,Math.ceil(armTotal(o)/3)):((!o.natural||o.fort)&&SPR_LV.has(t)?(o.lv|0):0);
   const uni=SPR_UNIFORM.has(t),vq=uni?0:(o.v*4)|0,id4=uni?0:o.id%4,bio=SPR_BIOME.has(t)?(biome||G.biome):'plain',own=o.natural?'n':o.team;
   SPR.kr=[t,bio,o.size,vq,id4,hp,nb,own,o.from||'',stock].join('|');          // 반전 없이 그대로의 키
   // 좌우반전 재사용: 무늬 id 짝(0,1 ↔ 2,3)과 이웃 연결 모양(E↔S, W↔N)은 반전으로 만든다

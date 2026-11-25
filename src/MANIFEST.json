@@ -71,5 +71,6 @@
   "src/70_ai-parts.js",
   "src/71_fortress.js",
   "src/72_workshop-drone.js",
-  "src/73_svg-misc.js"
+  "src/73_svg-misc.js",
+  "src/74_svg-fx.js"
 ]

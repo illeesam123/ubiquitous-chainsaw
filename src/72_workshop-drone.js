@@ -42,6 +42,7 @@ function wsArmoryCapacity(T,n){
 function wsQueue(o,kind,item,n,quiet){
   if(!G.obSet.has(o)||o.type!=='workshop')return '공방을 찾을 수 없습니다';
   const T=G.teams[o.team];n=Math.floor(+n||1);
+  if(kind==='drone'&&wsTier(o)<2)return '군수공장 단계에서 드론이 해금됩니다';
   if(o.job)return '현재 제작이 진행 중입니다';
   if(n<1||n>WS.batches[wsTier(o)])return '이 단계에서 제작할 수 있는 양을 초과했습니다';
   const cost=wsRecipe(kind,item,n,wsTier(o));if(!cost)return '지원하지 않는 제작 품목입니다';

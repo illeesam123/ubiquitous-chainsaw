@@ -18,24 +18,38 @@ function aiMinePool(T){
   const A=T.ai,ex=new Set([...(A.squad||[]),...((A.purge&&A.purge.ids)||[])]);
   return G.units.filter(u=>u.team===T.id&&!u.dead&&!ex.has(u.id)&&u.state!=='crew'&&!u.fetch&&!u.wf&&!u.af&&!u.item&&!u.medTarget&&!u.after&&!['med','medwait','medmove','medqueue'].includes(u.state));
 }
+// 채굴 회피 구역을 한 번 타일 마스크로 만들어, 광석마다 모든 마을·자경단 무리를 다시 검사하지 않는다.
+// 같은 게임 초 안에서는 AI 팀들이 함께 재사용한다. 마스크의 좌표는 기존 avSafe와 같은 타일 좌상단 기준이다.
+function aiMineSafeMask(gap){
+  const sec=Math.floor(G.time);
+  if(G._aiMineSafe&&G._aiMineSafeSec===sec&&G._aiMineSafeGap===gap)return G._aiMineSafe;
+  const blocked=new Uint8Array(G.N),w=G.w,h=G.h;
+  const mark=(cx,cy,r)=>{
+    const r2=r*r,x0=Math.max(0,Math.floor(cx-r)),x1=Math.min(w-1,Math.ceil(cx+r)),y0=Math.max(0,Math.floor(cy-r)),y1=Math.min(h-1,Math.ceil(cy+r));
+    for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const dx=x-cx,dy=y-cy;if(dx*dx+dy*dy<r2)blocked[y*w+x]=1;}
+  };
+  for(const z of avZones())mark(z.x,z.y,z.r+gap);
+  for(const g of G.militia||[])if(g.n===undefined||g.n>0)mark(g.cx,g.cy,g.R+gap);
+  G._aiMineSafe=blocked;G._aiMineSafeSec=sec;G._aiMineSafeGap=gap;return blocked;
+}
 function aiEconMine(T,P){
   if(!G.ore)return 0;
   const pop=popOf(T.id);if(pop<8)return 0;
   const cap=Math.min(P.crews,Math.max(1,Math.floor(pop/10)));
   let slots=cap-aiMineCrews(T);if(slots<=0)return 0;
-  const w=G.w,cand=[];
+  const w=G.w,blocked=aiMineSafeMask(AV.mineGap),limit=Math.min(G.N,slots*4),cand=[];
+  // 필요한 채굴조 수의 네 배까지만 유지한다. 전체 후보 정렬 대신 작은 상위 목록에 삽입한다.
   for(let i=0;i<G.N;i++){
-    const o=G.ore[i];if(!o||!G.open[T.id][i]||G.tasks.has(tkey('mine',i)))continue;
-    if(!avSafe(i%w,(i/w)|0,AV.mineGap))continue;   // 마을·자경단 근처 광석은 건너뛰고 다른 쪽을 찾는다
-    const d=Math.hypot(i%w-T.flag.x,((i/w)|0)-T.flag.y),v=o===3?340:o===2?260:60;
-    cand.push([i,v-d*1.5]);
+    const o=G.ore[i];if(!o||!G.open[T.id][i]||blocked[i]||G.tasks.has(tkey('mine',i)))continue;
+    const x=i%w,y=(i/w)|0,d=Math.hypot(x-T.flag.x,y-T.flag.y),v=o===3?340:o===2?260:60,score=v-d*1.5;
+    let at=0;while(at<cand.length&&cand[at][1]>=score)at++;
+    if(at>=limit)continue;
+    cand.splice(at,0,[i,score]);if(cand.length>limit)cand.pop();
   }
   if(!cand.length)return 0;
-  cand.sort((a,b)=>b[1]-a[1]);
-  let n=0;
+  let n=0;const pool=aiMinePool(T);if(pool.length<2)return 0;
   for(const [i] of cand){
     if(slots<=0)break;
-    const pool=aiMinePool(T);if(pool.length<2)break;
     if(!issueWork(T.id,'mine',[[i%w,(i/w)|0]],null,2,pool)){slots--;n++;}
   }
   return n;

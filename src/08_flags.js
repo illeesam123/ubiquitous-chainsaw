@@ -29,13 +29,18 @@ function placeFlag(team,tx,ty){
 }
 function aiPlaceFlags(){
   for(let t=1;t<G.teams.length;t++){
-    const pref=Math.max(G.cfg.minDist,Math.round(G.w*.5));let best=null,bs=-1;
-    for(let k=0;k<600;k++){
-      const x=rint(Math.random,2,G.w-3),y=rint(Math.random,2,G.h-3);
-      if(flagCheck(x,y))continue;
-      let md=1e9;for(const f of G.flags)md=Math.min(md,Math.max(Math.abs(f.x-x),Math.abs(f.y-y)));
-      if(md>bs){bs=md;best=[x,y];}
-      if(md>=pref)break;
+    const pref=Math.max(G.cfg.minDist,Math.round(G.w*.5));let best=null;
+    // 마을·자경단 거점(avZoneDist)에서 떨어진 곳을 우선: 기준(칸)을 단계적으로 낮춰 가며 찾는다
+    for(const gap of (typeof AV!=='undefined'?AV.flagGap:[-99])){
+      let bs=-1,cand=null;
+      for(let k=0;k<700;k++){
+        const x=rint(Math.random,2,G.w-3),y=rint(Math.random,2,G.h-3);
+        if(flagCheck(x,y)||(avZoneDist(x,y)<gap))continue;
+        let md=1e9;for(const f of G.flags)md=Math.min(md,Math.max(Math.abs(f.x-x),Math.abs(f.y-y)));
+        if(md>bs){bs=md;cand=[x,y];}
+        if(md>=pref)break;
+      }
+      if(cand){best=cand;break;}
     }
     if(!best){for(let y=2;y<G.h-2&&!best;y++)for(let x=2;x<G.w-2;x++)if(!flagCheck(x,y)){best=[x,y];break;}}
     if(best)placeFlag(t,best[0],best[1]);

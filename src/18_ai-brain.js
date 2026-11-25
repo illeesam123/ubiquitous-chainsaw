@@ -414,6 +414,7 @@ function aiMine(T,free){
   let best=null,bd=1e9;
   for(let i=0;i<G.N;i++){
     if(!G.ore[i]||!G.open[T.id][i]||G.tasks.has(tkey('mine',i)))continue;
+    if(typeof avSafe==='function'&&!avSafe(i%w,(i/w)|0,AV.mineGap))continue;
     const d=Math.hypot(i%w-T.flag.x,((i/w)|0)-T.flag.y);if(d<bd){bd=d;best=i;}
   }
   if(best!==null&&(T.res.metal<70||T.res.money<350||ORE[G.ore[best]].work<12)){
@@ -422,7 +423,7 @@ function aiMine(T,free){
   // 아직 못 찾았으면 가까운 동굴 입구로 정찰 병사를 보낸다
   if(best===null&&(!A.scoutAt||G.time-A.scoutAt>60)&&G.time>120){
     let m=-1,md=1e9;
-    for(const i of G.trans){if(!G.mouth[i]||G.open[T.id][i])continue;const d=Math.hypot(i%w-T.flag.x,((i/w)|0)-T.flag.y);if(d<md&&d<G.w*.6){md=d;m=i;}}
+    for(const i of G.trans){if(!G.mouth[i]||G.open[T.id][i])continue; if(typeof avSafe==='function'&&!avSafe(i%w,(i/w)|0,AV.mineGap))continue;const d=Math.hypot(i%w-T.flag.x,((i/w)|0)-T.flag.y);if(d<md&&d<G.w*.6){md=d;m=i;}}
     if(m>=0){const u=free.splice(0,2);orderMoveL(u,m%w,(m/w)|0,1);A.scoutAt=G.time;}
   }
 }

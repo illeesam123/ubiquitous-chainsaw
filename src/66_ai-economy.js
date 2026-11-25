@@ -26,6 +26,7 @@ function aiEconMine(T,P){
   const w=G.w,cand=[];
   for(let i=0;i<G.N;i++){
     const o=G.ore[i];if(!o||!G.open[T.id][i]||G.tasks.has(tkey('mine',i)))continue;
+    if(!avSafe(i%w,(i/w)|0,AV.mineGap))continue;   // 마을·자경단 근처 광석은 건너뛰고 다른 쪽을 찾는다
     const d=Math.hypot(i%w-T.flag.x,((i/w)|0)-T.flag.y),v=o===3?340:o===2?260:60;
     cand.push([i,v-d*1.5]);
   }

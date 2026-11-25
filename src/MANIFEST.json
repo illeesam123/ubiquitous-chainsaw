@@ -64,5 +64,6 @@
   "src/63_militia-drops.js",
   "src/64_ai-advanced.js",
   "src/65_reclaim.js",
-  "src/66_ai-economy.js"
+  "src/66_ai-economy.js",
+  "src/67_ai-avoid.js"
 ]

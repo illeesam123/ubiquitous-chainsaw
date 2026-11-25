@@ -69,5 +69,6 @@
   "src/68_lmg-suppress.js",
   "src/69_ai-sniper.js",
   "src/70_ai-parts.js",
-  "src/71_fortress.js"
+  "src/71_fortress.js",
+  "src/72_workshop-drone.js"
 ]

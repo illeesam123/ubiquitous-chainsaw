@@ -27,7 +27,7 @@ function genMilitia(vs,rnd,urban){
 function milTarget(c){
   const sg=Math.max(MIL.sight,milRange(c)+.5);let best=null,bd=1e9;
   for(const u of G.units){
-    if(u.dead||u.surr>0||u.state==='crew'||u.lay&&Math.random()<.7)continue;
+    if(u.dead||u.surr>0||u.state==='crew'||u.lay)continue;
     const d=Math.hypot(u.x-c.x,u.y-c.y);if(d>sg||d>=bd)continue;
     if(hiddenUnit(u,c.x,c.y)||!losOk(c,u))continue;
     best=u;bd=d;

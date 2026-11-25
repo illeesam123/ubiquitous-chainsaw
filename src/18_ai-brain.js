@@ -315,7 +315,7 @@ const AI_WPREF={   // 성향별 총기 선호 (가중치)
 function aiPick(w){let t=0;for(const k in w)t+=w[k];let r=Math.random()*t;for(const k in w){r-=w[k];if(r<=0)return k;}return Object.keys(w)[0];}
 function aiUnderAttack(T,f){
   let n=0;
-  for(const u of G.units){if(u.dead||u.team===f.team||u.team===T.id||u.team<0)continue;if(Math.hypot(u.x-f.x,u.y-f.y)<26)n++;}
+  for(const u of G.units){if(u.dead||u.lay||u.team===f.team||u.team===T.id||u.team<0)continue;if(Math.hypot(u.x-f.x,u.y-f.y)<26)n++;}
   return n;
 }
 function aiFreeUnits(T){

@@ -22,7 +22,7 @@ function drawMini(){
   mx.imageSmoothingEnabled=false;mx.drawImage(mmLayer,ox,0,G.w*s,G.h*s);
   for(const f of G.flags){mx.fillStyle='#fff';mx.fillRect(ox+f.x*s-1,f.y*s-1,4,4);}
   for(const v of G.vehicles){mx.fillStyle=v.type==='tank'?'#d8d2a0':'#b7a16d';mx.fillRect(ox+v.x*s-2,v.y*s-2,4,4);}
-  for(const u of G.units){if(u.team!==0&&hiddenUnit(u))continue;mx.fillStyle=TEAM_COL[u.team];mx.fillRect(ox+u.x*s-1,u.y*s-1,2.5,2.5);}
+  for(const u of G.units){if(u.team!==0&&(hiddenUnit(u)||(u.lay&&!isAllyT(u.team,0))))continue;mx.fillStyle=TEAM_COL[u.team];mx.fillRect(ox+u.x*s-1,u.y*s-1,2.5,2.5);}
   for(const T of G.teams){const ps=T.heli&&heliPose(T);if(ps){mx.fillStyle='#fff';mx.fillRect(ox+ps.x*s-2,ps.y*s-2,4,4);mx.fillStyle=TEAM_COL[T.id];mx.fillRect(ox+ps.x*s-1,ps.y*s-1,2,2);}}
   const cs=[[0,0],[W,0],[W,H],[0,H]].map(p=>toW(p[0],p[1]));
   mx.strokeStyle='#fff';mx.lineWidth=1;mx.beginPath();cs.forEach((c,i)=>{const px=ox+c[0]*s,py=c[1]*s;i?mx.lineTo(px,py):mx.moveTo(px,py);});mx.closePath();mx.stroke();

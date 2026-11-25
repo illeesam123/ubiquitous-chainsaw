@@ -15,7 +15,7 @@ function dropCommitments(u){
 // ---- 병사 패닉 ----
 function nearestEnemyDist(u){
   let bd=1e9,bt=-1;
-  for(const e of G.units){if(e.dead||isAllyT(e.team,u.team)||e.surr>0||e.state==='crew')continue;const d=Math.hypot(e.x-u.x,e.y-u.y);if(d<bd){bd=d;bt=e.team;}}
+  for(const e of G.units){if(e.dead||isAllyT(e.team,u.team)||e.surr>0||e.state==='crew'||(e.lay|0)!==(u.lay|0))continue;const d=Math.hypot(e.x-u.x,e.y-u.y);if(d<bd){bd=d;bt=e.team;}}
   return [bd,bt];
 }
 function panicSoldier(u,med,sev){

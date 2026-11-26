@@ -25,19 +25,21 @@
 <div class="prog" id="spProg"></div>
 <table><thead><tr><th>성향</th><th>세대</th><th>최고</th><th>파츠(최고 개체)</th></tr></thead><tbody id="spTab"></tbody></table>
 <div class="log" id="spLog"></div>
+<div class="rw"><label><input type="checkbox" id="spAuto"> 🤖 켜 둔 동안 자동 학습 (로비·종료 화면에서만, 게임 시작 시 즉시 멈춤)</label></div>
 <div class="rw"><label><input type="checkbox" id="spUse"> 학습된 AI 사용</label><button class="btn" id="spExp" type="button">내보내기</button><button class="btn" id="spImp" type="button">가져오기</button><button class="btn" id="spReset" type="button">초기화</button></div>`;
   document.body.appendChild(m);
   const $s=id=>document.getElementById(id);
   const PARTN={smart:'고도화',economy:'경제',sniper:'저격',workshop:'공방',droneRush:'드론'};
   function sync(){
     $s('spVis').checked=!SP.headless;$s('spTur').checked=SP.cfg.turbo!==false;$s('spVar').checked=SP.cfg.vary!==false;$s('spSpdL').style.display=SP.headless?'none':'';$s('spBudRow').style.display=SP.headless?'':'none';
-    $s('spUse').checked=SP.useBest;$s('spProg').textContent=SP.progress||(SP.running?'진행 중…':'');
+    $s('spUse').checked=SP.useBest;$s('spAuto').checked=!!SP.auto;$s('spProg').textContent=SP.progress||(SP.running?'진행 중…':'');
     $s('spGo').disabled=SP.running;$s('spWatch').disabled=SP.running;
     $s('spTab').innerHTML=Object.keys(PN).map(p=>{const b=SP.store.best[p];return `<tr><td>${PN[p]}</td><td>${b?b.gen:0}</td><td>${b?b.fit.toFixed(2):'-'}</td><td style="color:var(--dim)">${b?spPartList(b.g).slice(2).map(k=>PARTN[k]).join('·')||'기본':'기본값'}</td></tr>`;}).join('');
     $s('spLog').innerHTML=SP.log.slice().reverse().join('<br>');
   }
   SP.onUpdate=sync;
   m.addEventListener('input',e=>{
+    if(e.target.id==='spAuto'){spAutoSet(e.target.checked);}
     if(e.target.id==='spTur'){SP.cfg.turbo=e.target.checked;}
     if(e.target.id==='spVar'){SP.cfg.vary=e.target.checked;}
     if(e.target.id==='spSpd'){SP.speed=+e.target.value;$s('spSpdV').textContent='×'+SP.speed;}

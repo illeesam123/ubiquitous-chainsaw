@@ -89,10 +89,11 @@ async function spWaitLoad(){while(typeof LOAD!=='undefined'&&LOAD.on)await spSle
 // spec={a:genome(0팀),b:genome(1팀),seed} → 0팀 점수(0~1)
 async function spMatch(spec){
   const c=SP.cfg,sc0=spec.scn||{},sz=sc0.size||c.size,cfg={seed:sc0.seed||spec.seed||('SP'+Math.random().toString(36).slice(2,8)),biome:sc0.biome||'plain',size:sz,enemies:1,soldiers:sc0.soldiers||c.soldiers,minDist:Math.round(sz*.45),noHills:sc0.hills===undefined?true:!sc0.hills};
-  SP.active=true;
+  SP.active=true;SP.inMatch=true;
   spResetAllTables();   // 기본 표 + 두 유전자 (전역 수치는 a 의 값을 쓴다)
   spApplyGenome(spec.b,false);spApplyGenome(spec.a,true);
-  if(SP.headless){_ldStart(cfg);}else{startGame(cfg);await spWaitLoad();}
+  if(SP.headless){_ldStart(cfg);}else{SP.selfStart=true;try{startGame(cfg);}finally{SP.selfStart=false;}await spWaitLoad();}
+  if(!SP.userBusy)SP.spG=G;
   const fr=mulberry(hashStr(cfg.seed+'#flag')());let fx=0,fy=0;for(let k=0;k<400&&!fx;k++){const x=rint(fr,3,G.w-4),y=rint(fr,3,G.h-4);if(!flagCheck(x,y)){fx=x;fy=y;}}
   if(!fx){for(let y=3;y<G.h-3&&!fx;y++)for(let x=3;x<G.w-3;x++)if(!flagCheck(x,y)){fx=x;fy=y;break;}}
   placeFlag(0,fx,fy);aiPlaceFlags();
@@ -123,7 +124,7 @@ async function spMatch(spec){
     G.paused=true;
   }
   const sc=result!==null?result:spScore();
-  SP.active=false;spResetAllTables();spApplyBestAll();
+  SP.active=false;SP.inMatch=false;spResetAllTables();spApplyBestAll();
   return sc;
 }
 // ---------- 진화 ----------
@@ -193,4 +194,20 @@ render=function(){
 };
 const _checkEndSP=checkEnd;
 checkEnd=function(){if(SP.active)return;return _checkEndSP();};
+// ---------- 켜 둔 동안 자동 학습 ----------
+// 게임 화면이 비어 있을 때(로비·종료 후)만 고속 모드로 조용히 학습하고, 사용자가 게임을 시작하는 즉시 멈춘다.
+SP.auto=false;SP.autoRun=false;
+function spAutoSet(on){SP.auto=!!on;try{localStorage.setItem(SPKEY+'_auto',on?'1':'0');}catch(e){}if(!on&&SP.autoRun)spAutoStop();if(SP.onUpdate)SP.onUpdate();}
+function spAutoStop(){if(SP.autoRun){SP.stop=true;SP.active=false;}}
+const _startGameSP=startGame;
+startGame=function(cfg){if(!SP.selfStart){SP.userBusy=true;if(SP.autoRun)spAutoStop();}return _startGameSP(cfg);};
+setInterval(()=>{
+  if(!SP.auto||SP.running)return;
+  if(SP.userBusy){if(G&&G!==SP.spG&&G.phase==='over')SP.userBusy=false;else return;}
+  if(typeof LOAD!=='undefined'&&LOAD.on)return;
+  if(G&&G!==SP.spG&&G.phase!=='over')return;
+  SP.headless=true;SP.budget=Math.min(SP.budget||40,40);SP.autoRun=true;SP.progress='자동 학습';
+  spEvolve(SPPERSONA,0).finally(()=>{SP.autoRun=false;SP.progress='';});
+},3000);
 try{spLoad();}catch(e){console.error('자기대전 저장값 오류',e);}
+try{SP.auto=localStorage.getItem(SPKEY+'_auto')==='1';}catch(e){}

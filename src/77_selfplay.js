@@ -104,8 +104,9 @@ async function spMatch(spec){
   if(!SP.userBusy)SP.spG=G;
   const fr=mulberry(hashStr(cfg.seed+'#flag')());let fx=0,fy=0;for(let k=0;k<400&&!fx;k++){const x=rint(fr,3,G.w-4),y=rint(fr,3,G.h-4);if(!flagCheck(x,y)){fx=x;fy=y;}}
   if(!fx){for(let y=3;y<G.h-3&&!fx;y++)for(let x=3;x<G.w-3;x++)if(!flagCheck(x,y)){fx=x;fy=y;break;}}
+  for(const T of G.teams){T.human=false;T.ai={persona:gs[T.id].p,parts:spPartList(gs[T.id])};}   // 깃발 배치 전에 성향을 정해 둔다(군집형은 광석·바위 밀집지 선호)
+  if(gs[0].p==='swarm'&&typeof swarmFlagSpot==='function'){const sp=swarmFlagSpot();if(sp){fx=sp[0];fy=sp[1];}}
   placeFlag(0,fx,fy);aiPlaceFlags();
-  for(const T of G.teams){T.human=false;T.ai={persona:gs[T.id].p,parts:spPartList(gs[T.id])};}
   G.phase='play';G.countdown=0;
   const cap=c.cap,out={};let done=false;
   if(SP.headless){

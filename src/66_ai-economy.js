@@ -41,12 +41,12 @@ function aiEconMine(T,P,ctx){
   let slots=cap-aiMineCrews(T);if(slots<=0)return 0;
   const w=G.w,blocked=aiMineSafeMask(ctx.goal?Math.max(3,AV.mineGap-5):AV.mineGap),limit=Math.min(G.N,slots*4),cand=[],foes=ctx.foes||[];
   for(let i=0;i<G.N;i++){
-    const o=G.ore[i];if(!o||!G.open[T.id][i]||G.tasks.has(tkey('mine',i)))continue;
+    const o=G.ore[i];if(!o||!G.open[T.id][i]||G.tasks.has(tkey('mine',i))||aiBadKey(T,tkey('mine',i)))continue;
     const x=i%w,y=(i/w)|0;
-    if(blocked[i]&&!ctx.goal)continue;
+    if(blocked[i]&&!ctx.goal&&!(T.ai&&T.ai.persona==='swarm'))continue;   // 군집형: 마을 근처 광석도 불이익만 받고 캔다
     const d=Math.hypot(x-T.flag.x,y-T.flag.y);
     let v=o===3?340:o===2?260:60;
-    if(T.ai&&T.ai.wantMetal&&o===1)v+=300;                    // 금속이 모자란 군집형: 철광 우선
+    if(T.ai&&(T.ai.persona==='swarm'||T.ai.wantMetal)&&o===1)v+=300;                    // 금속이 모자란 군집형: 철광 우선
     if(ctx.goal)v=aiOreGoalValue(o,ctx.goal);
     let score=v-d*1.5;
     if(blocked[i])score-=80;                                   // 목표 작업: 위험해도 하되 불이익

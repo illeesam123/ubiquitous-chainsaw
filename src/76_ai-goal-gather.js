@@ -4,7 +4,7 @@
 //  · '목표 작업'(aiGoal): 지금 가장 급한 구매(공방/강화/드론/증원)에 모자란 자원을 환전·채굴로 먼저 채운다.
 //    이때는 수수료·위험 같은 불이익을 감수한다(안전 재고를 무시하고 팔고, 위험한 광석도 점수만 깎고 허용).
 //  · 나무·바위·덤불을 반경 GATHER.r 칸 묶음으로 한꺼번에 채집한다(나무·바위는 철거 작업, 덤불은 'bush' 채집 작업).
-const GATHER={r:3,maxJobs:2,bushWork:2.2,maxHome:30,low:14};
+const GATHER={rockMul:1,r:3,maxJobs:2,bushWork:2.2,maxHome:30,low:14};
 // ---- 덤불 채집 작업 ----
 const _tcGA=taskCheck;
 taskCheck=function(team,kind,x,y,type){
@@ -108,14 +108,15 @@ function aiGatherCluster(cx,cy,wW,wM){
   for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
     const x=Math.floor(cx)+dx,y=Math.floor(cy)+dy;if(!inb(x,y)||Math.hypot(dx,dy)>r+.4)continue;
     const i=y*G.w+x,o=G.obst[i];
-    if(o&&o.natural&&(o.type==='tree'||o.type==='rock')&&!seen.has(o)&&!G.tasks.has(tkey('demo',o.idx))){
-      seen.add(o);demo.push([o.x,o.y]);value+=o.type==='tree'?6.7*wW:10.8*wM;
+    if(o&&o.natural&&(o.type==='tree'||o.type==='rock')&&!seen.has(o)&&!G.tasks.has(tkey('demo',o.idx))&&!(GATHER.curT&&aiBadKey(GATHER.curT,tkey('demo',o.idx)))){
+      seen.add(o);demo.push([o.x,o.y]);value+=o.type==='tree'?6.7*wW:10.8*wM*GATHER.rockMul;
     }else if(!o&&G.brush[i]&&!G.tasks.has(tkey('bush',i))){bush.push([x,y]);value+=2.2*wW;}
   }
   return {demo,bush,value};
 }
 function aiGatherJobs(T){const A=T.ai;A.gJobs=(A.gJobs||[]).filter(j=>j.keys.some(k=>G.tasks.has(k)));return A.gJobs;}
 function aiEconGather(T,P,ctx){
+  GATHER.curT=T;
   const A=T.ai,pop=popOf(T.id);if(pop<(ctx.low?3:6)||!T.flag)return 0;
   const jobs=aiGatherJobs(T);if(jobs.length>=GATHER.maxJobs+(ctx.goal?1:0))return 0;
   const needWood=(T.res.wood<P.keepW*1.4)||(T.res.metal<P.keepM*1.2)||(ctx.goal&&(ctx.goal.def.wood||ctx.goal.def.metal));

@@ -34,6 +34,8 @@ function aiPartDroneRush(T,dt){
     if(T.res.metal<needM&&!pend('metal'))shopAddTrade(T.id,'money','metal',Math.min(Math.floor(T.res.money*.5),240));
     else if(T.res.wood<needW&&!pend('wood'))shopAddTrade(T.id,'money','wood',Math.min(Math.floor(T.res.money*.4),160));
   }
+  // 0') 초반 철광 땅굴(79_swarm-econ.js): 코어 틱이 못 닿는 시기에도 직접 이어 판다
+  if(!A.oreDone&&typeof aiSwarmTunnel==='function'){const fr=aiFreeUnits(T);try{aiSwarmTunnel(T,A,fr,n=>fr.splice(0,n));}catch(e){console.error('군집 땅굴 오류',e);}}
   // 1) 생산: 군수공장이 있으면 드론 건설 주문을 쉬지 않는다(동시에 최대 2건)
   if(wsHasFactory(T.id)){
     const inflight=[...G.tasks.values()].filter(q=>q.kind==='build'&&q.type==='drone'&&q.team===T.id).length;

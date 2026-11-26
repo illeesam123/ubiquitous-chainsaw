@@ -19,6 +19,7 @@
 <div class="rw" id="spBudRow"><label>연산 비중 <input type="range" id="spBud" min="10" max="200" value="40" style="width:110px"><b id="spBudV">40ms</b></label><small>클수록 빠르지만 화면이 덜 반응합니다.</small></div>
 <div class="rw"><label>개체수 <input type="number" id="spPop" min="4" max="24" value="8"></label><label>판/개체 <input type="number" id="spGames" min="1" max="6" value="2"></label><label>세대(0=계속) <input type="number" id="spGens" min="0" max="200" value="20"></label></div>
 <div class="rw"><label>제한시간(초) <input type="number" id="spCap" min="60" max="3600" step="30" value="900"></label><label>맵 <select id="spSize"><option value="64">64</option><option value="96">96</option></select></label><label>병사 <input type="number" id="spSold" min="8" max="40" value="14"></label></div>
+<div class="rw"><label>대전 방식 <select id="spMode"><option value="duel">1 대 1</option><option value="3">3인 개인전</option><option value="4">4인 개인전</option><option value="5">5인 개인전</option><option value="mixed">혼합 (1v1·3~5인)</option></select></label></div>
 <div class="rw"><label>진화 대상 <select id="spWho"><option value="all">전 성향 순환</option>${Object.keys(PN).map(k=>`<option value="${k}">${PN[k]}</option>`).join('')}</select></label>
 <button class="btn on" id="spGo" type="button">▶ 진화 시작</button><button class="btn" id="spStop" type="button">⏹ 중지</button></div>
 <div class="rw"><label>시범 대결 <select id="spA">${Object.keys(PN).map(k=>`<option value="${k}">${PN[k]}</option>`).join('')}</select> vs <select id="spB">${Object.keys(PN).map((k,i)=>`<option value="${k}" ${i===4?'selected':''}>${PN[k]}</option>`).join('')}</select></label><button class="btn" id="spWatch" type="button">👁 보기</button></div>
@@ -32,7 +33,7 @@
   const PARTN={smart:'고도화',economy:'경제',sniper:'저격',workshop:'공방',droneRush:'드론'};
   function sync(){
     $s('spVis').checked=!SP.headless;$s('spTur').checked=SP.cfg.turbo!==false;$s('spVar').checked=SP.cfg.vary!==false;$s('spSpdL').style.display=SP.headless?'none':'';$s('spBudRow').style.display=SP.headless?'':'none';
-    $s('spUse').checked=SP.useBest;$s('spAuto').checked=!!SP.auto;$s('spProg').textContent=SP.progress||(SP.running?'진행 중…':'');
+    $s('spUse').checked=SP.useBest;$s('spMode').value=SP.cfg.mode||'duel';$s('spAuto').checked=!!SP.auto;$s('spProg').textContent=SP.progress||(SP.running?'진행 중…':'');
     $s('spGo').disabled=SP.running;$s('spWatch').disabled=SP.running;
     $s('spTab').innerHTML=Object.keys(PN).map(p=>{const b=SP.store.best[p];return `<tr><td>${PN[p]}</td><td>${b?b.gen:0}</td><td>${b?b.fit.toFixed(2):'-'}</td><td style="color:var(--dim)">${b?spPartList(b.g).slice(2).map(k=>PARTN[k]).join('·')||'기본':'기본값'}</td></tr>`;}).join('');
     $s('spLog').innerHTML=SP.log.slice().reverse().join('<br>');
@@ -41,6 +42,7 @@
   m.addEventListener('input',e=>{
     if(e.target.id==='spLoad'){SP.load=+e.target.value;$s('spLoadV').textContent=SP.load+'%';spWorkerCfg();}
     if(e.target.id==='spAuto'){spAutoSet(e.target.checked);}
+    if(e.target.id==='spMode'){SP.cfg.mode=e.target.value;spWorkerCfg();}
     if(e.target.id==='spTur'){SP.cfg.turbo=e.target.checked;}
     if(e.target.id==='spVar'){SP.cfg.vary=e.target.checked;}
     if(e.target.id==='spSpd'){SP.speed=+e.target.value;$s('spSpdV').textContent='×'+SP.speed;}
@@ -50,13 +52,13 @@
     if(e.target.id==='spVis'){SP.headless=!e.target.checked;sync();}
     if(e.target.id==='spUse'){SP.useBest=e.target.checked;try{localStorage.setItem(SPKEY+'_use',SP.useBest?'1':'0');}catch(_){}spApplyBestAll();}
   });
-  function readCfg(){const g=id=>+$s(id).value;Object.assign(SP.cfg,{pop:g('spPop'),games:g('spGames'),gens:g('spGens'),cap:g('spCap'),size:g('spSize'),soldiers:g('spSold')});SP.pop={};}
+  function readCfg(){const g=id=>+$s(id).value;Object.assign(SP.cfg,{mode:$s('spMode').value,pop:g('spPop'),games:g('spGames'),gens:g('spGens'),cap:g('spCap'),size:g('spSize'),soldiers:g('spSold')});SP.pop={};}
   m.addEventListener('click',e=>{
     const id=e.target.id;
     if(id==='spX'){m.hidden=true;return;}
     if(id==='spGo'){readCfg();const who=$s('spWho').value;spEvolve(who==='all'?SPPERSONA:[who],SP.cfg.gens);return;}
     if(id==='spStop'){SP.stop=true;SP.active=false;return;}
-    if(id==='spWatch'){readCfg();spWatch($s('spA').value,$s('spB').value);return;}
+    if(id==='spWatch'){readCfg();const n=SP.cfg.mode==='mixed'?2:(+SP.cfg.mode||2),all=Object.keys(PN),a=$s('spA').value,b=$s('spB').value,ps=[a,b];for(const k of spShuffle(all.filter(k=>k!==a&&k!==b)))if(ps.length<n)ps.push(k);spWatch(ps.slice(0,Math.max(2,n)));return;}
     if(id==='spExp'){const t=spExport();try{navigator.clipboard.writeText(t);toast('유전자 JSON을 클립보드에 복사했습니다','ok');}catch(_){prompt('복사하세요',t);}return;}
     if(id==='spImp'){const t=prompt('내보낸 유전자 JSON을 붙여넣으세요');if(t){try{spImport(t);sync();toast('가져왔습니다','ok');}catch(err){toast('가져오기 실패: '+err.message);}}return;}
     if(id==='spReset'){if(confirm('학습된 유전자를 모두 지울까요?')){SP.store={best:{},hist:{}};SP.pop={};SP.gen={};spSave();spApplyBestAll();sync();}return;}

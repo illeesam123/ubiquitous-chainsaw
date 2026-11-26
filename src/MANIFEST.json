@@ -74,5 +74,7 @@
   "src/73_svg-misc.js",
   "src/74_svg-fx.js",
   "src/75_ai-drone-rush.js",
-  "src/76_ai-goal-gather.js"
+  "src/76_ai-goal-gather.js",
+  "src/77_selfplay.js",
+  "src/78_selfplay-ui.js"
 ]

@@ -141,7 +141,7 @@ table.st td,table.st th{text-align:left;padding:4px 6px;border-bottom:1px solid 
     <button class="btn" id="bPause" title="일시정지 (P)">⏸</button>
     <button class="btn on" id="bX1">×1</button>
     <button class="btn" id="bX2">×2</button>
-    <button class="btn" id="bNew">새 게임</button>
+    <button class="btn" id="bNew" title="메인 로비로 나가기">🏠 메인 로비</button>
   </header>
   <main id="stage">
     <div id="loading" hidden><div class="ttl">참호전</div><div class="bar"><i id="loadBar"></i></div><div class="msg" id="loadMsg"></div></div>
@@ -195,6 +195,7 @@ table.st td,table.st th{text-align:left;padding:4px 6px;border-bottom:1px solid 
           </label>
         </div>
         <button class="go" id="bGo">맵 생성</button>
+        <button class="btn" id="bBack" type="button" hidden style="width:100%;margin-top:8px">↩ 진행 중인 게임으로 돌아가기</button>
         <div class="help">
           <b>조작</b> 타일을 끌면 참호, 클릭하면 철거·제작 · 놀고 있는 병사가 <b>배정 인원</b>만큼 자동으로 가서 작업 (<kbd>[</kbd> <kbd>]</kbd> 로 조절)<br>
           병사는 선택 후 땅 클릭으로 이동·작업, 차량은 클릭/박스 선택 후 <kbd>1</kbd>번 도구에서 땅 클릭으로 이동 · 우클릭 끌기 / <kbd>WASD</kbd> 카메라 · 휠 확대<br>
@@ -207,7 +208,7 @@ table.st td,table.st th{text-align:left;padding:4px 6px;border-bottom:1px solid 
         <h1 id="ovT"></h1>
         <p id="ovS"></p>
         <div id="ovTab"></div>
-        <div class="row"><button class="go" id="bAgain">같은 시드로 다시</button><button class="go" id="bNew2" style="background:var(--panel2);color:var(--fg);border:1px solid var(--line)">새 시드</button></div>
+        <div class="row"><button class="go" id="bAgain">같은 시드로 다시</button><button class="go" id="bNew2" style="background:var(--panel2);color:var(--fg);border:1px solid var(--line)">🏠 메인 로비로</button></div>
       </div>
     </div>
   </main>

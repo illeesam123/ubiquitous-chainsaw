@@ -148,3 +148,7 @@ button:disabled,.btn:disabled,.btn.dis{opacity:.45;cursor:not-allowed;filter:gra
 ::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-track{background:rgba(0,0,0,.2)}::-webkit-scrollbar-thumb{background:var(--line);border-radius:5px}::-webkit-scrollbar-thumb:hover{background:#565e3d}
 table.st th{color:var(--accent);font-weight:600}
 @media(max-width:560px){#bar{overflow-x:auto}#bar .tool{min-width:76px}}
+
+/* 로비·결과 창은 HUD(날씨·자원·팀·자경단 수·메뉴) 위에 오고, 열려 있는 동안 HUD 는 숨긴다 */
+.overlay{z-index:90}
+body:has(#lobby:not([hidden])) :is(#weather,#res,#teams,#sel,#mini,#rcHud,#banner,#armMenu,#wsPanel,#buildDrawer,#shopDrawer,#bar){visibility:hidden}

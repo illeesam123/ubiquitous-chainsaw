@@ -133,8 +133,15 @@ function togglePause(){if(!G||G.phase!=='play')return;G.paused=!G.paused;$('bPau
 $('bPause').onclick=togglePause;$('bMusic').onclick=toggleMusic;$('bSfx').onclick=toggleSfx;
 $('bX1').onclick=()=>{if(G){G.speed=1;$('bX1').classList.add('on');$('bX2').classList.remove('on');}};
 $('bX2').onclick=()=>{if(G){G.speed=2;$('bX2').classList.add('on');$('bX1').classList.remove('on');}};
-$('bNew').onclick=()=>{$('lobby').hidden=false;};
-$('bNew2').onclick=()=>{$('over').hidden=true;$('lobby').hidden=false;};
+let lobbyWasPaused=false;
+function openLobby(){
+  const live=!!(G&&G.phase&&G.phase!=='over'&&!G.edit);
+  if(live&&$('lobby').hidden){lobbyWasPaused=!!G.paused;if(G.phase==='play')G.paused=true;}
+  $('lobby').hidden=false;$('bBack').hidden=!live;
+}
+function closeLobby(){$('lobby').hidden=true;if(G&&G.phase==='play'){G.paused=lobbyWasPaused;$('bPause').classList.toggle('on',G.paused);}}
+$('bNew').onclick=openLobby;$('bBack').onclick=closeLobby;
+$('bNew2').onclick=()=>{$('over').hidden=true;$('lobby').hidden=false;$('bBack').hidden=true;};
 $('bAgain').onclick=()=>{$('over').hidden=true;startGame(lastCfg);};
 $('bDice').onclick=()=>{$('fSeed').value=Math.random().toString(36).slice(2,8).toUpperCase();};
 $('bGo').onclick=()=>{

@@ -14,7 +14,7 @@ const SPGENES=[   // [키,최소,최대,정수?]
   ['minLaunch',2,8,1],['saturate',4,12,1],['maxAlive',4,16,1],['low',6,24,1]
 ];
 const SP={active:false,headless:true,speed:8,budget:40,store:{best:{},hist:{}},useBest:true,
-  cfg:{size:64,soldiers:14,cap:360,pop:8,games:2,gens:20,turbo:true,dt:.12,aiStep:.3,idle:70,vary:true},pop:{},fit:{},gen:{},log:[],defaults:null,running:false,stop:false,onUpdate:null};
+  cfg:{size:64,soldiers:14,cap:900,pop:8,games:2,gens:20,turbo:true,dt:.12,aiStep:.3,idle:0,vary:true},pop:{},fit:{},gen:{},log:[],defaults:null,running:false,stop:false,onUpdate:null};
 const SPKEY='trench_ai_genomes_v1';
 const spClamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const spSleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -116,7 +116,7 @@ async function spMatch(spec){
           else if(c.idle&&G.time>120&&G.time-lastT>c.idle){result=spScore();break;}
         }
       }
-      await spSleep(0);
+      await spSleep(SPW?spYieldMs():0);
     }
   }else{
     G.paused=false;G.speed=SP.speed;
@@ -124,6 +124,11 @@ async function spMatch(spec){
     G.paused=true;
   }
   const sc=result!==null?result:spScore();
+  {const a=popOf(0),b=popOf(1),ko=(a===0)!==(b===0),w=ko?(b===0?0:1):(Math.abs(sc-.5)<.02?-1:(sc>.5?0:1));
+   const rep={a:spec.a.p,b:spec.b.p,winner:w,wp:w===0?spec.a.p:w===1?spec.b.p:null,time:G.time,how:ko?'ko':'time'};
+   if(SPW)spWorkerPost(Object.assign({type:'match'},rep));
+   else{spResCard('🧬 '+spResText(rep),`${SPNAME[rep.a]} vs ${SPNAME[rep.b]}${ko?'':' · 제한시간 판정'}`);
+     if(!SP.headless&&G){G.over=w===0?'win':'lose';G.phase='over';try{showOver();$('ovT').textContent=spResText(rep);$('ovS').textContent=`${SPNAME[rep.a]} 대 ${SPNAME[rep.b]} · ${Math.floor(G.time/60)}분 ${Math.floor(G.time%60)}초`;}catch(e){}}}}
   SP.active=false;SP.inMatch=false;spResetAllTables();spApplyBestAll();
   return sc;
 }
@@ -169,22 +174,22 @@ function spFinish(p,results){   // results: [{i,fit}]
 }
 function spLog(s){SP.log.push(s);if(SP.log.length>60)SP.log.shift();if(SP.onUpdate)SP.onUpdate();}
 async function spEvolve(personas,gens){
-  if(SP.running)return;SP.running=true;SP.stop=false;
+  if(SP.running)return;SP.running=true;SP.stop=false;if(!SPW)spWorkerStop();
   try{
     for(let g=0;(gens<=0||g<gens)&&!SP.stop;g++)for(const p of personas){
       if(SP.stop)break;
       const jobs=spPlan(p),res=[];
-      for(let j=0;j<jobs.length&&!SP.stop;j++){res.push({i:jobs[j].i,fit:await spRunJob(jobs[j])});SP.progress=`${p} 세대 ${(SP.gen[p]||0)+1} · ${j+1}/${jobs.length}판`;if(SP.onUpdate)SP.onUpdate();}
+      for(let j=0;j<jobs.length&&!SP.stop;j++){res.push({i:jobs[j].i,fit:await spRunJob(jobs[j])});SP.progress=`${p} 세대 ${(SP.gen[p]||0)+1} · ${j+1}/${jobs.length}판`;if(SPW)spWorkerPost({type:'prog',prog:SP.progress});if(SP.onUpdate)SP.onUpdate();}
       if(SP.stop)break;
-      const r=spFinish(p,res);spLog(`${p} 세대 ${r.gen}: 최고 ${r.best.toFixed(2)} · 평균 ${r.avg.toFixed(2)}`);spApplyBestAll();
+      const r=spFinish(p,res);const ln=`${p} 세대 ${r.gen}: 최고 ${r.best.toFixed(2)} · 평균 ${r.avg.toFixed(2)}`;spLog(ln);spWorkerPost({type:'gen',line:ln,prog:ln});if(!SPW)spApplyBestAll();
     }
-  }finally{SP.running=false;SP.active=false;SP.progress='';if(SP.onUpdate)SP.onUpdate();}
+  }finally{SP.running=false;SP.active=false;SP.progress='';if(!SPW&&SP.auto)setTimeout(spWorkerStart,500);if(SP.onUpdate)SP.onUpdate();}
 }
 // 화면 보기: 선택한 두 성향의 최고 유전자끼리 시범 대결
 async function spWatch(pa,pb){
-  if(SP.running)return;SP.running=true;SP.headless=false;
+  if(SP.running)return;SP.running=true;SP.headless=false;if(!SPW)spWorkerStop();
   try{const s=await spMatch({a:spOppGenome(pa),b:spOppGenome(pb)});spLog(`시범 대결 ${pa} vs ${pb}: ${pa} 점수 ${s.toFixed(2)}`);}
-  finally{SP.running=false;SP.active=false;if(SP.onUpdate)SP.onUpdate();}
+  finally{SP.running=false;SP.active=false;if(!SPW&&SP.auto)setTimeout(spWorkerStart,500);if(SP.onUpdate)SP.onUpdate();}
 }
 // ---------- 렌더 생략·종료 판정 ----------
 const _renderSP=render;
@@ -194,20 +199,43 @@ render=function(){
 };
 const _checkEndSP=checkEnd;
 checkEnd=function(){if(SP.active)return;return _checkEndSP();};
-// ---------- 켜 둔 동안 자동 학습 ----------
-// 게임 화면이 비어 있을 때(로비·종료 후)만 고속 모드로 조용히 학습하고, 사용자가 게임을 시작하는 즉시 멈춘다.
-SP.auto=false;SP.autoRun=false;
-function spAutoSet(on){SP.auto=!!on;try{localStorage.setItem(SPKEY+'_auto',on?'1':'0');}catch(e){}if(!on&&SP.autoRun)spAutoStop();if(SP.onUpdate)SP.onUpdate();}
-function spAutoStop(){if(SP.autoRun){SP.stop=true;SP.active=false;}}
+// ---------- 켜 둔 동안(플레이 중에도) 자동 학습 ----------
+// 보이지 않는 iframe 안에 같은 게임을 하나 더 띄워 고속·저비중으로 학습한다(게임 상태 G 는 iframe 마다 따로라 플레이와 충돌하지 않는다).
+// 종료는 한쪽이 전멸(승리 조건)할 때. 결과는 같은 localStorage 로 공유하고, 판이 끝날 때마다 postMessage 로 결과 카드를 띄운다.
+const SPNAME={aggressive:'공세형',defensive:'수비형',tricky:'교란형',balanced:'균형형',swarm:'군집형'};
+const SPW=/[?&]spworker=1/.test(location.search);
+SP.worker=SPW;SP.auto=false;SP.load=25;   // load: 백그라운드 CPU 비중(%)
+function spWorkerPost(o){try{if(SPW)parent.postMessage(Object.assign({sp:1},o),'*');}catch(e){}}
+function spYieldMs(){const b=SP.budget||6,l=clamp(SP.load||25,5,90);return Math.round(b*(100-l)/l);}
+function spWorkerEl(){return document.getElementById('spWorker');}
+function spWorkerCfg(){const f=spWorkerEl();if(f&&f.contentWindow)try{f.contentWindow.postMessage({sp:1,type:'cfg',cfg:SP.cfg,load:SP.load,vary:SP.cfg.vary},'*');}catch(e){}}
+function spWorkerStart(){
+  if(SPW||spWorkerEl()||SP.running)return;
+  const f=document.createElement('iframe');f.id='spWorker';f.src=location.pathname+'?spworker=1';f.style.cssText='position:fixed;left:-9999px;top:0;width:480px;height:320px;border:0;opacity:0;pointer-events:none';f.setAttribute('aria-hidden','true');f.tabIndex=-1;
+  f.onload=()=>setTimeout(spWorkerCfg,300);document.body.appendChild(f);
+}
+function spWorkerStop(){const f=spWorkerEl();if(f)f.remove();}
+function spAutoSet(on){SP.auto=!!on;try{localStorage.setItem(SPKEY+'_auto',on?'1':'0');}catch(e){}if(on)spWorkerStart();else spWorkerStop();if(SP.onUpdate)SP.onUpdate();}
+function spResCard(t,sub){
+  let c=document.getElementById('spRes');if(!c){c=document.createElement('div');c.id='spRes';c.style.cssText='position:fixed;left:12px;bottom:12px;z-index:95;background:rgba(18,20,14,.94);border:1px solid #d9ad4e;border-radius:10px;padding:10px 14px;color:#eee;font:13px system-ui;max-width:280px;box-shadow:0 4px 18px #0008;transition:opacity .4s';document.body.appendChild(c);}
+  c.innerHTML=`<b style="color:#d9ad4e;font-size:14px">${t}</b><div style="color:#aaa;margin-top:3px;font-size:11px">${sub||''}</div>`;c.style.opacity=1;c.style.display='';
+  clearTimeout(c._t);c._t=setTimeout(()=>{c.style.opacity=0;setTimeout(()=>{if(c.style.opacity==='0')c.style.display='none';},450);},6000);
+}
+function spResText(r){return r.winner<0?`무승부 — 제한시간 종료`:`팀 ${SPNAME[r.wp]}이 승리하였습니다!`;}
+if(!SPW)window.addEventListener('message',e=>{
+  const f=spWorkerEl(),d=e.data;if(!d||!d.sp||!f||e.source!==f.contentWindow)return;
+  if(d.type==='match'){const t=Math.floor(d.time);spResCard('🧬 '+spResText(d),`${SPNAME[d.a]} vs ${SPNAME[d.b]} · ${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}${d.how==='time'?' · 제한시간 판정':''}`);}
+  else if(d.type==='gen'){try{spLoad();}catch(_){}if(!(G&&G.phase==='play'))spApplyBestAll();SP.log.push(d.line);if(SP.log.length>60)SP.log.shift();SP.progress='백그라운드 학습: '+d.prog;if(SP.onUpdate)SP.onUpdate();}
+  else if(d.type==='prog'){SP.progress='백그라운드 학습: '+d.prog;if(SP.onUpdate)SP.onUpdate();}
+});
+if(SPW)window.addEventListener('message',e=>{const d=e.data;if(!d||!d.sp||e.source!==parent)return;if(d.type==='cfg'){Object.assign(SP.cfg,d.cfg,{pop:SP.cfg.pop});SP.load=d.load;SP.pop={};}});
 const _startGameSP=startGame;
-startGame=function(cfg){if(!SP.selfStart){SP.userBusy=true;if(SP.autoRun)spAutoStop();}return _startGameSP(cfg);};
-setInterval(()=>{
-  if(!SP.auto||SP.running)return;
-  if(SP.userBusy){if(G&&G!==SP.spG&&G.phase==='over')SP.userBusy=false;else return;}
-  if(typeof LOAD!=='undefined'&&LOAD.on)return;
-  if(G&&G!==SP.spG&&G.phase!=='over')return;
-  SP.headless=true;SP.budget=Math.min(SP.budget||40,40);SP.autoRun=true;SP.progress='자동 학습';
-  spEvolve(SPPERSONA,0).finally(()=>{SP.autoRun=false;SP.progress='';});
-},3000);
+startGame=function(cfg){if(!SPW&&!SP.selfStart&&SP.useBest&&!SP.active)try{spApplyBestAll();}catch(e){}return _startGameSP(cfg);};
+if(SPW){SP.headless=true;SP.budget=6;SP.load=25;
+  const go=()=>{if(SP.running)return;spEvolve(SPPERSONA,0);};
+  window.addEventListener('load',()=>setTimeout(go,800));
+  for(const fn of ['sfx','musTick'])if(typeof window[fn]==='function')window[fn]=function(){};
+}
 try{spLoad();}catch(e){console.error('자기대전 저장값 오류',e);}
 try{SP.auto=localStorage.getItem(SPKEY+'_auto')==='1';}catch(e){}
+if(SP.auto&&!SPW)window.addEventListener('load',()=>setTimeout(spWorkerStart,2500));

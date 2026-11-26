@@ -14,7 +14,7 @@ const SPGENES=[   // [키,최소,최대,정수?]
   ['minLaunch',2,8,1],['saturate',4,12,1],['maxAlive',4,16,1],['low',6,24,1]
 ];
 const SP={active:false,headless:true,speed:8,budget:40,store:{best:{},hist:{}},useBest:true,
-  cfg:{size:64,soldiers:14,cap:360,pop:8,games:2,gens:20},pop:{},fit:{},gen:{},log:[],defaults:null,running:false,stop:false,onUpdate:null};
+  cfg:{size:64,soldiers:14,cap:360,pop:8,games:2,gens:20,turbo:true,dt:.12,aiStep:.3,idle:70,vary:true},pop:{},fit:{},gen:{},log:[],defaults:null,running:false,stop:false,onUpdate:null};
 const SPKEY='trench_ai_genomes_v1';
 const spClamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const spSleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -88,12 +88,12 @@ function spScore(){   // 0 팀 관점의 0~1 점수
 async function spWaitLoad(){while(typeof LOAD!=='undefined'&&LOAD.on)await spSleep(30);}
 // spec={a:genome(0팀),b:genome(1팀),seed} → 0팀 점수(0~1)
 async function spMatch(spec){
-  const c=SP.cfg,cfg={seed:spec.seed||('SP'+Math.random().toString(36).slice(2,8)),biome:'plain',size:c.size,enemies:1,soldiers:c.soldiers,minDist:Math.round(c.size*.45),noHills:true};
+  const c=SP.cfg,sc0=spec.scn||{},sz=sc0.size||c.size,cfg={seed:sc0.seed||spec.seed||('SP'+Math.random().toString(36).slice(2,8)),biome:sc0.biome||'plain',size:sz,enemies:1,soldiers:sc0.soldiers||c.soldiers,minDist:Math.round(sz*.45),noHills:sc0.hills===undefined?true:!sc0.hills};
   SP.active=true;
   spResetAllTables();   // 기본 표 + 두 유전자 (전역 수치는 a 의 값을 쓴다)
   spApplyGenome(spec.b,false);spApplyGenome(spec.a,true);
   if(SP.headless){_ldStart(cfg);}else{startGame(cfg);await spWaitLoad();}
-  let fx=0,fy=0;for(let k=0;k<400&&!fx;k++){const x=rint(Math.random,3,G.w-4),y=rint(Math.random,3,G.h-4);if(!flagCheck(x,y)){fx=x;fy=y;}}
+  const fr=mulberry(hashStr(cfg.seed+'#flag')());let fx=0,fy=0;for(let k=0;k<400&&!fx;k++){const x=rint(fr,3,G.w-4),y=rint(fr,3,G.h-4);if(!flagCheck(x,y)){fx=x;fy=y;}}
   if(!fx){for(let y=3;y<G.h-3&&!fx;y++)for(let x=3;x<G.w-3;x++)if(!flagCheck(x,y)){fx=x;fy=y;break;}}
   placeFlag(0,fx,fy);aiPlaceFlags();
   const gs=[spec.a,spec.b];
@@ -101,12 +101,19 @@ async function spMatch(spec){
   G.phase='play';G.countdown=0;
   const cap=c.cap;let result=null;
   if(SP.headless){
-    G.paused=true;const dt=.05;let n=0;
+    G.paused=true;const turbo=c.turbo!==false,dt=turbo?(c.dt||.12):.05,aiStep=turbo?(c.aiStep||.3):0;let n=0,acc=0,lastKey='',lastT=0;
     while(SP.active&&G.time<cap&&!result){
       const t0=performance.now();
       while(G.time<cap&&performance.now()-t0<SP.budget){
-        stepWorld(dt);for(const T of G.teams)if(!T.human&&teamCount(T.id)>0&&G.phase==='play')aiTick(T,dt);
-        if(++n%20===0&&spEnded()){result=spScore();break;}
+        stepWorld(dt);acc+=dt;
+        if(acc>=aiStep){for(const T of G.teams)if(!T.human&&teamCount(T.id)>0&&G.phase==='play')aiTick(T,acc);acc=0;}
+        if(++n%10===0){
+          if(spEnded()){result=spScore();break;}
+          // 교착 판정: 한동안 양쪽 병력·전력이 그대로면 조기 종료
+          const key=teamCount(0)+'/'+teamCount(1)+'/'+Math.round(spStrength(0)/8)+'/'+Math.round(spStrength(1)/8);
+          if(key!==lastKey){lastKey=key;lastT=G.time;}
+          else if(c.idle&&G.time>120&&G.time-lastT>c.idle){result=spScore();break;}
+        }
       }
       await spSleep(0);
     }
@@ -127,17 +134,22 @@ function spInitPop(p){
   SP.pop[p]=pop;SP.gen[p]=SP.gen[p]||0;
 }
 // 한 세대의 평가 작업 목록(워커가 나눠 돌릴 수 있는 순수 JSON)
+function spScenario(){   // 판마다 다른 시드·바이옴·맵 크기·언덕·병력
+  const rs='S'+Math.random().toString(36).slice(2,9),r=mulberry(hashStr(rs+'#scn')());
+  if(!SP.cfg.vary)return {seed:rs};
+  const sizes=[48,56,64,72],keys=BIOME_KEYS.filter(k=>k!=='plain'||r()<.5);
+  return {seed:rs,biome:keys[(r()*keys.length)|0],size:sizes[(r()*sizes.length)|0],hills:r()<.55,soldiers:10+((r()*9)|0)};
+}
 function spPlan(p){
   if(!SP.pop[p]||SP.pop[p].length!==SP.cfg.pop)spInitPop(p);
-  const others=SPPERSONA.filter(q=>q!==p),jobs=[];let k=0;
-  SP.pop[p].forEach((g,i)=>{for(let j=0;j<SP.cfg.games;j++){
-    const op=others[(k++)%others.length],side=Math.random()<.5;
-    jobs.push({i,p,genome:g,opp:spOppGenome(op),side,seed:'E'+Math.random().toString(36).slice(2,8)});
-  }});
+  // 한 세대의 모든 개체가 같은 시나리오(시드·상대·진영)를 치른다 → 개체끼리 공정하게 비교(짝지은 비교).
+  const others=SPPERSONA.filter(q=>q!==p),jobs=[],scn=[];
+  for(let j=0;j<SP.cfg.games;j++)scn.push({scn:spScenario(),op:spOppGenome(others[(Math.random()*others.length)|0]),side:Math.random()<.5});
+  SP.pop[p].forEach((g,i)=>{for(const s of scn)jobs.push({i,p,genome:g,opp:s.op,side:s.side,scn:s.scn});});
   return jobs;
 }
 async function spRunJob(job){   // 0팀=a, 1팀=b. side=true 이면 후보가 1팀.
-  const sc=await spMatch(job.side?{a:job.opp,b:job.genome,seed:job.seed}:{a:job.genome,b:job.opp,seed:job.seed});
+  const sc=await spMatch(job.side?{a:job.opp,b:job.genome,scn:job.scn}:{a:job.genome,b:job.opp,scn:job.scn});
   return job.side?1-sc:sc;
 }
 function spFinish(p,results){   // results: [{i,fit}]

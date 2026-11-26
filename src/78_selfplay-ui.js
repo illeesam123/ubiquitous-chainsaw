@@ -14,7 +14,8 @@
   const PN={aggressive:'공세형',defensive:'수비형',tricky:'교란형',balanced:'균형형',swarm:'군집형'};
   m.innerHTML=`<h3><span>🧬 자기대전 연구소</span><button class="btn" id="spX" type="button">닫기 ✕</button></h3>
 <small>AI끼리 대결시켜 성향별 파츠 선택·파라미터를 진화시킵니다. 학습 결과는 이 브라우저에 저장됩니다.</small>
-<div class="rw"><label><input type="checkbox" id="spVis"> 화면 보기</label><label id="spSpdL">배속 <input type="range" id="spSpd" min="1" max="20" value="8" style="width:90px"><b id="spSpdV">×8</b></label></div>
+<div class="rw"><label><input type="checkbox" id="spVis"> 화면 보기</label><label id="spSpdL">배속 <input type="range" id="spSpd" min="1" max="60" value="8" style="width:90px"><b id="spSpdV">×8</b></label></div>
+<div class="rw" id="spTurRow"><label><input type="checkbox" id="spTur" checked> ⚡ 터보 (거친 시간 단위·교착 조기종료)</label><label><input type="checkbox" id="spVar" checked> 🎲 판마다 다른 시드·바이옴·크기·언덕</label></div>
 <div class="rw" id="spBudRow"><label>연산 비중 <input type="range" id="spBud" min="10" max="200" value="40" style="width:110px"><b id="spBudV">40ms</b></label><small>클수록 빠르지만 화면이 덜 반응합니다.</small></div>
 <div class="rw"><label>개체수 <input type="number" id="spPop" min="4" max="24" value="8"></label><label>판/개체 <input type="number" id="spGames" min="1" max="6" value="2"></label><label>세대 <input type="number" id="spGens" min="1" max="200" value="20"></label></div>
 <div class="rw"><label>제한시간(초) <input type="number" id="spCap" min="60" max="900" step="30" value="360"></label><label>맵 <select id="spSize"><option value="64">64</option><option value="96">96</option></select></label><label>병사 <input type="number" id="spSold" min="8" max="40" value="14"></label></div>
@@ -29,7 +30,7 @@
   const $s=id=>document.getElementById(id);
   const PARTN={smart:'고도화',economy:'경제',sniper:'저격',workshop:'공방',droneRush:'드론'};
   function sync(){
-    $s('spVis').checked=!SP.headless;$s('spSpdL').style.display=SP.headless?'none':'';$s('spBudRow').style.display=SP.headless?'':'none';
+    $s('spVis').checked=!SP.headless;$s('spTur').checked=SP.cfg.turbo!==false;$s('spVar').checked=SP.cfg.vary!==false;$s('spSpdL').style.display=SP.headless?'none':'';$s('spBudRow').style.display=SP.headless?'':'none';
     $s('spUse').checked=SP.useBest;$s('spProg').textContent=SP.progress||(SP.running?'진행 중…':'');
     $s('spGo').disabled=SP.running;$s('spWatch').disabled=SP.running;
     $s('spTab').innerHTML=Object.keys(PN).map(p=>{const b=SP.store.best[p];return `<tr><td>${PN[p]}</td><td>${b?b.gen:0}</td><td>${b?b.fit.toFixed(2):'-'}</td><td style="color:var(--dim)">${b?spPartList(b.g).slice(2).map(k=>PARTN[k]).join('·')||'기본':'기본값'}</td></tr>`;}).join('');
@@ -37,6 +38,8 @@
   }
   SP.onUpdate=sync;
   m.addEventListener('input',e=>{
+    if(e.target.id==='spTur'){SP.cfg.turbo=e.target.checked;}
+    if(e.target.id==='spVar'){SP.cfg.vary=e.target.checked;}
     if(e.target.id==='spSpd'){SP.speed=+e.target.value;$s('spSpdV').textContent='×'+SP.speed;}
     if(e.target.id==='spBud'){SP.budget=+e.target.value;$s('spBudV').textContent=SP.budget+'ms';}
   });

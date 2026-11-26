@@ -17,7 +17,7 @@
 <div class="rw"><label><input type="checkbox" id="spVis"> 화면 보기</label><label id="spSpdL">배속 <input type="range" id="spSpd" min="1" max="60" value="8" style="width:90px"><b id="spSpdV">×8</b></label></div>
 <div class="rw" id="spTurRow"><label><input type="checkbox" id="spTur" checked> ⚡ 터보 (거친 시간 단위·교착 조기종료)</label><label><input type="checkbox" id="spVar" checked> 🎲 판마다 다른 시드·바이옴·크기·언덕</label></div>
 <div class="rw" id="spBudRow"><label>연산 비중 <input type="range" id="spBud" min="10" max="200" value="40" style="width:110px"><b id="spBudV">40ms</b></label><small>클수록 빠르지만 화면이 덜 반응합니다.</small></div>
-<div class="rw"><label>개체수 <input type="number" id="spPop" min="4" max="24" value="8"></label><label>판/개체 <input type="number" id="spGames" min="1" max="6" value="2"></label><label>세대 <input type="number" id="spGens" min="1" max="200" value="20"></label></div>
+<div class="rw"><label>개체수 <input type="number" id="spPop" min="4" max="24" value="8"></label><label>판/개체 <input type="number" id="spGames" min="1" max="6" value="2"></label><label>세대(0=계속) <input type="number" id="spGens" min="0" max="200" value="20"></label></div>
 <div class="rw"><label>제한시간(초) <input type="number" id="spCap" min="60" max="900" step="30" value="360"></label><label>맵 <select id="spSize"><option value="64">64</option><option value="96">96</option></select></label><label>병사 <input type="number" id="spSold" min="8" max="40" value="14"></label></div>
 <div class="rw"><label>진화 대상 <select id="spWho"><option value="all">전 성향 순환</option>${Object.keys(PN).map(k=>`<option value="${k}">${PN[k]}</option>`).join('')}</select></label>
 <button class="btn on" id="spGo" type="button">▶ 진화 시작</button><button class="btn" id="spStop" type="button">⏹ 중지</button></div>

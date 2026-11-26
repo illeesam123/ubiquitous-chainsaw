@@ -170,7 +170,7 @@ function spLog(s){SP.log.push(s);if(SP.log.length>60)SP.log.shift();if(SP.onUpda
 async function spEvolve(personas,gens){
   if(SP.running)return;SP.running=true;SP.stop=false;
   try{
-    for(let g=0;g<gens&&!SP.stop;g++)for(const p of personas){
+    for(let g=0;(gens<=0||g<gens)&&!SP.stop;g++)for(const p of personas){
       if(SP.stop)break;
       const jobs=spPlan(p),res=[];
       for(let j=0;j<jobs.length&&!SP.stop;j++){res.push({i:jobs[j].i,fit:await spRunJob(jobs[j])});SP.progress=`${p} 세대 ${(SP.gen[p]||0)+1} · ${j+1}/${jobs.length}판`;if(SP.onUpdate)SP.onUpdate();}

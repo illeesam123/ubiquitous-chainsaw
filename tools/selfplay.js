@@ -16,7 +16,9 @@ const url = 'file://' + path.join(__dirname, '..', 'dist', 'index.html');
   const p0 = pages[0];
   await Promise.all(pages.map(p => p.evaluate(([c, s]) => { Object.assign(SP.cfg, c); SP.headless = true; SP.budget = 60; SP.useBest = false; SP.store = s || { best: {}, hist: {} }; SP.store.hist = SP.store.hist || {}; SP.pop = {}; }, [cfg, FRESH ? null : store])));
   const save = async () => { const s = await p0.evaluate(() => spExport()); fs.writeFileSync(OUT, 'var AI_GENOMES=' + s + ';\n'); };
-  for (let g = 0; g < GENS; g++) for (const persona of PERS) {
+  let stopping = false; process.on('SIGINT', () => { stopping = true; console.log('중지 요청: 현재 세대를 마치고 저장합니다'); });
+  for (let g = 0; (GENS <= 0 || g < GENS) && !stopping; g++) for (const persona of PERS) {
+    if (stopping) break;
     const jobs = await p0.evaluate(p => spPlan(p), persona), res = []; let next = 0;
     await Promise.all(pages.map(async pg => {
       while (next < jobs.length) {
@@ -30,7 +32,7 @@ const url = 'file://' + path.join(__dirname, '..', 'dist', 'index.html');
     // 다른 탭의 명예의 전당도 갱신
     const best = await p0.evaluate(() => JSON.stringify(SP.store.best));
     await Promise.all(pages.slice(1).map(pg => pg.evaluate(s => { SP.store.best = JSON.parse(s); }, best)));
-    console.log(`세대 ${g + 1}/${GENS} ${persona.padEnd(10)} 세대수 ${r.gen} 최고 ${r.best.toFixed(2)} 평균 ${r.avg.toFixed(2)}`);
+    console.log(`세대 ${g + 1}/${GENS || '∞'} ${persona.padEnd(10)} 세대수 ${r.gen} 최고 ${r.best.toFixed(2)} 평균 ${r.avg.toFixed(2)}`);
     await save();
   }
   await save(); console.log('저장:', OUT); await b.close();

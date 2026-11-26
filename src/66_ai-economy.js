@@ -32,16 +32,33 @@ function aiMineSafeMask(gap){
   for(const g of G.militia||[])if(g.n===undefined||g.n>0)mark(g.cx,g.cy,g.R+gap);
   G._aiMineSafe=blocked;G._aiMineSafeSec=sec;G._aiMineSafeGap=gap;return blocked;
 }
-function aiEconMine(T,P){
+// ---- 위협·목표 보조 (76_ai-goal-gather.js 가 채워 넣는다) ----
+function aiEconMine(T,P,ctx){
+  ctx=ctx||{};
   if(!G.ore)return 0;
-  const pop=popOf(T.id);if(pop<8)return 0;
-  const cap=Math.min(P.crews,Math.max(1,Math.floor(pop/10)));
+  const pop=popOf(T.id);if(pop<(ctx.low?3:8))return 0;
+  const cap=Math.min(P.crews+(ctx.goal?1:0)+(ctx.low?1:0),Math.max(1,Math.floor(pop/(ctx.low?4:10))));
   let slots=cap-aiMineCrews(T);if(slots<=0)return 0;
-  const w=G.w,blocked=aiMineSafeMask(AV.mineGap),limit=Math.min(G.N,slots*4),cand=[];
-  // 필요한 채굴조 수의 네 배까지만 유지한다. 전체 후보 정렬 대신 작은 상위 목록에 삽입한다.
+  const w=G.w,blocked=aiMineSafeMask(ctx.goal?Math.max(3,AV.mineGap-5):AV.mineGap),limit=Math.min(G.N,slots*4),cand=[],foes=ctx.foes||[];
   for(let i=0;i<G.N;i++){
-    const o=G.ore[i];if(!o||!G.open[T.id][i]||blocked[i]||G.tasks.has(tkey('mine',i)))continue;
-    const x=i%w,y=(i/w)|0,d=Math.hypot(x-T.flag.x,y-T.flag.y),v=o===3?340:o===2?260:60,score=v-d*1.5;
+    const o=G.ore[i];if(!o||!G.open[T.id][i]||G.tasks.has(tkey('mine',i)))continue;
+    const x=i%w,y=(i/w)|0;
+    if(blocked[i]&&!ctx.goal)continue;
+    const d=Math.hypot(x-T.flag.x,y-T.flag.y);
+    let v=o===3?340:o===2?260:60;
+    if(ctx.goal)v=aiOreGoalValue(o,ctx.goal);
+    let score=v-d*1.5;
+    if(blocked[i])score-=80;                                   // 목표 작업: 위험해도 하되 불이익
+    if(foes.length){
+      const th=aiThreat(foes,x,y,14),sg=aiSegThreat(foes,T.flag.x,T.flag.y,x,y,7);
+      const under=!!G.under[i]&&aiMouthSafe(T,x,y,foes);       // 땅굴 안은 지상 교전을 피할 수 있다
+      if(under){score+=70;}
+      else if(th>0||sg>0){
+        if(ctx.low&&!ctx.goal)continue;                         // 병력이 적으면 교전 지역을 피한다
+        if(th>=3&&!ctx.goal)continue;
+        score-=60*th+35*sg;
+      }
+    }
     let at=0;while(at<cand.length&&cand[at][1]>=score)at++;
     if(at>=limit)continue;
     cand.splice(at,0,[i,score]);if(cand.length>limit)cand.pop();
@@ -82,9 +99,14 @@ function aiEconRecruit(T,P){
 function aiEconomy(T){
   const A=T.ai;if(!A||!T.flag||T.dead||G.phase!=='play')return;
   const P=AIE.prof[A.persona||'balanced']||AIE.prof.balanced;
-  const e=A.eco||(A.eco={mine:0,sold:0,packs:0});
-  e.mine+=aiEconMine(T,P);
-  if(aiEconSell(T,P))e.sold++;
+  const e=A.eco||(A.eco={mine:0,sold:0,packs:0,gather:0,goal:''});
+  const ctx={foes:aiFoePts(T),low:aiLowPop(T),goal:aiGoal(T)};
+  e.goal=ctx.goal?ctx.goal.n:'';A.ecoLow=ctx.low;
+  if(ctx.low&&A.attackAt!==undefined&&A.mode!=='defend')A.attackAt=Math.max(A.attackAt,G.time+12);   // 병력이 적으면 원정 대신 채굴에 집중
+  if(ctx.goal&&aiGoalTrade(T,ctx.goal))e.sold++;
+  e.mine+=aiEconMine(T,P,ctx);
+  e.gather+=aiEconGather(T,P,ctx);
+  if(!ctx.goal&&aiEconSell(T,P))e.sold++;
   e.packs+=aiEconRecruit(T,P);
 }
 // 파츠 'economy'

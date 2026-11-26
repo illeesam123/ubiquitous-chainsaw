@@ -140,7 +140,7 @@ $('bDice').onclick=()=>{$('fSeed').value=Math.random().toString(36).slice(2,8).t
 $('bGo').onclick=()=>{
   const seed=($('fSeed').value.trim())||Math.random().toString(36).slice(2,8).toUpperCase();
   $('fSeed').value=seed;
-  startGame({seed,biome:$('fBiome').value,size:+$('fSize').value,enemies:+$('fEnemy').value,soldiers:clamp(+$('fSold').value||24,12,60),minDist:clamp(+$('fDist').value||30,5,Math.max(5,Math.floor(+$('fSize').value*(+$('fEnemy').value>1?.34:.5)))),noHills:!!$('fNoHills')?.checked,mode:$('fMode')?.value||'normal'});
+  startGame({seed,biome:$('fBiome').value,size:+$('fSize').value,enemies:+$('fEnemy').value,soldiers:clamp(+$('fSold').value||24,12,60),minDist:clamp(+$('fDist').value||30,5,Math.max(5,Math.floor(+$('fSize').value*(+$('fEnemy').value>1?.34:.5)))),noHills:$('fHills').value==='0',mode:$('fMode')?.value||'normal'});
 };
 // 미니맵
 let miniDragging=false;

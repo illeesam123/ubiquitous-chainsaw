@@ -13,10 +13,11 @@ function drSamCover(sams,x0,y0,x1,y1){   // 직선 비행경로가 SAM 사거리
   let hit=0;const N=8;for(let k=1;k<=N;k++){const x=x0+(x1-x0)*k/N,y=y0+(y1-y0)*k/N;if(sams.some(s=>Math.hypot(s[0]-x,s[1]-y)<DR.samAvoid))hit++;}return hit/N;
 }
 function drTargets(T,foes){
-  const out=[],ids=new Set(foes.map(t=>t.id)),W={mg:3.2,bunker:3,tower:2.8,mortar:2.4,medbay:1.6,workshop:2,armory:2.2,tank:2};
-  for(const o of G.obSet){if(o.natural||!ids.has(o.team))continue;const w=W[o.type];if(!w)continue;out.push({kind:'ob',e:o,x:o.x+(o.size||1)/2,y:o.y+(o.size||1)/2,w:w+(stLv(o)||0)*.3});}
+  const out=[],ids=new Set(foes.map(t=>t.id)),W={mg:3.2,bunker:3,tower:2.8,mortar:2.4,medbay:2.6,workshop:2,armory:3,sandbag:1.1,wire:1,fence:.8};
+  for(const o of G.obSet){if(o.natural||!ids.has(o.team))continue;const w=W[o.type];if(!w)continue;const lv=stLv(o)||0;if(w<=1.1&&lv<1)continue;   // 일반 장애물은 건너뛰고 강화된 것만
+    out.push({kind:'ob',e:o,x:o.x+(o.size||1)/2,y:o.y+(o.size||1)/2,w:w+lv*.5});}
   const us=G.units.filter(u=>!u.dead&&u.state!=='crew'&&ids.has(u.team)&&!u.lay);
-  for(const u of us){let n=0;for(const q of us)if(q!==u&&Math.hypot(q.x-u.x,q.y-u.y)<3)n++;if(n>=2)out.push({kind:'unit',e:u,x:u.x,y:u.y,w:1.2+n*.7});}
+  for(const u of us){let n=0;for(const q of us)if(q!==u&&Math.hypot(q.x-u.x,q.y-u.y)<3)n++;if(n>=2)out.push({kind:'unit',e:u,x:u.x,y:u.y,w:1.2+n*.9});}
   for(const c of G.civs||[])if(c.mil&&!c.dead&&isReclaim()){let n=0;for(const q of G.civs)if(q!==c&&q.mil&&!q.dead&&Math.hypot(q.x-c.x,q.y-c.y)<3)n++;if(n>=1)out.push({kind:'civ',e:c,x:c.x,y:c.y,w:1+n*.6});}
   for(const v of G.vehicles)if(!v.dead&&ids.has(v.team)&&v.type!=='drone')out.push({kind:'vehicle',e:v,x:v.x,y:v.y,w:2.2});
   return out;
@@ -24,10 +25,19 @@ function drTargets(T,foes){
 function aiPartDroneRush(T,dt){
   if(!T.ai||T.dead||G.phase!=='play'||((G.cfg&&G.cfg.mode)==='defense'))return;
   const A=T.ai,mine=G.vehicles.filter(v=>v.team===T.id&&v.type==='drone'&&!v.dead);
+  // 0) 금속 확보: 드론 한 기(금속 70)를 몇 기 찍을 만큼 없으면 철광 채굴을 우선하고, 달러가 있으면 금속을 사 온다
+  const dm=OB.drone.cost.metal,ws0=[...G.obSet].find(o=>o.type==='workshop'&&!o.natural&&o.team===T.id),tier=ws0?wsTier(ws0):-1;
+  const needM=tier<0?260:tier===0?160:tier===1?250:dm*3,needW=tier===0?105:tier===1?185:0;   // 공방 건설 250 · 공예소 150 · 군수공장 240(+목재) → 그다음 드론 70씩
+  A.wantMetal=T.res.metal<needM;
+  if(T.pad&&T.res.money>=140&&T.order.lines.length<SHOP.maxLines-1){
+    const pend=k=>T.order.lines.some(l=>l.kind==='trade'&&l.to===k);
+    if(T.res.metal<needM&&!pend('metal'))shopAddTrade(T.id,'money','metal',Math.min(Math.floor(T.res.money*.5),240));
+    else if(T.res.wood<needW&&!pend('wood'))shopAddTrade(T.id,'money','wood',Math.min(Math.floor(T.res.money*.4),160));
+  }
   // 1) 생산: 군수공장이 있으면 드론 건설 주문을 쉬지 않는다(동시에 최대 2건)
   if(wsHasFactory(T.id)){
     const inflight=[...G.tasks.values()].filter(q=>q.kind==='build'&&q.type==='drone'&&q.team===T.id).length;
-    if(mine.length+inflight<DR.maxAlive&&inflight<2&&T.res.metal>=OB.drone.cost.metal+(AIE.prof.swarm.keepM|0))wsAiDroneBuild(T,aiFreeUnits(T));
+    if(mine.length+inflight<DR.maxAlive&&inflight<2&&T.res.metal>=OB.drone.cost.metal+0)wsAiDroneBuild(T,aiFreeUnits(T));
   }
   // 2) 이미 날아가는 드론: 움직이는 목표는 현재 위치로 목적지를 갱신
   for(const v of mine){const tg=v.aiTarget;if(!tg||!v.droneDest)continue;

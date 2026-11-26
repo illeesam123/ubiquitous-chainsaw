@@ -129,13 +129,7 @@ function wsStepDrones(dt){
     let tx=null,ty=null;
     if(v.droneDest){
       tx=v.droneDest.x;ty=v.droneDest.y;
-    }else{
-      if(!v.target||v.target.kind==='ob'&&!G.obSet.has(v.target.e)||v.target.kind==='unit'&&(v.target.e.dead||!G.units.includes(v.target.e))||v.target.kind==='vehicle'&&(v.target.e.dead||!G.vehicles.includes(v.target.e))||v.target.kind==='civ'&&v.target.e.dead||v.droneSense<=0){
-        v.target=wsDroneTarget(v);v.droneSense=.75;
-      }
-      const tar=v.target;if(!tar)continue;
-      const e=tar.e;tx=tar.kind==='ob'?e.x+e.size/2:e.x;ty=tar.kind==='ob'?e.y+e.size/2:e.y;
-    }
+    }else continue;   // 목적지(클릭·AI 지정)가 없으면 제자리에서 대기한다 — 스스로 가장 가까운 목표로 날아가지 않는다
     const dx=tx-v.x,dy=ty-v.y,d=Math.hypot(dx,dy);
     if(d<=.14){v.x=tx;v.y=ty;wsDroneBlast(v);continue;}
     const step=VEH.drone.speed*weatherSpeed()*dt,move=Math.min(step,d),nx=v.x+dx/d*move,ny=v.y+dy/d*move;

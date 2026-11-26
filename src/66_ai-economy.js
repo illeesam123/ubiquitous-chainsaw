@@ -37,7 +37,7 @@ function aiEconMine(T,P,ctx){
   ctx=ctx||{};
   if(!G.ore)return 0;
   const pop=popOf(T.id);if(pop<(ctx.low?3:8))return 0;
-  const cap=Math.min(P.crews+(ctx.goal?1:0)+(ctx.low?1:0),Math.max(1,Math.floor(pop/(ctx.low?4:10))));
+  const cap=Math.min(P.crews+(ctx.goal?1:0)+(ctx.low?1:0)+(T.ai&&T.ai.wantMetal?1:0),Math.max(1,Math.floor(pop/(ctx.low?4:10))));
   let slots=cap-aiMineCrews(T);if(slots<=0)return 0;
   const w=G.w,blocked=aiMineSafeMask(ctx.goal?Math.max(3,AV.mineGap-5):AV.mineGap),limit=Math.min(G.N,slots*4),cand=[],foes=ctx.foes||[];
   for(let i=0;i<G.N;i++){
@@ -46,6 +46,7 @@ function aiEconMine(T,P,ctx){
     if(blocked[i]&&!ctx.goal)continue;
     const d=Math.hypot(x-T.flag.x,y-T.flag.y);
     let v=o===3?340:o===2?260:60;
+    if(T.ai&&T.ai.wantMetal&&o===1)v+=300;                    // 금속이 모자란 군집형: 철광 우선
     if(ctx.goal)v=aiOreGoalValue(o,ctx.goal);
     let score=v-d*1.5;
     if(blocked[i])score-=80;                                   // 목표 작업: 위험해도 하되 불이익
@@ -71,11 +72,12 @@ function aiEconMine(T,P,ctx){
   }
   return n;
 }
+function A0(T){return T.ai&&T.ai.persona==='swarm'?320:0;}   // 군집형은 드론 재료인 금속을 팔지 않는다
 function aiEconSell(T,P){
   if(!T.pad||T.order.lines.length>=SHOP.maxLines-2)return false;
   if(T.res.money>=SHOP.packCost+P.keepMoney+60)return false;   // 달러가 모자랄 때만 환전한다
   const pend=(k)=>T.order.lines.some(l=>l.kind==='trade'&&l.from===k);
-  const plan=[['metal',P.keepM,40,260],['wood',P.keepW,60,260],['bullets',P.keepB,120,400]];
+  const plan=[['metal',Math.max(P.keepM,A0(T)),40,260],['wood',Math.max(P.keepW,A0(T)),60,260],['bullets',Math.max(P.keepB,300),120,400]];
   let best=null,bv=0;
   for(const [k,keep,min,max] of plan){
     const extra=T.res[k]-keep;if(extra<min||pend(k))continue;
@@ -90,6 +92,7 @@ function aiEconRecruit(T,P){
   for(let k=0;k<P.packs&&T.order.lines.length<SHOP.maxLines-1;k++){
     const pop=popOf(T.id)+pendingRecruits(T);
     if(pop+SHOP.packN>SHOP.popCap)break;
+    if(T.ai&&T.ai.wantMetal&&pop>=10&&T.res.money<520)break;   // 군집형: 공방·드론 재료가 모일 때까지 달러를 아낀다
     if(T.res.money<SHOP.packCost+P.keepMoney)break;
     if(shopAddRecruit(T.id,SHOP.packN))break;
     n++;
@@ -100,7 +103,7 @@ function aiEconomy(T){
   const A=T.ai;if(!A||!T.flag||T.dead||G.phase!=='play')return;
   const P=AIE.prof[A.persona||'balanced']||AIE.prof.balanced;
   const e=A.eco||(A.eco={mine:0,sold:0,packs:0,gather:0,goal:''});
-  const ctx={foes:aiFoePts(T),low:aiLowPop(T),goal:aiGoal(T)};
+  const ctx={foes:aiFoePts(T),low:aiLowPop(T),goal:(A.persona==='swarm'&&A.wantMetal)?null:aiGoal(T)};   // 군집형은 금속 확보 중에는 '병력 증원' 목표로 자원을 팔지 않는다
   e.goal=ctx.goal?ctx.goal.n:'';A.ecoLow=ctx.low;
   if(ctx.low&&A.attackAt!==undefined&&A.mode!=='defend')A.attackAt=Math.max(A.attackAt,G.time+12);   // 병력이 적으면 원정 대신 채굴에 집중
   if(ctx.goal&&aiGoalTrade(T,ctx.goal))e.sold++;
@@ -111,5 +114,5 @@ function aiEconomy(T){
 }
 // 파츠 'economy'
 function aiPartEconomy(T,dt){
-  if(T.ai&&T.id!==0){T.ai.ecT=(T.ai.ecT||0)-dt;if(T.ai.ecT<=0){T.ai.ecT=AIE.every*(.9+Math.random()*.2);try{aiEconomy(T);}catch(e){console.error('AI 경제 오류',e);}}}
+  if(T.ai&&!T.human){T.ai.ecT=(T.ai.ecT||0)-dt;if(T.ai.ecT<=0){T.ai.ecT=AIE.every*(.9+Math.random()*.2);try{aiEconomy(T);}catch(e){console.error('AI 경제 오류',e);}}}
 }

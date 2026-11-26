@@ -101,7 +101,13 @@ function heliEta(T){
 // 적 AI의 간단한 헬기 주문: 여유 달러로 병력을 충원하고, 모자란 자원은 교환
 function aiShop(T){
   if(!T.pad||T.order.lines.length>=3)return;
+  // 총알이 바닥나기 전에 먼저 사 둔다(병력 충원이 항상 먼저 걸려 총알 구매가 영영 안 되던 문제)
+  if(T.res.bullets<bulletCap()*.38&&T.res.money>=130&&!T.order.lines.some(l=>l.kind==='trade'&&l.to==='bullets')){
+    const amt=Math.min(Math.floor(T.res.money*.4),T.res.bullets<120?220:150);
+    if(!shopAddTrade(T.id,'money','bullets',amt))return;
+  }
   const pop=popOf(T.id)+pendingRecruits(T);
+  if(T.ai&&T.ai.wantMetal&&pop>=10&&T.res.money<520)return;
   if(T.res.money>=SHOP.packCost+80&&pop+SHOP.packN<=SHOP.popCap){shopAddRecruit(T.id,SHOP.packN);return;}
   if(T.res.money>=SHOP.recruitCost+60&&pop<SHOP.popCap){shopAddRecruit(T.id,1);return;}
   if(T.res.bullets<80&&T.res.money>260)shopAddTrade(T.id,'money','bullets',120);

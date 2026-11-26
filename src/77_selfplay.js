@@ -38,7 +38,7 @@ function spMutate(g,rate=.25,sig=.16){
   return c;
 }
 function spCross(a,b){const c=spClone(a);for(const [k] of SPGENES)if(Math.random()<.5)c.v[k]=b.v[k];for(const k of SPOPT)if(Math.random()<.5)c.parts[k]=b.parts[k];return c;}
-function spPartList(g){const l=['purge','core'];for(const k of SPOPT)if(g.parts[k])l.push(k);return l;}
+function spPartList(g){const l=['purge','core'],force=g.p==='swarm'?['economy','workshop','droneRush']:[];for(const k of SPOPT)if(g.parts[k]||force.includes(k))l.push(k);return l;}   // 군집형은 경제·공방·드론 파츠가 필수
 // ---------- 유전자 적용 ----------
 function spResetGlobals(){const D=SP.defaults;Object.assign(DR,D.DR);GATHER.low=D.low;}
 function spApplyGenome(g,globals){

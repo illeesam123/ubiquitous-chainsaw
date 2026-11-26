@@ -86,7 +86,7 @@ function aiOreGoalValue(o,g){
 // 목표에 모자란 자원을 남는 자원으로 환전(수수료 감수): 목표에 쓰지 않는 자원은 최소 재고만 남기고 판다
 function aiGoalTrade(T,g){
   if(!T.pad||T.order.lines.length>=SHOP.maxLines-2)return false;
-  const keepMin={metal:25,wood:25,bullets:90,money:0};
+  const keepMin={metal:25,wood:25,bullets:240,money:0};
   for(const r of Object.keys(g.def)){
     if(T.order.lines.some(l=>l.kind==='trade'&&l.to===r))continue;          // 이미 환전 중이면 기다린다
     let best=null,bv=0;

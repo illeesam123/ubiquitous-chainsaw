@@ -140,7 +140,7 @@ function aiCoreTick(T,dt){
   const tanks=G.vehicles.filter(v=>v.team===T.id&&!v.dead&&v.type==='tank');
   const homeR=12+G.w*.05;
   const home=foesNear(T,my.x,my.y,homeR);
-  if(!A.persona){const r=Math.random();A.persona=r<.26?'aggressive':r<.5?'defensive':r<.76?'tricky':'balanced';A.side=Math.random()<.5?-1:1;}
+  if(!A.persona){const r=Math.random();A.persona=r<.2?'aggressive':r<.4?'defensive':r<.6?'tricky':r<.8?'balanced':'swarm';A.side=Math.random()<.5?-1:1;}
   const P=AIP[A.persona];
   if(A.attackAt===undefined)A.attackAt=(40+G.w*.6+Math.random()*25)*P.delay;
 

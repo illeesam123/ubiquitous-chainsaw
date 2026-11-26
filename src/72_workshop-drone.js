@@ -267,11 +267,11 @@ function aiPartWorkshop(T,dt){
     if([...G.tasks.values()].some(q=>q.kind==='build'&&q.type==='workshop'&&q.team===T.id))return;
     wsAiBuild(T,aiFreeUnits(T));return;
   }
-  const o=os[0],free=aiFreeUnits(T),target=Math.min(2,Math.ceil((G.cfg.soldiers||18)/24));
+  const o=os[0],free=aiFreeUnits(T),target=T.ai.persona==='swarm'?0:Math.min(2,Math.ceil((G.cfg.soldiers||18)/24));
   if(wsTier(o)<2&&wsUpgrade(o,true))return;
   const droneCount=G.vehicles.filter(v=>v.type==='drone'&&v.team===T.id&&!v.dead).length;
   if(wsTier(o)>=2&&droneCount<target&&T.res.metal>=OB.drone.cost.metal&&!o.job){wsAiDroneBuild(T,free);return;}
-  if(armories(T.id).length&&!o.job){
+  if(armories(T.id).length&&!o.job&&!(T.ai.persona==='swarm'&&wsTier(o)>=2)){
     const stock=wst(T),want=Math.max(3,Math.floor(popOf(T.id)*.22));
     if((stock.assault||0)<want&&T.res.metal>30&&T.res.wood>12){wsQueue(o,'weapon','assault',Math.min(WS.batches[wsTier(o)],Math.max(1,want-(stock.assault||0)),5),true);return;}
     const astock=ast(T);

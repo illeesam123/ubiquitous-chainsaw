@@ -310,7 +310,7 @@ function xrayPass(e,px,py,hits,bx0,by0,bw,bh,zb){
     if(e.o)drawOb(e.o);else if(e.u)drawUnit(e.u);else if(e.v)drawVehicle(e.v);else if(e.civ)drawCiv(e.civ);
     ELK=null;
     S.setTransform(1,0,0,1,0,0);S.globalCompositeOperation='source-in';
-    const XC=['#6fc3ff','#ff8a80','#ffd166','#d6a4ff'],tm=e.u?e.u.team:e.v?e.v.team:-1;
+    const XC=['#6fc3ff','#ff8a80','#ffd166','#d6a4ff','#ffffff'],tm=e.u?e.u.team:e.v?e.v.team:-1;
     S.fillStyle=tm>=0?XC[tm]||'#d8ecff':'#d8ecff';S.fillRect(0,0,pw,ph);
     S.globalCompositeOperation='source-over';
     // 2) 가린 타일들의 모양

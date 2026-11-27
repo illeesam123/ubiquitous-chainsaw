@@ -1,6 +1,6 @@
 // ================= 상수 / 정의 =================
-const TEAM_COL=['#4f8fd6','#d9534f','#e0a82e','#a56bd6'];
-const TEAM_NAME=['아군','적군 A','적군 B','적군 C'];
+const TEAM_COL=['#4f8fd6','#d9534f','#e0a82e','#a56bd6','#f2f2f2'];   // 5인 개인전의 5번째 팀은 흰색
+const TEAM_NAME=['아군','적군 A','적군 B','적군 C','적군 D'];
 const SPEED=2.1, DIG_WORK=4, MAXW=5, VIS_R=9.5;
 const RIFLE={dmg:14,int:.95,range:8,cost:.5,acc:.9};
 const RK=['money','bullets','metal','wood'];

@@ -143,7 +143,7 @@ stepVehicles=function(dt){
 };
 // ---- 그리기 ----
 function heliSprite(v,alt){
-  if(!(v.team>=0&&v.team<=3))return false;
+  if(!(v.team>=0&&v.team<=4))return false;
   const q=((Math.round(vFace(v.face)/(Math.PI/8))%16)+16)%16,qm=(4-q)&15,qc=Math.min(q,qm),fl=qc!==q;
   const e=sprGetX('veh|'+((v.spin||0)>.25?'heliR':'heli')+'|'+v.team+'|'+qc);if(!sprOk(e))return false;
   const [sx,sy]=toS(v.x,v.y),lift=(alt-3)*cam.z;

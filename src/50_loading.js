@@ -14,7 +14,7 @@ async function preloadCriticalSprites(set){
   const keys=[];
   for(const pose of ['stand','gar','move0','move1','move2','move3','fuse'])keys.push('ubody|'+pose,'ubodyt|'+pose);
   const dirs=[0,1,2,5,6,7,8,9,10];
-  for(const type of ['tank','truck'])for(let team=0;team<4;team++)for(const dir of dirs)keys.push('veh|'+type+'|'+team+'|'+dir);
+  for(const type of ['tank','truck'])for(let team=0;team<5;team++)for(const dir of dirs)keys.push('veh|'+type+'|'+team+'|'+dir);
   for(const key of Object.keys(SPRITE_MANIFEST))if(/^(?:occ|occt)\|/.test(key))keys.push(key);
   const unique=[...new Set(keys)],entries=[],failed=[];
   for(const key of unique){const e=sprGetX(key);if(e)entries.push(e);else{sprMissing(key);failed.push(key);}}

@@ -93,7 +93,7 @@ function addDrops(x,y,gun,item){
 }
 function civDrop(c){if(c.in)milExit(c,true);if(c.mil)addDrops(c.x,c.y,c.gun,c.item);}
 const _kuD=killUnit;
-killUnit=function(u){const was=u.dead;_kuD(u);if(!was&&!u.civ&&u.team>=0&&u.team<=3)addDrops(u.x,u.y,u.gun,u.item);};
+killUnit=function(u){const was=u.dead;_kuD(u);if(!was&&!u.civ&&u.team>=0&&u.team<=4)addDrops(u.x,u.y,u.gun,u.item);};
 function dropDeposit(team,d){
   if(d.kind==='gun'){if(!armories(team).length)return false;wst(G.teams[team])[d.k]++;return true;}
   for(const o of armories(team))if(armTotal(o)<ARM.cap){armStock(o)[d.k]++;return true;}
@@ -104,7 +104,7 @@ function stepDrops(dt){
   G.dropT=(G.dropT||0)-dt;if(G.dropT>0)return;G.dropT=.25;
   for(const d of G.drops){
     for(const u of G.units){
-      if(u.dead||u.surr>0||u.state==='crew'||!(u.team>=0&&u.team<=3))continue;
+      if(u.dead||u.surr>0||u.state==='crew'||!(u.team>=0&&u.team<=4))continue;
       if(Math.hypot(u.x-d.x,u.y-d.y)>1.1)continue;
       if(dropDeposit(u.team,d)){
         d.done=true;

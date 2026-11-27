@@ -120,7 +120,7 @@ function aiThrUpdate(T,A,mine){
   for(let i=0;i<g.length;i++)g[i]*=AIS.decay;
   const add=(x,y,w)=>{if(!inb(x|0,y|0))return;const i=((y/AIS.cell)|0)*W+((x/AIS.cell)|0);g[i]=Math.min(12,g[i]+w);};
   for(const e of G.units){
-    if(e.dead||e.team===T.id||e.state==='crew'||e.lay||!(e.team>=0&&e.team<=3))continue;
+    if(e.dead||e.team===T.id||e.state==='crew'||e.lay||!(e.team>=0&&e.team<=4))continue;
     let seen=false;for(const o of mine){if(Math.hypot(o.x-e.x,o.y-e.y)<=10&&!hiddenUnit(e,o.x,o.y)){seen=true;break;}}
     if(seen)add(e.x,e.y,1);
   }
@@ -272,7 +272,7 @@ function aiProfile(T,A){
   if(A.prof&&G.time-A.prof.t<5)return A.prof;
   let n=0,ent=0,snip=0,lmg=0,hp=0,mh=0;
   for(const e of G.units){
-    if(e.dead||e.team===T.id||e.state==='crew'||!(e.team>=0&&e.team<=3))continue;
+    if(e.dead||e.team===T.id||e.state==='crew'||!(e.team>=0&&e.team<=4))continue;
     n++;if(e.gar||sameTeamTrench(e))ent++;if(e.gun==='sniper')snip++;if(e.gun==='lmg')lmg++;
   }
   let veh=0,air=0;for(const v of G.vehicles){if(v.dead||v.team===T.id)continue;if(VEH[v.type].air)air++;else if(v.type==='tank')veh++;}

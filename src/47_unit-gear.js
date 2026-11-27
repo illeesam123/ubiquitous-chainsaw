@@ -13,7 +13,7 @@ function gearPose(A){ // 화면 각도 → [모양, 회전, 좌우반전]
   return A<0?['up',A+Math.PI/2,false]:['down',A-Math.PI/2,false];
 }
 function unitSprite(u,sx,by,z,body,inG){
-  if(REC||!(u.civ||(u.team>=0&&u.team<=3)))return false;
+  if(REC||!(u.civ||(u.team>=0&&u.team<=4)))return false;
   const st=u.state,mv=st==='move'||st==='flee';
   let pose='stand';
   if(st==='fuse')pose='fuse';else if(inG)pose='gar';else if(mv)pose='move'+((((u.anim*(st==='flee'?17:12))/6.2832)%1)*4|0);

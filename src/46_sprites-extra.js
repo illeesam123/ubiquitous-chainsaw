@@ -101,7 +101,7 @@ function sprBlitFlip(e,sx,sy,z,snap,tint){
 
 // ---- 차량 ----
 function vehSprite(v,flash){
-  if(!(v.team>=0&&v.team<=3)){v._tuDone=false;return false;}
+  if(!(v.team>=0&&v.team<=4)){v._tuDone=false;return false;}
   v._tuDone=false;
   const q=((Math.round(vFace(v.face)/(Math.PI/8))%16)+16)%16;let ok=true;
   if(v.type==='tank'){

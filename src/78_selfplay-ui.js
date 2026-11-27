@@ -33,7 +33,7 @@
   const PARTN={smart:'고도화',economy:'경제',sniper:'저격',workshop:'공방',droneRush:'드론'};
   function sync(){
     $s('spVis').checked=!SP.headless;$s('spTur').checked=SP.cfg.turbo!==false;$s('spVar').checked=SP.cfg.vary!==false;$s('spSpdL').style.display=SP.headless?'none':'';$s('spBudRow').style.display=SP.headless?'':'none';
-    $s('spUse').checked=SP.useBest;$s('spMode').value=SP.cfg.mode||'duel';$s('spAuto').checked=!!SP.auto;$s('spProg').textContent=SP.progress||(SP.running?'진행 중…':'');
+    $s('spUse').checked=SP.useBest;$s('spMode').value=SP.cfg.mode||'duel';for(const [i,k] of [['spPop','pop'],['spGames','games'],['spGens','gens'],['spCap','cap'],['spSize','size'],['spSold','soldiers']])if(SP.cfg[k]!==undefined)$s(i).value=SP.cfg[k];$s('spAuto').checked=!!SP.auto;$s('spProg').textContent=SP.progress||(SP.running?'진행 중…':'');
     $s('spGo').disabled=SP.running;$s('spWatch').disabled=SP.running;
     $s('spTab').innerHTML=Object.keys(PN).map(p=>{const b=SP.store.best[p];return `<tr><td>${PN[p]}</td><td>${b?b.gen:0}</td><td>${b?b.fit.toFixed(2):'-'}</td><td style="color:var(--dim)">${b?spPartList(b.g).slice(2).map(k=>PARTN[k]).join('·')||'기본':'기본값'}</td></tr>`;}).join('');
     $s('spLog').innerHTML=SP.log.slice().reverse().join('<br>');
@@ -49,6 +49,7 @@
     if(e.target.id==='spBud'){SP.budget=+e.target.value;$s('spBudV').textContent=SP.budget+'ms';}
   });
   m.addEventListener('change',e=>{
+    if(['spPop','spGames','spGens','spCap','spSize','spSold'].includes(e.target.id)){const o=SP.cfg.pop;readCfg();try{localStorage.setItem(SPKEY+'_cfg',JSON.stringify(SP.cfg));}catch(_){}spWorkerCfg();}   // 입력을 바꾸면 백그라운드 자동 학습에도 바로 반영한다
     if(e.target.id==='spVis'){SP.headless=!e.target.checked;sync();}
     if(e.target.id==='spUse'){SP.useBest=e.target.checked;try{localStorage.setItem(SPKEY+'_use',SP.useBest?'1':'0');}catch(_){}spApplyBestAll();}
   });

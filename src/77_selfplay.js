@@ -306,7 +306,7 @@ if(!SPW)window.addEventListener('message',e=>{
   else if(d.type==='gen'){try{spLoad();}catch(_){}if(!(G&&G.phase==='play'))spApplyBestAll();SP.log.push(d.line);if(SP.log.length>60)SP.log.shift();SP.progress='백그라운드 학습: '+d.prog;if(SP.onUpdate)SP.onUpdate();}
   else if(d.type==='prog'){SP.progress='백그라운드 학습: '+d.prog;if(SP.onUpdate)SP.onUpdate();}
 });
-if(SPW)window.addEventListener('message',e=>{const d=e.data;if(!d||!d.sp||e.source!==parent)return;if(d.type==='cfg'){Object.assign(SP.cfg,d.cfg,{pop:SP.cfg.pop});SP.load=d.load;SP.pop={};}});
+if(SPW)window.addEventListener('message',e=>{const d=e.data;if(!d||!d.sp||e.source!==parent)return;if(d.type==='cfg'){Object.assign(SP.cfg,d.cfg);SP.load=d.load;}});
 const _startGameSP=startGame;
 startGame=function(cfg){if(!SPW&&!SP.selfStart&&SP.useBest&&!SP.active)try{spApplyBestAll();}catch(e){}return _startGameSP(cfg);};
 if(SPW){SP.headless=true;SP.budget=6;SP.load=25;
@@ -316,4 +316,5 @@ if(SPW){SP.headless=true;SP.budget=6;SP.load=25;
 }
 try{spLoad();}catch(e){console.error('자기대전 저장값 오류',e);}
 try{SP.auto=localStorage.getItem(SPKEY+'_auto')==='1';}catch(e){}
+try{const c=JSON.parse(localStorage.getItem(SPKEY+'_cfg')||'null');if(c)Object.assign(SP.cfg,c);}catch(e){}   // 연구소 입력값(개체수·판/개체 등)은 저장해 두었다가 자동 학습에도 쓴다
 if(SP.auto&&!SPW)window.addEventListener('load',()=>setTimeout(spWorkerStart,2500));

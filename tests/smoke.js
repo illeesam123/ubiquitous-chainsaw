@@ -23,7 +23,7 @@ const { pathToFileURL } = require('url');
       failed: G.assetAudit?.failed || [],
       directionAssets: Object.keys(SPRITE_MANIFEST).filter(k => k.startsWith('veh|')).length
     }));
-    if (audit.required !== 118 || audit.ready !== audit.required || audit.failed.length || audit.directionAssets !== 144) {
+    if (audit.required !== 136 || audit.ready !== audit.required || audit.failed.length || audit.directionAssets !== 180) {
       errs.push('필수 SVG 에셋이 준비되지 않았습니다: ' + JSON.stringify(audit));
     }
     const started = await p.evaluate(() => {

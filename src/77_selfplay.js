@@ -17,7 +17,11 @@ const SP={active:false,headless:true,speed:8,budget:40,store:{best:{},hist:{}},u
   cfg:{size:64,soldiers:14,cap:900,pop:8,games:2,gens:20,joint:true,turbo:true,dt:.12,aiStep:.3,idle:0,vary:true},pop:{},fit:{},gen:{},log:[],defaults:null,running:false,stop:false,onUpdate:null};
 const SPKEY='trench_ai_genomes_v1';
 const spClamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const spSleep=ms=>new Promise(r=>setTimeout(r,ms));
+// 양보(yield): setTimeout 은 탭·창이 가려지면 브라우저가 1초 이상(5분 뒤에는 1분에 한 번)으로 늦춰서, 화면 밖 학습이 갑자기 1배속 수준으로 느려진다.
+// MessageChannel 메시지는 그 제한을 받지 않으므로 기본 양보는 그것으로 하고, 앞쪽(보이는) 화면에서 CPU 비중을 지킬 때만 setTimeout 으로 쉰다.
+const spMC=new MessageChannel(),spMCq=[];spMC.port1.onmessage=()=>{const r=spMCq.shift();if(r)r();};
+const spYield0=()=>new Promise(r=>{spMCq.push(r);spMC.port2.postMessage(0);});
+const spSleep=ms=>(ms>1&&!document.hidden)?new Promise(r=>setTimeout(r,ms)):spYield0();
 // ---------- 기본값 스냅샷 ----------
 SP.defaults={AIP:JSON.parse(JSON.stringify(AIP)),AIE:JSON.parse(JSON.stringify(AIE.prof)),WP:JSON.parse(JSON.stringify(AI_WPREF)),DR:Object.assign({},DR),low:GATHER.low};
 // ---------- 유전자 ----------

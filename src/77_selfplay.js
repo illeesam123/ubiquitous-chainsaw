@@ -14,7 +14,7 @@ const SPGENES=[   // [키,최소,최대,정수?]
   ['minLaunch',2,8,1],['saturate',4,12,1],['maxAlive',4,16,1],['low',6,24,1]
 ];
 const SP={active:false,headless:true,speed:8,budget:40,store:{best:{},hist:{}},useBest:true,
-  cfg:{size:64,soldiers:14,cap:900,pop:8,games:2,gens:20,turbo:true,dt:.12,aiStep:.3,idle:0,vary:true},pop:{},fit:{},gen:{},log:[],defaults:null,running:false,stop:false,onUpdate:null};
+  cfg:{size:64,soldiers:14,cap:900,pop:8,games:2,gens:20,joint:true,turbo:true,dt:.12,aiStep:.3,idle:0,vary:true},pop:{},fit:{},gen:{},log:[],defaults:null,running:false,stop:false,onUpdate:null};
 const SPKEY='trench_ai_genomes_v1';
 const spClamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const spSleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -178,6 +178,31 @@ function spPlan(p){
   SP.pop[p].forEach((g,i)=>{for(const s of scn)jobs.push({i,p,genome:g,ops:s.ops,seat:s.seat,scn:s.scn});});
   return jobs;
 }
+// ---- 공동 학습: 한 판에 나온 '모든' 성향이 같이 평가·학습한다 ----
+// 후보 한 명만 점수를 받던 방식은 다른 AI 가 이긴 판을 버렸다. 이제 판마다 각 자리(성향별 개체)가 자기 순위·점수를 기록한다.
+// 75%: 필요한 성향들을 함께 앉혀 전원 기록 / 25%: 한 성향만 기록하고 나머지는 현재최고·과거최고·기본 AI(기준점 유지).
+function spPlanJoint(ps){
+  for(const p of ps)if(!SP.pop[p]||SP.pop[p].length!==SP.cfg.pop)spInitPop(p);
+  const q={};for(const p of ps){q[p]=[];for(let k=0;k<SP.cfg.games;k++)q[p].push(...spShuffle([...Array(SP.pop[p].length).keys()]));}
+  const jobs=[];
+  for(;;){
+    const need=ps.filter(p=>q[p].length);if(!need.length)break;
+    const sc=spScenario(),n=sc.n||2,bench=Math.random()<.25;
+    let rec=spShuffle(need).sort((a,b)=>q[b].length-q[a].length).slice(0,bench?1:Math.min(n,need.length));
+    const seats=rec.map(p=>{const i=q[p].pop();return {p,i,g:spClone(SP.pop[p][i])};});
+    const rest=spShuffle(SPPERSONA.filter(x=>!rec.includes(x)));
+    while(seats.length<n)seats.push({p:null,g:spOppPick(rest.pop())});
+    const ord=spShuffle(seats);
+    jobs.push({gs:ord.map(x=>x.g),rec:ord.map(x=>x.p?{p:x.p,i:x.i}:null),scn:sc});
+  }
+  return jobs;
+}
+async function spRunJoint(job){
+  const sc=await spMatch({gs:job.gs,scn:job.scn}),out=[];
+  job.rec.forEach((r,k)=>{if(r)out.push({p:r.p,i:r.i,fit:sc[k]});});
+  return out;
+}
+function spFinishJoint(ps,res){return ps.map(p=>Object.assign({p},spFinish(p,res.filter(x=>x.p===p).map(x=>({i:x.i,fit:x.fit})))));}
 async function spRunJob(job){   // 후보는 job.seat 번 팀, 나머지는 job.ops 순서대로
   const gs=job.ops.slice();gs.splice(job.seat,0,job.genome);
   const sc=await spMatch({gs,scn:job.scn});
@@ -219,7 +244,15 @@ function spLog(s){SP.log.push(s);if(SP.log.length>60)SP.log.shift();if(SP.onUpda
 async function spEvolve(personas,gens){
   if(SP.running)return;SP.running=true;SP.stop=false;if(!SPW)spWorkerStop();
   try{
-    for(let g=0;(gens<=0||g<gens)&&!SP.stop;g++)for(const p of personas){
+    if(personas.length>=2&&SP.cfg.joint!==false){   // 공동 학습
+      for(let g=0;(gens<=0||g<gens)&&!SP.stop;g++){
+        const jobs=spPlanJoint(personas),res=[];
+        for(let j=0;j<jobs.length&&!SP.stop;j++){res.push(...await spRunJoint(jobs[j]));SP.progress=`공동 학습 · ${j+1}/${jobs.length}판`;if(SPW)spWorkerPost({type:'prog',prog:SP.progress});if(SP.onUpdate)SP.onUpdate();}
+        if(SP.stop)break;
+        for(const r of spFinishJoint(personas,res)){const ln=`${r.p} 세대 ${r.gen}: 최고 ${r.best.toFixed(2)} · 평균 ${r.avg.toFixed(2)} · 신뢰 ${r.rel.toFixed(2)}${r.stall?' · 정체 '+r.stall:''}`;spLog(ln);spWorkerPost({type:'gen',line:ln,prog:ln});}
+        if(!SPW)spApplyBestAll();
+      }
+    }else for(let g=0;(gens<=0||g<gens)&&!SP.stop;g++)for(const p of personas){
       if(SP.stop)break;
       const jobs=spPlan(p),res=[];
       for(let j=0;j<jobs.length&&!SP.stop;j++){res.push({i:jobs[j].i,fit:await spRunJob(jobs[j])});SP.progress=`${p} 세대 ${(SP.gen[p]||0)+1} · ${j+1}/${jobs.length}판`;if(SPW)spWorkerPost({type:'prog',prog:SP.progress});if(SP.onUpdate)SP.onUpdate();}

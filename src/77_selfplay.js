@@ -30,14 +30,16 @@ function spDefaultGenome(p){
   const parts={};for(const k of SPOPT)parts[k]=k==='droneRush'?(p==='swarm'?1:0):1;
   return {p,v,parts};
 }
-function spClone(g){return {p:g.p,v:Object.assign({},g.v),parts:Object.assign({},g.parts)};}
+function spClone(g){const c={p:g.p,v:Object.assign({},g.v),parts:Object.assign({},g.parts)};if(g.n){c.n=g.n;c.s=g.s;}return c;}   // n,s: 지금까지 치른 판 수·적합도 합(여러 세대에 걸친 평균을 위해)
+function spFresh(g){delete g.n;delete g.s;return g;}
+function spRel(g){const n=g.n||0;return n?g.s/n-.22/Math.sqrt(n):0;}   // 신뢰 하한: 판 수가 적은 '운 좋은 한 판'은 깎는다
 function spMutate(g,rate=.25,sig=.16){
   const c=spClone(g);
   for(const [k,lo,hi,int] of SPGENES)if(Math.random()<rate){let x=c.v[k]+(Math.random()+Math.random()+Math.random()-1.5)*2*sig*(hi-lo);x=spClamp(x,lo,hi);c.v[k]=int?Math.round(x):+x.toFixed(3);}
   for(const k of SPOPT)if(Math.random()<.08)c.parts[k]=c.parts[k]?0:1;
-  return c;
+  return spFresh(c);
 }
-function spCross(a,b){const c=spClone(a);for(const [k] of SPGENES)if(Math.random()<.5)c.v[k]=b.v[k];for(const k of SPOPT)if(Math.random()<.5)c.parts[k]=b.parts[k];return c;}
+function spCross(a,b){const c=spFresh(spClone(a));for(const [k] of SPGENES)if(Math.random()<.5)c.v[k]=b.v[k];for(const k of SPOPT)if(Math.random()<.5)c.parts[k]=b.parts[k];return c;}
 function spPartList(g){const l=['purge','core'],force=g.p==='swarm'?['economy','workshop','droneRush']:[];for(const k of SPOPT)if(g.parts[k]||force.includes(k))l.push(k);return l;}   // 군집형은 경제·공방·드론 파츠가 필수
 // ---------- 유전자 적용 ----------
 function spResetGlobals(){const D=SP.defaults;Object.assign(DR,D.DR);GATHER.low=D.low;}
@@ -86,7 +88,9 @@ function spTrackOut(out){for(const T of G.teams)if(out[T.id]===undefined&&popOf(
 // 팀별 점수(0~1)와 순위(나쁜→좋은). 2팀: 전력 비율, 3~5팀: 순위 70% + 전력 점유 30%.
 function spScores(out){
   const n=G.teams.length,st=G.teams.map((T,i)=>spStrength(i)),al=G.teams.map((T,i)=>popOf(i)>0);
-  if(n===2){const a=popOf(0),b=popOf(1);let s0;if(a===0&&b===0)s0=.5;else if(b===0)s0=1;else if(a===0)s0=0;else s0=spClamp(.5+(st[0]-st[1])/(st[0]+st[1]+1)*.5,0,1)*.98;
+  if(n===2){const a=popOf(0),b=popOf(1),f=spClamp(G.time/(SP.cfg.cap||900),0,1);let s0;
+    // 이기면 빨리 이길수록, 지면 오래 버틸수록 점수가 더 높다(0/1 로 포화되어 기울기가 사라지는 것을 막는다). 승 .78~1 > 판정 .3~.7 > 패 .05~.22
+    if(a===0&&b===0)s0=.5;else if(b===0)s0=.78+.22*(1-f);else if(a===0)s0=.05+.17*f;else s0=.3+.4*(st[0]/(st[0]+st[1]+1));
     return {sc:[s0,1-s0],order:s0>=.5?[1,0]:[0,1],ko:(a===0)!==(b===0)};}
   const ids=[...Array(n).keys()],dead=ids.filter(i=>!al[i]).sort((x,y)=>(out[x]||0)-(out[y]||0)),live=ids.filter(i=>al[i]).sort((x,y)=>st[x]-st[y]),order=dead.concat(live),sum=st.reduce((a,b)=>a+b,0)+1,sc=[];
   order.forEach((id,r)=>{sc[id]=spClamp(.7*r/(n-1)+.3*Math.min(1,st[id]/sum*n/2),0,1)*.98;});
@@ -143,8 +147,15 @@ async function spMatch(spec){
 }
 // ---------- 진화 ----------
 function spOppGenome(p){const b=SP.store.best[p];return b&&b.g?spClone(b.g):spDefaultGenome(p);}
+// 학습용 상대: 현재 최고 55% · 과거 최고(명예의 전당) 25% · 기본 AI 20% → 상대가 계속 바뀌는 '움직이는 표적'과 서로 물려 도는 현상을 줄이고, 기본 AI에도 지지 않도록 한다
+function spOppPick(p){
+  const r=Math.random(),hof=(SP.store.hof&&SP.store.hof[p])||[];
+  if(r<.2)return spDefaultGenome(p);
+  if(r<.45&&hof.length)return spFresh(spClone(hof[(Math.random()*hof.length)|0]));
+  return spFresh(spOppGenome(p));
+}
 function spInitPop(p){
-  const base=SP.store.best[p]&&SP.store.best[p].g?spClone(SP.store.best[p].g):spDefaultGenome(p),pop=[base];
+  const has=SP.store.best[p]&&SP.store.best[p].g,base=has?spClone(SP.store.best[p].g):spDefaultGenome(p),pop=[base];if(has)base._hof=1;
   while(pop.length<SP.cfg.pop)pop.push(spMutate(base,.45,.22));
   SP.pop[p]=pop;SP.gen[p]=SP.gen[p]||0;
 }
@@ -162,7 +173,7 @@ function spPlan(p){
   // 한 세대의 모든 개체가 같은 시나리오(시드·인원·상대들·자리)를 치른다 → 개체끼리 공정하게 비교(짝지은 비교).
   const others=SPPERSONA.filter(q=>q!==p),jobs=[],scn=[];
   for(let j=0;j<SP.cfg.games;j++){const sc=spScenario(),n=sc.n||2;
-    const ops=(n-1<=others.length?spShuffle(others).slice(0,n-1):others.concat(spShuffle(SPPERSONA).slice(0,n-1-others.length))).map(spOppGenome);
+    const ops=(n-1<=others.length?spShuffle(others).slice(0,n-1):others.concat(spShuffle(SPPERSONA).slice(0,n-1-others.length))).map(spOppPick);
     scn.push({scn:sc,ops,seat:(Math.random()*n)|0});}
   SP.pop[p].forEach((g,i)=>{for(const s of scn)jobs.push({i,p,genome:g,ops:s.ops,seat:s.seat,scn:s.scn});});
   return jobs;
@@ -175,16 +186,34 @@ async function spRunJob(job){   // 후보는 job.seat 번 팀, 나머지는 job.
 function spFinish(p,results){   // results: [{i,fit}]
   const pop=SP.pop[p],sum=pop.map(()=>0),cnt=pop.map(()=>0);
   for(const r of results){sum[r.i]+=r.fit;cnt[r.i]++;}
-  const fit=pop.map((_,i)=>cnt[i]?sum[i]/cnt[i]:0),order=fit.map((f,i)=>i).sort((x,y)=>fit[y]-fit[x]);
-  const best=pop[order[0]],avg=fit.reduce((a,b)=>a+b,0)/fit.length;
-  SP.gen[p]=(SP.gen[p]||0)+1;
-  SP.store.best[p]={g:spClone(best),fit:+fit[order[0]].toFixed(3),gen:SP.gen[p]};
-  (SP.store.hist[p]=SP.store.hist[p]||[]).push({gen:SP.gen[p],best:+fit[order[0]].toFixed(3),avg:+avg.toFixed(3)});
-  if(SP.store.hist[p].length>200)SP.store.hist[p].shift();
-  const next=[spClone(pop[order[0]]),spClone(pop[order[1]||order[0]])],tour=()=>{const a=order[Math.floor(Math.random()*Math.ceil(pop.length*.6))],b=order[Math.floor(Math.random()*Math.ceil(pop.length*.6))];return pop[fit[a]>=fit[b]?a:b];};
-  while(next.length<pop.length)next.push(spMutate(spCross(tour(),tour()),.22,.14));
+  // 개체별 누적 통계: 살아남은 개체는 지난 세대 기록을 70% 만 이어받아(오래된 시나리오의 운은 잊는다) 새 판 결과와 합친다
+  pop.forEach((g,i)=>{if(!cnt[i])return;const n0=(g.n||0)*.7,s0=(g.s||0)*.7;g.n=n0+cnt[i];g.s=s0+sum[i];});
+  const rel=pop.map(spRel),order=rel.map((f,i)=>i).sort((x,y)=>rel[y]-rel[x]);
+  const gen=SP.gen[p]=(SP.gen[p]||0)+1,top=pop[order[0]];
+  const thisFit=cnt[order[0]]?sum[order[0]]/cnt[order[0]]:0,avg=pop.reduce((a,g,i)=>a+(cnt[i]?sum[i]/cnt[i]:0),0)/pop.length;
+  // 명예의 전당: 새 최고가 저장된 최고보다 (같은 시나리오에서 함께 평가된 뒤) 신뢰 하한이 높을 때만 교체한다 → 운 좋은 한 판으로 퇴보하지 않는다
+  const st=SP.store;st.hof=st.hof||{};st.stall=st.stall||{};
+  const cur=st.best[p]&&st.best[p].g,curIdx=cur?pop.findIndex(g=>g._hof):-1;
+  let improved=false;
+  if(!cur||curIdx<0||rel[order[0]]>rel[curIdx]+.01){
+    if(cur){(st.hof[p]=st.hof[p]||[]).push(spFresh(spClone(cur)));if(st.hof[p].length>6)st.hof[p].shift();}
+    st.best[p]={g:spClone(top),fit:+(top.s/top.n).toFixed(3),gen,n:+top.n.toFixed(1)};improved=true;
+  }else{const b=pop[curIdx];st.best[p]={g:spClone(b),fit:+(b.s/b.n).toFixed(3),gen:st.best[p].gen,n:+b.n.toFixed(1)};}
+  st.stall[p]=improved?0:(st.stall[p]||0)+1;
+  (st.hist[p]=st.hist[p]||[]).push({gen,best:+thisFit.toFixed(3),avg:+avg.toFixed(3),rel:+rel[order[0]].toFixed(3)});
+  if(st.hist[p].length>200)st.hist[p].shift();
+  // 다음 세대: 최고(재평가용으로 항상 포함) + 이번 상위 + 적응형 변이(정체되면 변이를 키우고, 오래 정체되면 새 피를 수혈)
+  const stall=st.stall[p],sig=.1+.03*Math.min(stall,8),rate=.2+.03*Math.min(stall,8);
+  const best=spClone(st.best[p].g);best._hof=1;
+  const next=[best];if(order[0]!==pop.indexOf(top)||true){const t2=spClone(top);if(JSON.stringify(t2.v)!==JSON.stringify(best.v))next.push(t2);}
+  const pool=order.slice(0,Math.max(3,Math.ceil(pop.length*.5))),tour=()=>{const a=pool[(Math.random()*pool.length)|0],b=pool[(Math.random()*pool.length)|0];return pop[rel[a]>=rel[b]?a:b];};
+  if(stall>=10&&next.length<pop.length)next.push(spMutate(spDefaultGenome(p),.6,.3));
+  while(next.length<pop.length){
+    const k=Math.random();   // 40% 최고 주변 탐색(exploit) · 60% 상위끼리 교배 후 변이
+    next.push(k<.4?spMutate(best,rate,sig*.7):spMutate(spCross(tour(),tour()),rate,sig));
+  }
   SP.pop[p]=next;spSave();
-  return {gen:SP.gen[p],best:fit[order[0]],avg};
+  return {gen,best:thisFit,avg,rel:rel[order[0]],stall};
 }
 function spLog(s){SP.log.push(s);if(SP.log.length>60)SP.log.shift();if(SP.onUpdate)SP.onUpdate();}
 async function spEvolve(personas,gens){
@@ -195,7 +224,7 @@ async function spEvolve(personas,gens){
       const jobs=spPlan(p),res=[];
       for(let j=0;j<jobs.length&&!SP.stop;j++){res.push({i:jobs[j].i,fit:await spRunJob(jobs[j])});SP.progress=`${p} 세대 ${(SP.gen[p]||0)+1} · ${j+1}/${jobs.length}판`;if(SPW)spWorkerPost({type:'prog',prog:SP.progress});if(SP.onUpdate)SP.onUpdate();}
       if(SP.stop)break;
-      const r=spFinish(p,res);const ln=`${p} 세대 ${r.gen}: 최고 ${r.best.toFixed(2)} · 평균 ${r.avg.toFixed(2)}`;spLog(ln);spWorkerPost({type:'gen',line:ln,prog:ln});if(!SPW)spApplyBestAll();
+      const r=spFinish(p,res);const ln=`${p} 세대 ${r.gen}: 최고 ${r.best.toFixed(2)} · 평균 ${r.avg.toFixed(2)} · 신뢰 ${r.rel.toFixed(2)}${r.stall?' · 정체 '+r.stall:''}`;spLog(ln);spWorkerPost({type:'gen',line:ln,prog:ln});if(!SPW)spApplyBestAll();
     }
   }finally{SP.running=false;SP.active=false;SP.progress='';if(!SPW&&SP.auto)setTimeout(spWorkerStart,500);if(SP.onUpdate)SP.onUpdate();}
 }

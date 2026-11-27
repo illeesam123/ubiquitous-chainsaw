@@ -32,7 +32,7 @@ const url = 'file://' + path.join(__dirname, '..', 'dist', 'index.html');
     // 다른 탭의 명예의 전당도 갱신
     const best = await p0.evaluate(() => JSON.stringify(SP.store.best));
     await Promise.all(pages.slice(1).map(pg => pg.evaluate(s => { SP.store.best = JSON.parse(s); }, best)));
-    console.log(`세대 ${g + 1}/${GENS || '∞'} ${persona.padEnd(10)} 세대수 ${r.gen} 최고 ${r.best.toFixed(2)} 평균 ${r.avg.toFixed(2)}`);
+    console.log(`세대 ${g + 1}/${GENS || '∞'} ${persona.padEnd(10)} 세대수 ${r.gen} 최고 ${r.best.toFixed(2)} 평균 ${r.avg.toFixed(2)} 신뢰 ${r.rel.toFixed(2)}${r.stall ? " 정체 " + r.stall : ""}`);
     await save();
   }
   await save(); console.log('저장:', OUT); await b.close();

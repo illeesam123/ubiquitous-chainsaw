@@ -43,17 +43,18 @@ function aiEconMine(T,P,ctx){
   for(let i=0;i<G.N;i++){
     const o=G.ore[i];if(!o||!G.open[T.id][i]||G.tasks.has(tkey('mine',i))||aiBadKey(T,tkey('mine',i)))continue;
     const x=i%w,y=(i/w)|0;
-    if(blocked[i]&&!ctx.goal&&!(T.ai&&T.ai.persona==='swarm'))continue;   // 군집형: 마을 근처 광석도 불이익만 받고 캔다
+    const ug=!!G.under[i];   // 지하 광석(내 지도에 열린 동굴)은 지상 마을·자경단 구역과 무관하다 — 지하 경로로 가면 교전에 휘말리지 않는다
+    if(blocked[i]&&!ctx.goal&&!ug&&!(T.ai&&T.ai.persona==='swarm'))continue;   // 군집형: 마을 근처 광석도 불이익만 받고 캔다
     const d=Math.hypot(x-T.flag.x,y-T.flag.y);
     let v=o===3?340:o===2?260:60;
     if(T.ai&&(T.ai.persona==='swarm'||T.ai.wantMetal)&&o===1)v+=300;                    // 금속이 모자란 군집형: 철광 우선
     if(ctx.goal)v=aiOreGoalValue(o,ctx.goal);
     let score=v-d*1.5;
-    if(blocked[i])score-=80;                                   // 목표 작업: 위험해도 하되 불이익
+    if(blocked[i]&&!ug)score-=80;                                   // 목표 작업: 위험해도 하되 불이익
     if(foes.length){
       const th=aiThreat(foes,x,y,14),sg=aiSegThreat(foes,T.flag.x,T.flag.y,x,y,7);
       const under=!!G.under[i]&&aiMouthSafe(T,x,y,foes);       // 땅굴 안은 지상 교전을 피할 수 있다
-      if(under){score+=70;}
+      if(ug){if(under)score+=70;}   // 지하는 지상 위협 판정을 건너뛴다
       else if(th>0||sg>0){
         if(ctx.low&&!ctx.goal)continue;                         // 병력이 적으면 교전 지역을 피한다
         if(th>=3&&!ctx.goal)continue;

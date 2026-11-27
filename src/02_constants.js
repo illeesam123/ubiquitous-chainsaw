@@ -35,7 +35,7 @@ const OB={
 const BUILDS=['sandbag','wire','tower','mg','bunker','mortar','medbay','workshop','tank','truck','heli','drone'];
 const VEH={
   tank:{hp:850,speed:1.25,range:12,interval:3.5,damage:38,ammo:4,blast:1.35,trenchDmg:72,armor:.35,crew:3},
-  truck:{hp:430,speed:1.8,range:0,interval:0,damage:0,ammo:0,blast:0,trenchDmg:0,armor:.15,cargo:180,supply:2.2,supplyRange:5.5,crew:1,seats:8},
+  truck:{hp:430,speed:4.2,range:0,interval:0,damage:0,ammo:0,blast:0,trenchDmg:0,armor:.15,cargo:180,supply:2.2,supplyRange:5.5,crew:1,seats:8},
   heli:{hp:340,speed:3.3,range:0,interval:0,damage:0,ammo:0,blast:0,trenchDmg:0,armor:.1,crew:1,seats:4,air:true,rangeBonus:4,takeoff:2.4,landing:2.2},
   drone:{hp:95,speed:3.6,range:0,interval:0,damage:0,ammo:0,blast:0,trenchDmg:0,armor:0,crew:0,air:true}
 };

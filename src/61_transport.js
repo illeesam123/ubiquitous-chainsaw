@@ -1,6 +1,6 @@
 // ================= 수송: 헬리콥터 + 수송트럭 (병사 탑승) =================
 // 정차한 수송 차량을 병사 선택 상태에서 클릭하면 탑승한다. 목적지에 도착하거나 [주둔 해제] 로 하차한다.
-// 수송트럭 8인승(보정 없음), 헬리콥터 4인승: 사거리 보정 + 탑승 병사 대응 사격, 이륙·착륙 지연.
+// 수송트럭 8인승(속도 병사의 2배, 탑승 병사 사격 가능·사거리 보정 없음), 헬리콥터 4인승: 사거리 보정 + 탑승 병사 대응 사격, 이륙·착륙 지연.
 function vehSeats(v){return (VEH[v.type]&&VEH[v.type].seats)||0;}
 function vehPax(v){const a=[];for(const id of (v.pax||[])){const u=G.uid.get(id);if(u&&!u.dead)a.push(u);}v.pax=a.map(u=>u.id);return a;}
 function seatsPending(v){let n=0;for(const u of G.units)if(!u.dead&&u.boardV===v.id)n++;return n;}
@@ -136,6 +136,15 @@ stepVehicles=function(dt){
     const P=vehPax(v);
     for(const u of P){u.x=v.x;u.y=v.y;}
     if(!P.length)continue;
+    // 수송트럭 탑승 병사도 창밖으로 사격한다(사거리 보정 없음, 달리는 중에는 명중률 -12%)
+    if(v.type==='truck'){
+      const ws=Math.max(.3,weatherSight()),mv=v.state==='move';
+      for(const u of P){
+        u.cd=(u.cd||0)-dt;if(u.cd>0)continue;
+        const base=gunOf(u),g=Object.assign({},base,{acc:Math.max(.05,base.acc-(mv?.12:0))});
+        if(fire(u,g,{x:v.x,y:v.y}))u.cd=base.int*(.9+Math.random()*.2);else u.cd=.35;
+      }
+    }
     // 목적지에 도착하면 하차
     if(v.type==='heli'){if(v._arrived){v._arrived=false;unloadVehicle(v);}}
     else if(v._mv0&&v.state!=='move')unloadVehicle(v);

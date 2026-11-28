@@ -25,9 +25,9 @@ function drTargets(T,foes){
 function aiPartDroneRush(T,dt){
   if(!T.ai||T.dead||G.phase!=='play'||((G.cfg&&G.cfg.mode)==='defense'))return;
   const A=T.ai,mine=G.vehicles.filter(v=>v.team===T.id&&v.type==='drone'&&!v.dead);
-  // 0) 금속 확보: 드론 한 기(금속 70)를 몇 기 찍을 만큼 없으면 철광 채굴을 우선하고, 달러가 있으면 금속을 사 온다
+  // 0) 금속 확보: 드론 한 기(금속 50)를 몇 기 찍을 만큼 없으면 철광 채굴을 우선하고, 달러가 있으면 금속을 사 온다
   const dm=OB.drone.cost.metal,ws0=[...G.obSet].find(o=>o.type==='workshop'&&!o.natural&&o.team===T.id),tier=ws0?wsTier(ws0):-1;
-  const needM=tier<0?260:tier===0?160:tier===1?250:dm*3,needW=tier===0?105:tier===1?185:0;   // 공방 건설 250 · 공예소 150 · 군수공장 240(+목재) → 그다음 드론 70씩
+  const needM=tier<0?160:tier===0?110:tier===1?170:dm*3,needW=tier===0?65:tier===1?125:0;   // 공방 건설 150 · 공예소 100 · 군수공장 160(+목재) → 그다음 드론 50씩
   A.wantMetal=T.res.metal<needM;
   if(T.pad&&T.res.money>=140&&T.order.lines.length<SHOP.maxLines-1){
     const pend=k=>T.order.lines.some(l=>l.kind==='trade'&&l.to===k);

@@ -1,17 +1,17 @@
 // ================= 공방 · 공예소 · 군수공장 · 폭발 드론 =================
 const WS={
   names:['공방','공예소','군수공장'],
-  batches:[5,8,10],
-  upgrade:[null,{metal:150,wood:100},{metal:240,wood:180}],
+  batches:[6,10,14],
+  upgrade:[null,{metal:100,wood:60},{metal:160,wood:120}],
   recipes:{
     weapon:{
-      sling:{wood:4},pistol:{metal:5},assault:{metal:12,wood:3},sniper:{metal:18,wood:4},lmg:{metal:24,wood:6},at:{metal:20,wood:5}
+      sling:{wood:3},pistol:{metal:4},assault:{metal:9,wood:2},sniper:{metal:14,wood:3},lmg:{metal:18,wood:4},at:{metal:15,wood:4}
     },
-    armor:{wood:{wood:14},plate:{metal:18,wood:2},stone:{metal:20,wood:8}},
-    exp:{smoke:{metal:2,wood:4},flash:{metal:4},molotov:{metal:1,wood:5},frag:{metal:5,wood:1}},
+    armor:{wood:{wood:10},plate:{metal:14,wood:1},stone:{metal:15,wood:6}},
+    exp:{smoke:{metal:1,wood:3},flash:{metal:3},molotov:{metal:1,wood:4},frag:{metal:4,wood:1}},
     drone:{}
   },
-  time:{weapon:2.2,armor:2.2,exp:1.5,drone:5}
+  time:{weapon:1.5,armor:1.5,exp:1,drone:3}
 };
 const WS_IMG=new Image(),DRONE_IMG=new Image();
 WS_IMG.src='assets/sprites/workshop.svg';DRONE_IMG.src='assets/sprites/drone.svg';
@@ -172,8 +172,8 @@ let wsSel={kind:'weapon',item:null,n:1};
 function wsItemName(kind,k){return kind==='weapon'?WEAP[k].n:kind==='armor'?ARMOR[k].n:kind==='exp'?EXP[k].n:'폭발 드론';}
 function wsItemCol(kind,k){return kind==='weapon'?WEAP[k].col:kind==='armor'?ARMOR[k].col:kind==='exp'?EXP[k].col:'#aaa';}
 function wsStockOf(T,kind,k){return kind==='weapon'?(wst(T)[k]|0):kind==='armor'?(ast(T)[k]|0):armories(T.id).reduce((a,o)=>a+(armStock(o)[k]|0),0);}
-// 제작 시간: 수량이 늘수록 개당 시간이 조금씩 길어진다(개당 +6%씩, 최대 +60%)
-function wsDuration(kind,n){return WS.time[kind]*n*(1+Math.min(.6,.06*(n-1)));}
+// 제작 시간: 수량이 늘수록 개당 시간이 조금씩 길어진다(개당 +4%씩, 최대 +40%)
+function wsDuration(kind,n){return WS.time[kind]*n*(1+Math.min(.4,.04*(n-1)));}
 function wsMakePanel(){
   let m=document.getElementById('wsPanel');if(m)return m;
   const st=document.createElement('style');

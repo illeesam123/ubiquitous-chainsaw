@@ -25,8 +25,8 @@ const OB={
   bunker:{n:'벙커',hp:900,absorb:.75,block:true,size:2,demo:16,build:40,cost:{money:50,wood:16,metal:14},slots:4,gun:{dmg:16,int:.6,range:8.5,cost:.5,acc:.9},collapse:12},
   mortar:{n:'박격포 진지',hp:300,absorb:.45,block:false,demo:9,build:34,cost:{money:55,wood:8,metal:22,bullets:30},slots:2,range:16,interval:7.5,shell:58,trenchDmg:105},
   medbay:{n:'의무 막사',hp:380,absorb:.5,block:false,demo:10,build:26,cost:{money:48,wood:18,metal:8},slots:2,staff:1,beds:2,heal:5,healRange:5.2,retreatAt:.45},
-  workshop:{n:'공방',building:true,size:2,hp:560,absorb:.55,block:true,demo:16,build:45,cost:{metal:250}},
-  drone:{n:'폭발 드론',size:1,build:18,cost:{metal:70}},
+  workshop:{n:'공방',building:true,size:2,hp:560,absorb:.55,block:true,demo:16,build:30,cost:{metal:150}},
+  drone:{n:'폭발 드론',size:1,build:12,cost:{metal:50}},
   // 차량은 작업 시스템의 비용·제작 시간만 공유하며, 장애물 대신 독립 엔티티로 생성된다.
   tank:{n:'전차',size:1,build:48,cost:{money:130,metal:45,bullets:60}},
   truck:{n:'수송트럭',size:1,build:28,cost:{money:75,metal:18,wood:6,bullets:10}},

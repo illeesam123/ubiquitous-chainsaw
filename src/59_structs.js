@@ -179,6 +179,19 @@ function stUpgrade(o,team){
   fxPush({k:'dust',x:o.x+.5,y:o.y+.5,t:0,d:.6});sfx('toast');
   return null;
 }
+// 분기 강화(지뢰): 여러 갈래 중 하나로 개조한다. 장애물 종류(o.type) 자체를 바꾼다.
+function stBranchErr(o,team,nt){
+  const t=UPT[o.type];if(!t||!t.branch||!t.branch.includes(nt)||o.natural||o.team!==team)return '개조할 수 없습니다';
+  if(!canAfford(G.teams[team],t.bcost[nt]))return '자원이 부족합니다';
+  return null;
+}
+function stBranch(o,team,nt){
+  const er=stBranchErr(o,team,nt);if(er)return er;
+  pay(G.teams[team],UPT[o.type].bcost[nt]);
+  o.type=nt;o.lv=1;o.max=OB[nt].hp;o.hp=o.max;o._ss=-1;o._se=null;o.pt=0;
+  fxPush({k:'dust',x:o.x+o.size/2,y:o.y+o.size/2,t:0,d:.6});sfx('toast');
+  return null;
+}
 // AI: 여유 자원이 있으면 구조물을 강화한다
 function stAiUpgrade(T){
   if(T.res.money<160||(T.stAt&&G.time-T.stAt<14))return;
@@ -212,10 +225,12 @@ function stAiUpgrade(T){
     m.innerHTML=`<h3><span>${stName(o)} <small style="color:var(--dim);font-weight:400">${t.names.length>1?`${lv+1}/${t.names.length}단계`:''}</small></span><button class="btn" id="stX" type="button">닫기 ✕</button></h3>
 <div class="hpb"><i style="width:${Math.max(0,Math.min(100,o.hp/o.max*100))}%"></i></div>
 <div class="tree">${t.names.map((n,i)=>`${i?'<div class="ln"></div>':''}<div class="nd ${i===lv?'cur':i<lv?'done':''}" ${tipAttr('upt:'+o.type+':'+i)}><b>${i<lv?'✔ ':i===lv?'▶ ':''}${n}</b>${i>lv&&t.cost[i]?`<div class="cost">강화 비용: ${costTxt(t.cost[i])}</div>`:''}</div>`).join('')}</div>
-${next?`<button class="btn" id="stUp" type="button" ${er?'disabled':''} style="${er?'':'border-color:var(--accent)'}">${t.names[lv+1]}(으)로 강화 · ${costTxt(next)}</button>${er?`<div style="color:#e08a7a">${er}</div>`:''}`:(t.names.length>1?'<div style="color:var(--dim)">최종 단계입니다.</div>':'')}`;
+${next?`<button class="btn" id="stUp" type="button" ${er?'disabled':''} style="${er?'':'border-color:var(--accent)'}">${t.names[lv+1]}(으)로 강화 · ${costTxt(next)}</button>${er?`<div style="color:#e08a7a">${er}</div>`:''}`:(t.names.length>1?'<div style="color:var(--dim)">최종 단계입니다.</div>':'')}
+${t.branch?'<div style="color:var(--dim)">아래 중 하나로 개조합니다 (한 번 고르면 되돌릴 수 없음)</div>'+t.branch.map(b=>{const er2=stBranchErr(o,0,b);return `<button class="btn" data-br="${b}" type="button" ${er2?'disabled':''} ${tipAttr('upt:'+b+':0')} style="${er2?'':'border-color:var(--accent)'}">${UPT[b].names[0]} · ${costTxt(t.bcost[b])}</button><div class="cost" style="margin-top:-4px">${UPT[b].info[0]}</div>`;}).join(''):''}`;
   }
   m.addEventListener('click',e=>{
     if(e.target.id==='stX'){m.hidden=true;return;}
+    if(e.target.dataset&&e.target.dataset.br&&G&&cur){const er=stBranch(cur,0,e.target.dataset.br);if(er)toast(er);sig='';render(true);return;}
     if(e.target.id==='stUp'&&G&&cur){const er=stUpgrade(cur,0);if(er)toast(er);sig='';render(true);}
   });
   window.structMenu=function(o){

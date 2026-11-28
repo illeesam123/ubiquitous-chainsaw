@@ -77,5 +77,6 @@
   "src/76_ai-goal-gather.js",
   "src/77_selfplay.js",
   "src/78_selfplay-ui.js",
-  "src/79_swarm-econ.js"
+  "src/79_swarm-econ.js",
+  "src/80_mines.js"
 ]

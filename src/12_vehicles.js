@@ -4,7 +4,7 @@ function vehicleCellsFree(x,y,team,ignore){
   for(let ty=Math.floor(y-r);ty<=Math.floor(y+r);ty++)for(let tx=Math.floor(x-r);tx<=Math.floor(x+r);tx++){
     if(!inb(tx,ty))return false;
     const ti=ty*G.w+tx;if((G.trench[ti]>0&&G.up[ti]!==1)||(G.tt[ti]===2&&G.up[ti]!==1))return false;
-    const o=G.obst[ti];if(o&&o.type!=='crate')return false;
+    const o=G.obst[ti];if(o&&o.type!=='crate'&&!OB[o.type].mine)return false;
   }
   for(const v of G.vehicles)if(v!==ignore&&!v.dead&&!(v.alt>.02)&&Math.hypot(v.x-x,v.y-y)<.85)return false;
   return true;

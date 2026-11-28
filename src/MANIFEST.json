@@ -78,5 +78,6 @@
   "src/77_selfplay.js",
   "src/78_selfplay-ui.js",
   "src/79_swarm-econ.js",
-  "src/80_mines.js"
+  "src/80_mines.js",
+  "src/81_vehicles2.js"
 ]

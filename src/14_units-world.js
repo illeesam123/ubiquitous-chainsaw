@@ -79,10 +79,18 @@ function stepWorld(dt){
   for(const t of [...G.tasks.values()]){
     if(t.bomb){stepBomb(t,dt);continue;}
     const n=t.workers.size;
+    // 대상이 이미 사라진 작업(건물이 포격으로 무너짐·이미 판 참호)은 바로 취소
+    if(t.kind==='demo'&&!G.obst[t.idx]){dropTask(t,false);continue;}
+    if(t.kind==='dig'&&G.trench[t.idx]===t.team+1){dropTask(t,false);continue;}
     if(n>0){
       t.prog+=n*dt*weatherWork()*(t.kind==='dig'?BIOME[G.biome].dig:1)*(typeof taskSpeed==='function'?taskSpeed(t):1);
       if(Math.random()<dt*3){fxPush({k:'chip',x:t.x+.5,y:t.y+.5,t:0,d:.3,kind:t.kind});sfx(t.kind==='demo'?'hammer':'dig',t.x+.5,t.y+.5);}
-      if(t.kind==='build'&&VEH[t.type]&&n<VEH[t.type].crew)t.prog=Math.min(t.prog,t.work-.001);
+      if(t.kind==='build'&&VEH[t.type]&&n<VEH[t.type].crew){
+        t.prog=Math.min(t.prog,t.work-.001);
+        // 승무원이 모자란 채(사망·후송·명령 변경) 더 올 사람이 없으면 영원히 '작업 중'이 되므로 일정 시간 뒤 취소하고 환급한다
+        t.short=(t.short||0)+dt;
+        if(t.short>(t.res.size?25:8)){dropTask(t,true);continue;}
+      }else if(t.short)t.short=0;
       if(t.prog>=t.work)finishTask(t);
     }
   }
